@@ -109,7 +109,7 @@ ifeq ($(MMOD),realview_pbx)
 cortex_CC_FLAGS		:= -mcpu=cortex-a9
 cortex_AS_FLAGS		:= -mcpu=cortex-a9
 cortex_LD_FLAGS		:=
-cortex_EMULATOR		= qemu-system-arm -machine realview-pbx-a9 -smp $(CPUS) -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel
+cortex_EMULATOR		= qemu-system-arm -machine realview-pbx-a9 -smp $(CPUS) -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel 
 cortex_DEBUGGER		:= arm-none-eabi-gdb
 cortex_FLASHER		= $(TLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f
 cortex_MAGIC		:= --omagic
@@ -121,7 +121,7 @@ endif
 ifeq ($(MMOD),zynq)
 cortex_CC_FLAGS		:= -mcpu=cortex-a9
 cortex_AS_FLAGS		:= -mcpu=cortex-a9
-cortex_EMULATOR		= qemu-system-arm -machine xilinx-zynq-a9  -smp $(CPUS) -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel
+cortex_EMULATOR		= qemu-system-arm -machine xilinx-zynq-a9  -smp $(CPUS) -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel 
 cortex_DEBUGGER		:= arm-none-eabi-gdb
 cortex_FLASHER		= $(TLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f
 cortex_MAGIC		:= --omagic
@@ -134,7 +134,7 @@ ifeq ($(MMOD),raspberry_pi3)
 cortex_CC_FLAGS		:= -mcpu=cortex-a53 -mfloat-abi=hard -mfpu=vfp
 cortex_AS_FLAGS		:= -mcpu=cortex-a53
 cortex_LD_FLAGS		:=
-cortex_EMULATOR		= qemu-system-aarch64 -machine type=virt -cpu cortex-a53 -smp $(CPUS) -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel
+cortex_EMULATOR		= qemu-system-aarch64 -machine type=virt -cpu cortex-a53 -smp $(CPUS) -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel 
 cortex_DEBUGGER		:= arm-none-eabi-gdb
 cortex_FLASHER		= $(TLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f
 cortex_MAGIC		:= --omagic
@@ -144,7 +144,7 @@ cortex_IMG_SUFFIX	:= .bin
 endif
 
 ifeq ($(MMOD),lm3s811)
-cortex_EMULATOR		= qemu-system-arm -machine lm3s811evb -m $(MEM_SIZE)k -serial mon:stdio -serial null -nographic -no-reboot -kernel
+cortex_EMULATOR		= qemu-system-arm -machine lm3s811evb -m $(MEM_SIZE)k -serial mon:stdio -serial null -nographic -no-reboot -kernel 
 cortex_CC_FLAGS		:= -mcpu=cortex-m3 -mthumb -mabi=atpcs
 cortex_AS_FLAGS		:= -mcpu=cortex-m3 -mthumb -meabi=gnu
 cortex_LD_FLAGS		:=
@@ -180,8 +180,8 @@ atmega_CODE_NAME	:= .init
 atmega_DATA_NAME	:= .data
 atmega_IMG_SUFFIX	:= .hex
 
-MACH_CC_FLAGS           := $($(MACH)_CC_FLAGS) -O -nostdinc -Wno-builtin-declaration-mismatch -Wno-array-bounds -fno-stack-protector
-MACH_CXX_FLAGS          := $($(MACH)_CC_FLAGS) -O -std=c++14 -nostdinc --no-exceptions --no-rtti --no-use-cxa-atexit --no-asynchronous-unwind-tables -fno-stack-protector -fdata-sections -ffunction-sections -Wall -Werror -Wno-builtin-declaration-mismatch -Wno-array-bounds -Wno-attribute-alias -Wno-placement-new -Wno-class-memaccess
+MACH_CC_FLAGS           := $($(MACH)_CC_FLAGS) -O -nostdinc -Wno-builtin-declaration-mismatch -Wno-array-bounds -fno-stack-protector 
+MACH_CXX_FLAGS          := $($(MACH)_CC_FLAGS) -O -std=c++14 -nostdinc --no-exceptions --no-rtti --no-use-cxa-atexit --no-asynchronous-unwind-tables -fno-stack-protector -fdata-sections -ffunction-sections -Wall -Werror -Wno-builtin-declaration-mismatch -Wno-array-bounds -Wno-attribute-alias -Wno-placement-new -Wno-class-memaccess 
 MACH_AS_FLAGS           := $($(MACH)_AS_FLAGS)
 MACH_LD_FLAGS           := $($(MACH)_LD_FLAGS)
 MACH_CODE_NAME          := $($(MACH)_CODE_NAME)
@@ -223,7 +223,7 @@ TLDFLAGS	:= -m32
 ACC		= $(BIN)/eposcc $(MACH_CC_FLAGS)  -c -ansi -O
 ACXX		= $(BIN)/eposcc $(MACH_CXX_FLAGS) -c -ansi -O
 AF77		= $(BIN)/eposcc $(MACH_CC_FLAGS)  -c -ansi -O
-ALD		= $(BIN)/eposcc --$(SMOD) --no-warn-mismatch
+ALD		= $(BIN)/eposcc --$(SMOD) --no-warn-mismatch 
 ALDFLAGS	:= --gc-sections $(MACH_MAGIC)
 
 # Tools and flags to compile the system
