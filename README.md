@@ -38,7 +38,7 @@ You can also built for specific applications using ```make APPLICATION=<app>```,
 
 ### Running
 
-After building an application-oriented instance of EPOS, you can run the application with the tailored EPOS on QEMU using: ```make run```
+After building an application-oriented instance of EPOS, you can run the application with the tailored EPOS on QEMU using: ```make APPLICATION=<app> run```
 
 ## Contributing
 
