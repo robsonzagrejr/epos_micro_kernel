@@ -157,7 +157,7 @@ cortex_IMG_SUFFIX	:= .img
 endif
 
 ifeq ($(MMOD),emote3)
-cortex_EMULATOR		=
+cortex_EMULATOR		= 
 cortex_CC_FLAGS		:= -mcpu=cortex-m3 -mthumb -mabi=atpcs
 cortex_AS_FLAGS		:= -mcpu=cortex-m3 -mthumb -meabi=gnu
 cortex_LD_FLAGS		:=

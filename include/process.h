@@ -92,10 +92,6 @@ protected:
     static void unlock() { CPU::int_enable(); }
     static bool locked() { return CPU::int_disabled(); }
 
-    static void sleep(Queue * q);
-    static void wakeup(Queue * q);
-    static void wakeup_all(Queue * q);
-
     static void reschedule();
     static void time_slicer(IC::Interrupt_Id interrupt);
 
@@ -110,8 +106,6 @@ protected:
     char * _stack;
     Context * volatile _context;
     volatile State _state;
-    Queue * _waiting;
-    Thread * volatile _joining;
     Queue::Element _link;
 
     static Scheduler_Timer * _timer;
@@ -125,7 +119,7 @@ private:
 
 template<typename ... Tn>
 inline Thread::Thread(int (* entry)(Tn ...), Tn ... an)
-: _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
+: _state(READY), _link(this, NORMAL)
 {
     constructor_prologue(STACK_SIZE);
     _context = CPU::init_stack(0, _stack + STACK_SIZE, &__exit, entry, an ...);
@@ -134,7 +128,7 @@ inline Thread::Thread(int (* entry)(Tn ...), Tn ... an)
 
 template<typename ... Tn>
 inline Thread::Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
-: _state(conf.state), _waiting(0), _joining(0), _link(this, conf.priority)
+: _state(conf.state), _link(this, conf.priority)
 {
     constructor_prologue(conf.stack_size);
     _context = CPU::init_stack(0, _stack + conf.stack_size, &__exit, entry, an ...);
