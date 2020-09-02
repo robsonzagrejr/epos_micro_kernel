@@ -36,6 +36,8 @@ void Semaphore::v()
     finc(_value);
     if(_value < 1)
         wakeup();  // implicit end_atomic()
+    else
+        end_atomic();
 }
 
 __END_SYS
