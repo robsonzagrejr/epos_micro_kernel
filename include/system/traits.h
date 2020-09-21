@@ -12,10 +12,8 @@ class CRC;
 class Debug;
 class ELF;
 class Handler;
-class Hashes;
-class Heaps;
 class Lists;
-class Observeds;
+class Heaps;
 class Observers;
 class OStream;
 class Predictors;
@@ -150,8 +148,8 @@ template<typename Channel, bool connectionless = Channel::connectionless> class 
 template<typename Channel, bool connectionless = Channel::connectionless> class Port;
 
 class SmartData;
-template<typename Transducer, typename Network = TSTP> class Responsive_SmartData;
-template<typename Transducer, typename Network = TSTP> class Interested_SmartData;
+template<typename Transducer, typename Network> class Responsive_SmartData;
+template<typename Transducer, typename Network> class Interested_SmartData;
 
 // Framework
 class Framework;
@@ -529,7 +527,7 @@ template<typename T>
 struct Traits {
     // Traits for components that do not declare any
     static const bool enabled = true;
-    static const bool monitored = true;
+    static const bool monitored = false;
     static const bool debugged = true;
     static const bool hysterically_debugged = false;
 

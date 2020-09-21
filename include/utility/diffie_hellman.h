@@ -23,7 +23,8 @@ private:
     public:
         typedef typename Diffie_Hellman::Bignum Coordinate;
 
-        Elliptic_Curve_Point() __attribute__((noinline)) { }
+        Elliptic_Curve_Point() __attribute__((noinline)) {}
+        Elliptic_Curve_Point(const Coordinate & _x, const Coordinate & _y, const Coordinate & _z) { x = _x; y = _y; z = _z; }
 
         void operator*=(const Coordinate & b);
 

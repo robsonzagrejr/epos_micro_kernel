@@ -26,10 +26,10 @@ private:
 
 public:
     Observed() {
-        db<Observeds>(TRC) << "Observed() => " << this << endl;
+        db<Observers>(TRC) << "Observed() => " << this << endl;
     }
     ~Observed() {
-        db<Observeds>(TRC) << "~Observed(this=" << this << ")" << endl;
+        db<Observers>(TRC) << "~Observed(this=" << this << ")" << endl;
     }
 
     virtual void attach(Observer * o);
@@ -196,22 +196,22 @@ public:
 
 public:
     Data_Observed() {
-        db<Observeds>(TRC) << "Data_Observed() => " << this << endl;
+        db<Observers>(TRC) << "Data_Observed() => " << this << endl;
     }
 
     virtual ~Data_Observed() {
-        db<Observeds>(TRC) << "~Data_Observed(this=" << this << ")" << endl;
+        db<Observers>(TRC) << "~Data_Observed(this=" << this << ")" << endl;
     }
 
     virtual void attach(Data_Observer<D, C> * o, const C & c) {
-        db<Observeds>(TRC) << "Data_Observed::attach(obs=" << o << ",cond=" << c << ")" << endl;
+        db<Observers>(TRC) << "Data_Observed::attach(obs=" << o << ",cond=" << c << ")" << endl;
 
         o->_link = Element(o, c);
         _observers.insert(&o->_link);
     }
 
     virtual void detach(Data_Observer<D, C> * o, const C & c) {
-        db<Observeds>(TRC) << "Data_Observed::detach(obs=" << o << ",cond=" << c << ")" << endl;
+        db<Observers>(TRC) << "Data_Observed::detach(obs=" << o << ",cond=" << c << ")" << endl;
 
         _observers.remove(&o->_link);
     }
@@ -219,11 +219,11 @@ public:
     virtual bool notify(const C & c, D * d) {
         bool notified = false;
 
-        db<Observeds>(TRC) << "Data_Observed::notify(this=" << this << ",cond=" << c << ")" << endl;
+        db<Observers>(TRC) << "Data_Observed::notify(this=" << this << ",cond=" << c << ")" << endl;
 
         for(Element * e = _observers.head(); e; e = e->next()) {
             if(e->rank() == c) {
-                db<Observeds>(INF) << "Data_Observed::notify(this=" << this << ",obs=" << e->object() << ")" << endl;
+                db<Observers>(INF) << "Data_Observed::notify(this=" << this << ",obs=" << e->object() << ")" << endl;
                 e->object()->update(this, c, d);
                 notified = true;
             }

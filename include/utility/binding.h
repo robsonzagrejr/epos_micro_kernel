@@ -17,7 +17,7 @@ private:
 
 public:
     Binding(A * a, const Key_A & ka, B * b, const Key_B & kb): _a(a), _b(b), _ka(ka), _kb(kb), _link(this, ka) {
-        db<Hashes>(TRC) << "Binding::Binding(a=" << a << ",ka=" << ka << ",b=" << b << ",kb=" << kb << ")" << endl;
+        db<Lists>(TRC) << "Binding::Binding(a=" << a << ",ka=" << ka << ",b=" << b << ",kb=" << kb << ")" << endl;
         _bindings.insert(&_link);
     }
 
@@ -30,7 +30,7 @@ public:
     Key_B key_b() { return _kb; }
 
     static bool rebind(const Key_A & oka, const Key_A & nka) {
-        db<Hashes>(TRC) << "Binding::rebind(old=" << oka << ",new=" << nka << ")" << endl;
+        db<Lists>(TRC) << "Binding::rebind(old=" << oka << ",new=" << nka << ")" << endl;
         for(typename Bindings::Iterator it = _bindings.begin(); it != _bindings.end(); it++) {
             if(it->object()->_ka == oka) {
                 _bindings.remove(&it->object()->_link);
@@ -43,7 +43,7 @@ public:
     }
 
     static bool unbind(const Key_A & ka) {
-        db<Hashes>(TRC) << "Binding::unbind(key=" << ka << ")" << endl;
+        db<Lists>(TRC) << "Binding::unbind(key=" << ka << ")" << endl;
         for(typename Bindings::Iterator it = _bindings.begin(); it != _bindings.end(); it++) {
             if(it->object()->bound() && (it->object()->_ka = ka)) {
                 it->object()->_ka = 0;
@@ -54,7 +54,7 @@ public:
     }
 
     static Binding * get_by_key(const Key_A & ka) {
-        db<Hashes>(TRC) << "Binding::get_by_key(key=" << ka << ")" << endl;
+        db<Lists>(TRC) << "Binding::get_by_key(key=" << ka << ")" << endl;
         for(typename Bindings::Iterator it = _bindings.begin(); it != _bindings.end(); it++)
             if(it->object()->_a && (it->object()->_ka == ka))
                 return it->object();
