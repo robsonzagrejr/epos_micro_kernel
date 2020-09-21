@@ -397,8 +397,7 @@ void PC_Setup::build_lm()
         if(si->lm.has_ext) { // Check for EXTRA data in the boot image
             si->lm.app_extra = si->lm.app_data + si->lm.app_data_size;
             si->lm.app_extra_size = si->bm.img_size - si->bm.extras_offset;
-            if(Traits<System>::multiheap)
-                si->lm.app_extra_size = MMU::align_page(si->lm.app_extra_size);
+            si->lm.app_extra_size = MMU::align_page(si->bm.img_size - si->bm.extras_offset);
             si->lm.app_data_size += si->lm.app_extra_size;
         }
     }

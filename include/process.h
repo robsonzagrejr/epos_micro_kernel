@@ -148,6 +148,20 @@ inline Thread::Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... 
     constructor_epilogue(entry, conf.stack_size);
 }
 
+
+// An event handler that triggers a thread (see handler.h)
+class Thread_Handler : public Handler
+{
+public:
+    Thread_Handler(Thread * h) : _handler(h) {}
+    ~Thread_Handler() {}
+
+    void operator()() { _handler->resume(); }
+
+private:
+    Thread * _handler;
+};
+
 __END_SYS
 
 #endif

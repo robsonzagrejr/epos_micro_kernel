@@ -354,6 +354,8 @@ int Thread::idle()
         db<Thread>(WRN) << "Halting the machine ..." << endl;
         CPU::halt();
     }
+    // Some machines will need a little time to actually reboot
+    for(;;);
 
     return 0;
 }
