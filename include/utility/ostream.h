@@ -124,44 +124,19 @@ public:
     }
 
     OStream & operator<<(float f) {
-        if(f < 0.0001f && f > -0.0001f)
+        if(f < 0.0001f && f > -0.0001f){
             (*this) << "0.0000";
-
-        int b = 0;
-        int m = 0;
-
-        float x = f;
-        if(x >= 0.0001f) {
-            while(x >= 1.0000f) {
-                x -= 1.0f;
-                b++;
-            }
-            (*this) << b << ".";
-            for(int i = 0; i < 3; i++) {
-                m = 0;
-                x *= 10.0f;
-                while(x >= 1.000f) {
-                    x -= 1.0f;
-                    m++;
-                }
-                (*this) << m;
-            }
-        } else {
-            while(x <= -1.000f) {
-                x += 1.0f;
-                b++;
-            }
-            (*this) << "-" << b << ".";
-            for(int i = 0; i < 3; i++) {
-                m = 0;
-                x *= 10.0f;
-                while(x <= -1.000f) {
-                    x += 1.0f;
-                    m++;
-                }
-                (*this) << m;
-            }
+            return *this;
         }
+        if (f < 0) {
+            (*this) << "-";
+            f *= -1;
+        }
+
+        long long b = (long long) f;
+        (*this) << b << ".";
+        long long m = (long long) ((f - b)  * 10000);
+        (*this) << m;
         return *this;
     }
 

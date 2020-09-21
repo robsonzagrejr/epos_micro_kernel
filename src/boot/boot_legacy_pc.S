@@ -475,7 +475,10 @@ msg_done:
 ; The following is to enable "sys" to define the actual size of the image.
 ; And the floppy geometry.
 ; The default values 19 and 360 will only be used if you don't use sys.
-		.align 506
+		.align 502
+system_info:
+                .word 0
+                .word 0
 n_sec_track:
                 .word 19
 n_sec_image:

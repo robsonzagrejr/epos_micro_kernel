@@ -18,9 +18,11 @@ private:
     typedef typename LARGER<T>::Result Larger_T;
 
 public:
-    typedef typename UNSIGNED<Larger_T>::Result Distance;
+    using Number = T;
+    using Distance = typename UNSIGNED<Larger_T>::Result;
 
-    Point(const T & xi = 0, const T & yi = 0): x(xi), y(yi) {}
+    Point() {}
+    Point(const T & xi, const T & yi): x(xi), y(yi) {}
 
     // Euclidean distance
     template<typename P>
@@ -101,17 +103,19 @@ private:
     typedef typename LARGER<T>::Result Larger_T;
 
 public:
-    typedef typename UNSIGNED<Larger_T>::Result Distance;
+    using Number = T;
+    using Distance = typename UNSIGNED<Larger_T>::Result;
 
-    Point(const T & xi = 0, const T & yi = 0, const T & zi = 0): x(xi), y(yi), z(zi) {}
+    Point() {}
+    Point(const T & xi, const T & yi, const T & zi): x(xi), y(yi), z(zi) {}
 
     // Euclidean distance
     template<typename P>
     Distance operator-(const P & p) const {
         // Care for unsigned T
-        Larger_T xx = p.x > x ? p.x - x : x - p.x;
-        Larger_T yy = p.y > y ? p.y - y : y - p.y;
-        Larger_T zz = p.z > z ? p.z - z : z - p.z;
+        Distance xx = p.x > x ? p.x - x : x - p.x;
+        Distance yy = p.y > y ? p.y - y : y - p.y;
+        Distance zz = p.z > z ? p.z - z : z - p.z;
         return Math::sqrt(xx * xx + yy * yy + zz * zz);
     }
 
@@ -187,11 +191,12 @@ private:
     typedef typename IF<EQUAL<T1, char>::Result, int, T1>::Result Print_Type;
 
 public:
-    typedef Point<T1, 3> Center;
-    typedef typename IF<EQUAL<T2, void>::Result, typename Point<T1, 3>::Distance, T2>::Result Radius;
+    using Number = T1;
+    using Center = Point<Number, 3>;
+    using Radius = typename IF<EQUAL<T2, void>::Result, typename Center::Distance, T2>::Result;
 
     Sphere() {}
-    Sphere(const Center & c, const Radius & r = 0): center(c), radius(r) { }
+    Sphere(const Center & c, const Radius & r = 0): center(c), radius(r) {}
 
     bool contains(const Center & c) const { return (center - c) <= radius; }
 

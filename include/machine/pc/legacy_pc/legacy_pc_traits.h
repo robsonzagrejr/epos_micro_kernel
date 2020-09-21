@@ -130,64 +130,6 @@ template<> struct Traits<Keyboard>: public Traits<Machine_Common>
     static const bool enabled = !Traits<Serial_Keyboard>::enabled;
 };
 
-template<> struct Traits<Scratchpad>: public Traits<Machine_Common>
-{
-    static const bool enabled = false;
-    static const unsigned int ADDRESS = 0xa0000; // VGA Graphic mode frame buffer
-    static const unsigned int SIZE = 96 * 1024;
-};
-
-template<> struct Traits<Ethernet>: public Traits<Machine_Common>
-{
-    typedef LIST<PCNet32, PCNet32> DEVICES;
-    static const unsigned int UNITS = DEVICES::Length;
-
-    static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
-};
-
-template<> struct Traits<PCNet32>: public Traits<Machine_Common>
-{
-    static const unsigned int UNITS = Traits<Ethernet>::DEVICES::Count<PCNet32>::Result;
-    static const unsigned int SEND_BUFFERS = 64; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 256; // per unit
-
-    static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
-
-    static const bool promiscuous = false;
-};
-
-template<> struct Traits<E100>: public Traits<Machine_Common>
-{
-    static const unsigned int UNITS = Traits<Ethernet>::DEVICES::Count<E100>::Result;
-    static const unsigned int SEND_BUFFERS = 64; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 64; // per unit
-
-    static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
-
-    static const bool promiscuous = false;
-    static const bool qemu = true;
-};
-
-template<> struct Traits<C905>: public Traits<Machine_Common>
-{
-    static const unsigned int UNITS = Traits<Ethernet>::DEVICES::Count<C905>::Result;
-    static const unsigned int SEND_BUFFERS = 64; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 64; // per unit
-
-    static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
-
-    static const bool promiscuous = false;
-};
-
-template<> struct Traits<RTL8139>: public Traits<Machine_Common>
-{
-    static const unsigned int UNITS = Traits<Ethernet>::DEVICES::Count<RTL8139>::Result;
-    static const unsigned int SEND_BUFFERS = 4; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 8192; // no descriptor, just a memory block of 8192 bits
-
-    static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
-    static const bool promiscuous = false;
-};
 
 template<> struct Traits<FPGA>: public Traits<Machine_Common>
 {

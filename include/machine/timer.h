@@ -17,14 +17,15 @@ protected:
     Timer_Common() {}
 
 public:
-    Hertz frequency();
-    void frequency(const Hertz & f);
-
     Tick read();
     Percent reset();
 
     void enable();
     void disable();
+
+    PPB accuracy();
+    Hertz frequency();
+    void frequency(const Hertz & f);
 
     void handler(const Handler & handler);
 };
