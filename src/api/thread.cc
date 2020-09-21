@@ -48,7 +48,10 @@ void Thread::constructor_epilogue(const Log_Addr & entry, unsigned int stack_siz
         case FINISHING: break;
     }
 
-    unlock();
+    if(preemptive && (_state == READY) && (_link.rank() != IDLE))
+        reschedule();
+    else
+        unlock();
 }
 
 
@@ -109,7 +112,7 @@ int Thread::join()
 
     if(_state != FINISHING) {
         _joining = running();
-        _joining->suspend();
+        _joining->suspend(true);
     } else
         unlock();
 
@@ -137,9 +140,10 @@ void Thread::pass()
 }
 
 
-void Thread::suspend()
+void Thread::suspend(bool locked)
 {
-    lock();
+    if(!locked)
+        lock();
 
     db<Thread>(TRC) << "Thread::suspend(this=" << this << ")" << endl;
 
@@ -160,17 +164,26 @@ void Thread::suspend()
 }
 
 
-void Thread::resume()
+void Thread::resume(bool unpreemptive)
 {
     lock();
 
     db<Thread>(TRC) << "Thread::resume(this=" << this << ")" << endl;
 
-    _suspended.remove(this);
-    _state = READY;
-    _ready.insert(&_link);
+    if(_state == SUSPENDED) {
+        _suspended.remove(this);
+        _state = READY;
+        _ready.insert(&_link);
 
-    unlock();
+        if(preemptive && !unpreemptive)
+            reschedule();
+        else
+            unlock();
+    } else {
+        db<Thread>(WRN) << "Resume called for unsuspended object!" << endl;
+
+        unlock();
+    }
 }
 
 
@@ -209,7 +222,7 @@ void Thread::exit(int status)
     if(prev->_joining) {
         Thread * joining = prev->_joining;
         prev->_joining = 0;
-        joining->resume(); // implicit unlock()
+        joining->resume(true);
         lock();
     }
 
@@ -254,9 +267,13 @@ void Thread::wakeup(Queue * q)
         t->_state = READY;
         t->_waiting = 0;
         _ready.insert(&t->_link);
-    }
 
-    unlock();
+        if(preemptive)
+            reschedule();
+        else
+            unlock();
+    } else
+        unlock();
 }
 
 
@@ -267,14 +284,20 @@ void Thread::wakeup_all(Queue * q)
     // lock() must be called before entering this method
     assert(locked());
 
-    while(!q->empty()) {
-        Thread * t = q->remove()->object();
-        t->_state = READY;
-        t->_waiting = 0;
-        _ready.insert(&t->_link);
-    }
+    if(!q->empty()) {
+        while(!q->empty()) {
+            Thread * t = q->remove()->object();
+            t->_state = READY;
+            t->_waiting = 0;
+            _ready.insert(&t->_link);
+        }
 
-    unlock();
+        if(preemptive)
+            reschedule();
+        else
+            unlock();
+    } else
+        unlock();
 }
 
 
