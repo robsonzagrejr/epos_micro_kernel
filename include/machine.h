@@ -16,6 +16,9 @@
 #ifdef __PCI_H
 #include <machine/pci.h>
 #endif
+#ifdef __SCRATCHPAD_H
+#include <machine/scratchpad.h>
+#endif
 #ifdef __FPGA_H
 #include <machine/fpga.h>
 #endif

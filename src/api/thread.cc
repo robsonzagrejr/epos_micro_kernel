@@ -26,7 +26,7 @@ void Thread::constructor_prologue(unsigned int stack_size)
 
     _thread_count++;
 
-    _stack = reinterpret_cast<char *>(kmalloc(stack_size));
+    _stack = new (SYSTEM) char[stack_size];
 }
 
 
@@ -94,7 +94,7 @@ Thread::~Thread()
 
     unlock();
 
-    kfree(_stack);
+    delete _stack;
 }
 
 

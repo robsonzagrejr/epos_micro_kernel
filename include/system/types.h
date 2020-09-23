@@ -41,6 +41,14 @@ extern "C"
 inline void * operator new(size_t s, void * a) { return a; }
 inline void * operator new[](size_t s, void * a) { return a; }
 
+void * operator new(size_t, const EPOS::System_Allocator &);
+void * operator new[](size_t, const EPOS::System_Allocator &);
+
+void * operator new(size_t, const EPOS::Scratchpad_Allocator &);
+void * operator new[](size_t, const EPOS::Scratchpad_Allocator &);
+
+void * operator new(size_t, const EPOS::Color &);
+void * operator new[](size_t, const EPOS::Color &);
 
 // Utilities
 __BEGIN_UTIL
@@ -135,6 +143,8 @@ enum
     THREAD_ID = FIRST_COMPONENT_ID,
     TASK_ID,
     ACTIVE_ID,
+    ADDRESS_SPACE_ID,
+    SEGMENT_ID,
     MUTEX_ID,
     SEMAPHORE_ID,
     CONDITION_ID,
@@ -196,6 +206,9 @@ template<> struct Type<Periodic_Thread> { static const Type_Id ID = THREAD_ID; }
 template<> struct Type<RT_Thread> { static const Type_Id ID = THREAD_ID; };
 template<> struct Type<Active> { static const Type_Id ID = ACTIVE_ID; };
 template<> struct Type<Task> { static const Type_Id ID = TASK_ID; };
+
+template<> struct Type<Address_Space> { static const Type_Id ID = ADDRESS_SPACE_ID; };
+template<> struct Type<Segment> { static const Type_Id ID = SEGMENT_ID; };
 
 template<> struct Type<Mutex> { static const Type_Id ID = MUTEX_ID; };
 template<> struct Type<Semaphore> { static const Type_Id ID = SEMAPHORE_ID; };

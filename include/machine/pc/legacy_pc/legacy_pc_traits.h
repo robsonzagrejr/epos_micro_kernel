@@ -130,6 +130,12 @@ template<> struct Traits<Keyboard>: public Traits<Machine_Common>
     static const bool enabled = !Traits<Serial_Keyboard>::enabled;
 };
 
+template<> struct Traits<Scratchpad>: public Traits<Machine_Common>
+{
+    static const bool enabled = false;
+    static const unsigned int ADDRESS = 0xa0000; // VGA Graphic mode frame buffer
+    static const unsigned int SIZE = 96 * 1024;
+};
 
 template<> struct Traits<FPGA>: public Traits<Machine_Common>
 {
