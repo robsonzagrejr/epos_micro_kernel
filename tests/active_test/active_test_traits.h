@@ -52,6 +52,10 @@ template<> struct Traits<Heaps>: public Traits<Build>
     static const bool debugged = hysterically_debugged;
 };
 
+template<> struct Traits<Ciphers>: public Traits<Build>
+{
+};
+
 template<> struct Traits<Observers>: public Traits<Build>
 {
     // Some observed objects are created before initializing the Display
@@ -130,7 +134,7 @@ template<> struct Traits<Thread>: public Traits<Build>
     static const bool trace_idle = hysterically_debugged;
 
     typedef Scheduling_Criteria::RR Criterion;
-    static const unsigned int QUANTUM = 10000; // us
+    static const unsigned int QUANTUM = 1000; // us
 };
 
 template<> struct Traits<Scheduler<Thread>>: public Traits<Build>
@@ -167,6 +171,7 @@ template<> struct Traits<ELP>: public Traits<Network>
 {
     typedef Ethernet NIC_Family;
     static constexpr unsigned int NICS[] = {0}; // relative to NIC_Family (i.e. Traits<Ethernet>::DEVICES[NICS[i]]
+    static const unsigned int UNITS = COUNTOF(NICS);
 
     static const bool enabled = Traits<Network>::enabled && (NETWORKS::Count<ELP>::Result > 0);
 };
@@ -175,6 +180,7 @@ template<> struct Traits<TSTP>: public Traits<Network>
 {
     typedef Ethernet NIC_Family;
     static constexpr unsigned int NICS[] = {0}; // relative to NIC_Family (i.e. Traits<Ethernet>::DEVICES[NICS[i]]
+    static const unsigned int UNITS = COUNTOF(NICS);
 
     static const unsigned int KEY_SIZE = 16;
     static const unsigned int RADIO_RANGE = 8000; // approximated radio range in centimeters
@@ -186,6 +192,7 @@ template<> struct Traits<IP>: public Traits<Network>
 {
     typedef Ethernet NIC_Family;
     static constexpr unsigned int NICS[] = {0};  // relative to NIC_Family (i.e. Traits<Ethernet>::DEVICES[NICS[i]]
+    static const unsigned int UNITS = COUNTOF(NICS);
 
     struct Default_Config {
         static const unsigned int  TYPE    = DHCP;

@@ -18,9 +18,13 @@ public:
 
         db<Init>(INF) << "INIT ends here!" << endl;
 
-        db<Init, Thread>(INF) << "Dispatching the first thread: " << Thread::running() << endl;
+        // Thread::self() and Task::self() can be safely called after the construction of MAIN
+        // even if no reschedule() was called (running is set by the Scheduler at each insert())
+        Thread * first = Thread::self();
 
-        Thread::running()->_context->load();
+        db<Init, Thread>(INF) << "Dispatching the first thread: " << first << endl;
+
+        first->_context->load();
     }
 };
 
