@@ -89,9 +89,9 @@ namespace Scheduling_Criteria
         static const bool preemptive = false;
 
     public:
+        FCFS(int p = NORMAL);
         template <typename ... Tn>
         FCFS(int p = NORMAL, Tn & ... an);
-        // FCFS(int p = NORMAL, Tn & ... an): Priority(p) {}
     };
 
 
