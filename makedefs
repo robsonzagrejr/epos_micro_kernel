@@ -90,6 +90,8 @@ UUID                    = $(shell cat /proc/sys/kernel/random/uuid | sed 's/-//g
 ia32_COMP_PREFIX	:= /usr/bin/x86_64-linux-gnu-
 armv7_COMP_PREFIX	:= /usr/bin/arm-none-eabi-
 armv8_COMP_PREFIX	:= /usr/bin/arm-none-eabi-
+rv32_COMP_PREFIX	:= /usr/bin/riscv32-linux-gnu-
+rv64_COMP_PREFIX	:= /usr/bin/riscv64-linux-gnu-
 COMP_PREFIX		= $($(ARCH)_COMP_PREFIX)
 
 # Machine specifics
@@ -166,6 +168,32 @@ cortex_MAGIC		:= --omagic
 cortex_CODE_NAME	:= .init
 cortex_DATA_NAME	:= .data
 cortex_IMG_SUFFIX	:= .img
+endif
+
+ifeq ($(MMOD),sifive_e)
+riscv_CC_FLAGS          :=
+riscv_AS_FLAGS          := 
+riscv_LD_FLAGS          := 
+riscv_EMULATOR			= qemu-system-riscv32 -machine virt -cpu rv32gcsu-v1.10.0 -smp $(CPUS) -m $(MEM_SIZE)k -serial mon:stdio -bios none -nographic -no-reboot -kernel 
+riscv_DEBUGGER          := gdb
+riscv_FLASHER           := 
+riscv_MAGIC             := --nmagic
+riscv_CODE_NAME := .init
+riscv_DATA_NAME :=
+riscv_IMG_SUFFIX        := .img
+endif
+
+ifeq ($(MMOD),sifive_u)
+riscv_CC_FLAGS          := -mcmodel=medany
+riscv_AS_FLAGS          := 
+riscv_LD_FLAGS          := 
+riscv_EMULATOR          = qemu-system-riscv64 -machine virt -smp $(CPUS) -m $(MEM_SIZE)k -serial mon:stdio -bios none -nographic -no-reboot -kernel 
+riscv_DEBUGGER          := gdb
+riscv_FLASHER           := 
+riscv_MAGIC             := --omagic
+riscv_CODE_NAME := .init
+riscv_DATA_NAME :=
+riscv_IMG_SUFFIX        := .img
 endif
 
 atmega_CC_FLAGS		:= -mmcu=atmega128 -Wno-inline
