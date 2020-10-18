@@ -374,8 +374,9 @@ __END_SYS
 
 // Id forwarder to the spin lock
 __BEGIN_UTIL
-unsigned int This_Thread::id()
+
+volatile CPU::Reg This_Thread::id()
 {
-    return _not_booting ? reinterpret_cast<volatile unsigned int>(Thread::self()) : CPU::id() + 1;
+    return _not_booting ? CPU::Reg(Thread::self()) : CPU::Reg(CPU::id() + 1);
 }
 __END_UTIL

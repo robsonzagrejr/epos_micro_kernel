@@ -13,18 +13,18 @@ public:
     SREC() {}
 
     bool valid() {
-      return ((((char*)this)[0] == 'S') &&
-              (((char*)this)[1] == '0'));
+      return ((reinterpret_cast<char *>(this)[0] == 'S') &&
+              (reinterpret_cast<char *>(this)[1] == '0'));
     }
 
     void * entry();
 
     int segments() {
-      return (1);
+      return 1;
     }
 
     void * segment_address(int i) {
-      return ((void *) this->entry());
+      return reinterpret_cast<void *>(this->entry());
     }
 
     int segment_size(int i);
@@ -43,11 +43,11 @@ private:
     };
 
     inline int C1(unsigned char* l, unsigned char p) {
-      return(ctab[l[p]]);
+      return ctab[l[p]];
     };
 
     inline int C2(unsigned char* l, unsigned char p) {
-      return( (C1(l,p)<<4) | (C1(l,p+1)) );
+      return (C1(l,p) << 4) | (C1(l, p+1));
     };
 
     bool srec_decode(srec_t *srec, char *_line);

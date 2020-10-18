@@ -283,6 +283,8 @@ void populate_strings()
     case Traits<Build>::ARMv4:          set_token_value("ARCH", "armv4");       break;
     case Traits<Build>::ARMv7:          set_token_value("ARCH", "armv7");       break;
     case Traits<Build>::ARMv8:          set_token_value("ARCH", "armv8");       break;
+    case Traits<Build>::RV32:           set_token_value("ARCH", "rv32");        break;
+    case Traits<Build>::RV64:           set_token_value("ARCH", "rv64");        break;
     case Traits<Build>::SPARCv8:        set_token_value("ARCH", "sparc8");      break;
     case Traits<Build>::PPC32:          set_token_value("ARCH", "ppc32");       break;
     default:                            set_token_value("ARCH", "unsuported");  break;
@@ -296,7 +298,8 @@ void populate_strings()
     case Traits<Build>::RCX:            set_token_value("MACH", "rcx");              break;
     case Traits<Build>::Leon:           set_token_value("MACH", "leon");             break;
     case Traits<Build>::Virtex:         set_token_value("MACH", "virtex");           break;
-    case Traits<Build>::Cortex:         set_token_value("MACH", "cortex");         break;
+    case Traits<Build>::Cortex:         set_token_value("MACH", "cortex");           break;
+    case Traits<Build>::RISCV:          set_token_value("MACH", "riscv");            break;
     default:                            set_token_value("MACH", "unsuported");       break;
     }
 
@@ -307,7 +310,9 @@ void populate_strings()
     case Traits<Build>::LM3S811:        set_token_value("MMOD", "lm3s811");            break;
     case Traits<Build>::Zynq:           set_token_value("MMOD", "zynq");               break;
     case Traits<Build>::Realview_PBX:   set_token_value("MMOD", "realview_pbx");       break;
-    case Traits<Build>::Raspberry_Pi3:  set_token_value("MMOD", "raspberry_pi3");       break;
+    case Traits<Build>::Raspberry_Pi3:  set_token_value("MMOD", "raspberry_pi3");     break;
+    case Traits<Build>::SiFive_E:       set_token_value("MMOD", "sifive_e");           break;
+    case Traits<Build>::SiFive_U:       set_token_value("MMOD", "sifive_u");           break;
     default:                            set_token_value("MMOD", "unsuported");         break;
     }
 

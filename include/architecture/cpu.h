@@ -16,12 +16,12 @@ protected:
     CPU_Common() {}
 
 public:
-    typedef unsigned long  Reg;
     typedef unsigned char  Reg8;
     typedef unsigned short Reg16;
     typedef unsigned long  Reg32;
     typedef unsigned long long Reg64;
 
+    template <typename Reg>
     class Log_Addr
     {
     public:
@@ -68,7 +68,8 @@ public:
         Reg _addr;
     };
 
-    typedef Log_Addr Phy_Addr;
+    template<typename Reg>
+    using Phy_Addr = Log_Addr<Reg>;
 
     typedef unsigned long Hertz;
 
