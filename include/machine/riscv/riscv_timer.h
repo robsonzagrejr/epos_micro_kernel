@@ -6,6 +6,7 @@
 #include <architecture/cpu.h>
 #include <machine/ic.h>
 #include <machine/timer.h>
+#include <system/memory_map.h>
 #include <utility/convert.h>
 
 __BEGIN_SYS
@@ -33,9 +34,9 @@ public:
         ALARM
     };
 
-    // Addresses
-    enum {
-        // implement
+    // Registers offsets from CLINT_BASE
+    enum {                                // Description
+        // IMPLEMENT
     };
 
     static const Hertz CLOCK = Traits<Machine>::TIMER_CLOCK;
@@ -84,7 +85,7 @@ public:
     void handler(const Handler & handler) { _handler = handler; }
 
     static void config(const Hertz & frequency) {
-        // implement
+        // IMPLEMENT: set timer to next interrupt
     }
 
     static Hertz clock() {
@@ -92,7 +93,7 @@ public:
     }
 
 private:
-
+    static volatile CPU::Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile CPU::Reg32 *>(Memory_Map::CLINT_BASE)[o / sizeof(CPU::Reg32)]; }
 
     static void int_handler(Interrupt_Id i);
 

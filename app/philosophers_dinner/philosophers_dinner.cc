@@ -81,7 +81,7 @@ int philosopher(int n, int l, int c)
         cout << "thinking";
         table.unlock();
 
-        Delay thinking(1000000);
+        // Delay thinking(1000000);
 
         table.lock();
         Display::position(l, c);
@@ -96,7 +96,7 @@ int philosopher(int n, int l, int c)
         cout << " eating ";
         table.unlock();
 
-        Delay eating(500000);
+        // Delay eating(500000);
 
         table.lock();
         Display::position(l, c);

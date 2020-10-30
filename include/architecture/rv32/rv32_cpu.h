@@ -25,38 +25,111 @@ public:
     using Log_Addr = CPU_Common::Log_Addr<Reg>;
     using Phy_Addr = CPU_Common::Phy_Addr<Reg>;
 
-    static const bool thumb = true;
-
-    // CPU Flags
-    typedef Reg32 Flags;
+    // Control and Status Register (mstatus)
     enum {
-        //implement
+        FLAG_MIE            = 1 << 3,      // Machine Interrupts Enabled
+        FLAG_SIE            = 1 << 1,      // Supervisor Interrupts Enabled
+        FLAG_SPIE           = 1 << 5,      // Supervisor Previous Interrupts Enabled
+        FLAG_MPIE           = 1 << 7,      // Machine Previous Interrupts Enabled
+        FLAG_MPP            = 3 << 11,     // Machine Previous Privilege 
+        FLAG_SPP            = 3 << 12,     // Supervisor Previous Privilege
+        FLAG_MPRV           = 1 << 17,     // Memory Priviledge
+        FLAG_TVM            = 1 << 20,     // Trap Virtual Memory //not allow MMU
+        MSTATUS_DEFAULTS    = (FLAG_MIE | FLAG_SPP | FLAG_MPIE | FLAG_SPIE | FLAG_MPP | FLAG_SIE)
+    };
+
+    // Interrupt Enable Register (mie)
+    enum {
+        FLAG_SSIE       = 1 << 1,   // Supervisor Software Interrupt Enable
+        FLAG_MSIE       = 1 << 3,   // Machine Software Interrupt Enable
+        FLAG_STIE       = 1 << 5,   // Supervisor Software Interrupt Enable
+        FLAG_MTIE       = 1 << 7,   // Machine Software Interrupt Enable
+        FLAG_SEIE       = 1 << 9,   // Supervisor External Interrupt Enable
+        FLAG_MEIE       = 1 << 11,  // Machine External Interrupt Enable
+        MIE_DEFAULTS    = (FLAG_MSIE | FLAG_MTIE )
     };
 
     // CPU Context
     class Context
     {
     public:
-        Context(const Log_Addr & entry, const Log_Addr & exit): reg_flags(FLAG_DEFAULTS), reg_ra(exit), reg_ip(entry) {}
+        Context(const Log_Addr & entry, const Log_Addr & exit): _x1(exit), _pc(entry) {}
 
         void save() volatile  __attribute__ ((naked));
         void load() const volatile;
 
         friend Debug & operator<<(Debug & db, const Context & c) {
             db << hex
-               << "{REG NAME" << 0 //registers
+               << "{x5="   << c._x5
+               << ",x6="   << c._x6
+               << ",x7="   << c._x7
+               << ",x8="   << c._x8
+               << ",x9="   << c._x9
+               << ",x10="  << c._x10
+               << ",x11="  << c._x11
+               << ",x12="  << c._x12
+               << ",x13="  << c._x13
+               << ",x14="  << c._x14
+               << ",x15="  << c._x15
+               << ",x16="  << c._x16
+               << ",x17="  << c._x17
+               << ",x18="  << c._x18
+               << ",x19="  << c._x19
+               << ",x20="  << c._x20
+               << ",x21="  << c._x21
+               << ",x22="  << c._x22
+               << ",x23="  << c._x23
+               << ",x24="  << c._x24
+               << ",x25="  << c._x25
+               << ",x26="  << c._x26
+               << ",x27="  << c._x27
+               << ",x28="  << c._x28
+               << ",x29="  << c._x29
+               << ",x30="  << c._x30
+               << ",x31="  << c._x31
+               << ",sp="  << &c
+               << ",lr="  << c._x1
+               << ",pc="  << c._pc
                << "}" << dec;
             return db;
         }
 
     public:
-        Reg32 reg_flags;
-        Reg32 _general_use_reg0; //all registers that must be saved
-        Reg32 _reg_ra; // return address register
-        Reg32 _reg_ip; //instruction pointer
+        Reg32  _x1; // ABI Link Register (return address)
+        Reg32 _x31; // t6
+        Reg32 _x30; // t5
+        Reg32 _x29; // t4
+        Reg32 _x28; // t3
+        Reg32 _x27; // s11
+        Reg32 _x26; // s10
+        Reg32 _x25; // s9
+        Reg32 _x24; // s8
+        Reg32 _x23; // s7
+        Reg32 _x22; // s6
+        Reg32 _x21; // s5
+        Reg32 _x20; // s4
+        Reg32 _x19; // s3
+        Reg32 _x18; // s2
+        Reg32 _x17; // a7
+        Reg32 _x16; // a6
+        Reg32 _x15; // a5
+        Reg32 _x14; // a4
+        Reg32 _x13; // a3
+        Reg32 _x12; // a2
+        Reg32 _x11; // a1
+        Reg32 _x10; // a0
+        Reg32  _x9; // s1
+        Reg32  _x8; // s0
+        Reg32  _x7; // t2
+        Reg32  _x6; // t1
+        Reg32  _x5; // t0
+     // Reg32  _x4; // ABI Thread Pointer, not used in EPOS
+     // Reg32  _x3; // ABI Global Pointer, managed by the linker
+     // Reg32  _x2; // ABI Stack Pointer, saved as this
+     // Reg32  _x0; // zero
+        Reg32 _pc;
     };
 
-    
     // Interrupt Service Routines
     typedef void (ISR)();
 
@@ -69,26 +142,27 @@ public:
 public:
     // Register access
     static Reg32 sp() {
-        //implement
-        return 0;
+        Reg32 value;
+        ASM("mv %0, sp" : "=r"(value) :);
+        return value;
     }
-
     static void sp(const Reg32 & sp) {
-        //implement
+        ASM("mv sp, %0" : : "r"(sp) :);
     }
 
     static Reg32 fr() {
-        //implement
-        return 0;
+        Reg32 value;
+        ASM("mv %0, x10" : "=r"(value)); // x10 is a0
+        return value;
     }
-
     static void fr(const Reg32 & fr) {
-        //implement
+        ASM("mv x10, %0" : : "r"(fr) :); // x10 is a0
     }
 
     static Log_Addr ip() {
-        //implement
-        return 0;
+        Reg32 value;
+        ASM("mv %0, pc" : "=r"(value) :);
+        return value;
     }
 
     static Reg32 pdp() { return 0; }
@@ -97,56 +171,41 @@ public:
 
     // Atomic operations
 
-    using CPU_Common::tsl;
-    /*
-    template<typename T>
-    static T tsl(volatile T & lock) {
-        //implement
-    }
-    */
+    using CPU_Common::tsl; // IMPLEMENT
 
-    using CPU_Common::finc;
-    /*
-    template<typename T>
-    static T finc(volatile T & value) {
-        //implement
-    }
-    */
+    using CPU_Common::finc; // IMPLEMENT
 
-    using CPU_Common::fdec;
-    /*
-    template<typename T>
-    static T fdec(volatile T & value) {
-        //implement
-    }
-    */
+    using CPU_Common::fdec; // IMPLEMENT
 
-    using CPU_Common::cas;
-    /*
-    template <typename T>
-    static T cas(volatile T & value, T compare, T replacement) {
-        //implement
-    }
-    */
+    using CPU_Common::cas; // IMPLEMENT
 
     // Power modes
-    static void halt() {
-        //implement
-    }
-
-    //implement
-    static Flags flags() {
-        //implement
-        return 0;
-    }
-
-    static void flags(const Flags & flags) {
-        //implement
-    }
+    static void halt() { ASM("wfi"); }
 
     static unsigned int id() {
-        //implement
-        return 0;
+        int id;
+        ASM("csrr %0, mhartid" : "=r"(id) : : "memory", "cc");
+        return id & 0x3;
+    }
+
+    static void mstatus(Reg value) {
+        ASM("csrw mstatus, %0" : : "r"(value) : "cc");
+    }
+
+    static Reg mstatus() {
+        Reg value;
+        ASM("csrr %0, mstatus" : "=r"(value) : : );
+        return value;
+    }
+
+    static void mie(Reg value) {
+        ASM("csrw mie, %0" : : "r"(value) : "cc");
+    }
+
+    static Reg mie() {
+        Reg value;
+        ASM("csrr %0, mie" : "=r"(value) : : );
+        return value;
     }
 
     static unsigned int cores() {
@@ -155,14 +214,14 @@ public:
 
     static void smp_barrier(unsigned long cores = cores()) { CPU_Common::smp_barrier<&finc>(cores, id()); }
 
-    static void int_enable() { /* implement */ }
-    static void int_disable() { /* implement */ }
+    static void int_enable() { mie(MIE_DEFAULTS); }
+    static void int_disable() { mie(0); }
 
-    static bool int_enabled() { /* implement */ return 0; }
-    static bool int_disabled() { /* implement */ return !int_enabled(); }
+    static bool int_enabled() { return (mie() & MIE_DEFAULTS) ; }
+    static bool int_disabled() { return !int_enabled(); }
 
-    static void csrr31() { /* implement - write ctrl and status register to x31 */ }
-    static void csrw31() { /* implement - write x31 to ctrl and status register */ }
+    static void csrr31() { ASM("csrr x31, mstatus" : : : "x31"); }
+    static void csrw31() { ASM("csrw mstatus, x31" : : : "cc"); }
 
     static unsigned int int_id() { return 0; }
 
@@ -172,14 +231,14 @@ public:
     static Context * init_stack(const Log_Addr & usp, Log_Addr sp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
         sp -= sizeof(Context);
         Context * ctx = new(sp) Context(entry, exit);
-        init_stack_helper(&ctx->_general_use_reg0, an ...);
+        init_stack_helper(&ctx->_x10, an ...); // x10 is a0
         return ctx;
     }
     template<typename ... Tn>
     static Log_Addr init_user_stack(Log_Addr sp, void (* exit)(), Tn ... an) {
         sp -= sizeof(Context);
         Context * ctx = new(sp) Context(0, exit);
-        init_stack_helper(&ctx->_general_use_reg0, an ...);
+        init_stack_helper(&ctx->_x10, an ...); // x10 is a0
         return sp;
     }
 

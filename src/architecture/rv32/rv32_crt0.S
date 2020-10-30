@@ -10,12 +10,19 @@
 _start:
         // Temporary stack(s) for INIT are created and configure by SETUP
 
+        // Only hart (core) 0 cleans cache
+        // IMPLEMENT
+
         // Set all bytes in the BSS section to zero.
-
-        // implement
-
+        la      a0, __bss_start
+        la      a1, _end
+        bgeu    a0, a1, 2f
+1:
+        sw      zero, (a0)
+        addi    a0, a0, 4
+        bltu    a0, a1, 1b
+2:
         // Call _init
-
         call      _init
 
         // Call main

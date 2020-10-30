@@ -8,7 +8,7 @@ static fptr __DTOR_LIST__[1] __attribute__ ((section(".fini_array"), aligned(siz
 static void __do_global_dtors_aux()
 {
     fptr * p;
-    for(p = __DTOR_LIST__ + 1; *p; p++)
+    for(p = __DTOR_LIST__; *p != (fptr) -1; p++)
         (*p)();
 }
 

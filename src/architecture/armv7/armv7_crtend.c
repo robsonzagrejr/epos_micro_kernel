@@ -9,8 +9,7 @@ static void __do_global_ctors_aux()
 {
     fptr * p;
     for(p = __CTOR_END__ - 1; *p != (fptr) -1; p--)
-        if(p)
-            (*p)();
+        (*p)();
 }
 
 void _init()
