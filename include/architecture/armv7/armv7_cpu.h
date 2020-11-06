@@ -33,7 +33,7 @@ public:
         return value;
     }
     static void sp(const Reg32 & sp) {
-        ASM("mov sp, %0" : : "r"(sp) : "sp");
+        ASM("mov sp, %0" : : "r"(sp));
         ASM("isb");
     }
 

@@ -10,6 +10,41 @@ void _vector_table()
     ASM("\t\n\
     j _reset                                                                    \t\n\
     .align 4                                                                    \t\n\
+vec:                                                                            \t\n\
+    IRQ0:                                                                       \t\n\
+        j _exception_handling                                                   \t\n\
+    IRQ1:                                                                       \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ2:                                                                       \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ3:                                                                       \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ4:                                                                       \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ5:                                                                       \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ6:                                                                       \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ7:                                                                       \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ8:                                                                       \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ9:                                                                       \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ10:                                                                      \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ11:                                                                      \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ12:                                                                      \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ13:                                                                      \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ14:                                                                      \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ15:                                                                      \t\n\
+        j _int_entry                                                            \t\n\
+    IRQ16:                                                                      \t\n\
+        j _int_entry                                                            \t\n\
                                                                                 \t\n\
 _reset:                                                                         \t\n\
                                                                                 \t\n\
@@ -47,13 +82,17 @@ _reset:                                                                         
         la      t1, _start                                                      \t\n\
         csrw    mepc, t1                                                        \t\n\
                                                                                 \t\n\
-        # Machine's trap vector base address is set to vector table             \t\n\
-        # IMPLEMENT : FOR WHILE, ONLY ADDRESSING THE EXCEPTION HANDLING         \t\n\
-        la      t2, _exception_handling                                         \t\n\
+        # Machine's trap vector base address is set to vec.                     \t\n\
+        la      t2, vec                                                         \t\n\
+        ori     t2, t2, 0x1  # OR 0x1 to active vector mode                     \t\n\
         csrw    mtvec, t2                                                       \t\n\
                                                                                 \t\n\
         # Setting Machine's interrupt-enable bits (`mie` register):             \t\n\
-        # IMPLEMENT : configure MIE                                             \t\n\
+        # 1 << 3 : Machine's M-mode software interrupt-enable bit is 1 (MSIE=1) \t\n\
+        # 1 << 7 : Machine's timer interrupt-enable bit is 1 (MTIE=1).          \t\n\
+        # 1 << 11: Machine's external interrupt-enable bit is 1 (MEIE=1).       \t\n\
+        li      t3, (1 << 3) | (1 << 7) | (1 << 11)                             \t\n\
+        csrw    mie, t3                                                         \t\n\
                                                                                 \t\n\
         mret                                                                    \t\n\
                                                                                 \t\n\

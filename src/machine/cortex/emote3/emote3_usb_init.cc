@@ -1,5 +1,6 @@
 // EPOS EPOSMote III (ARM Cortex-M3) USB Mediator Declarations
 
+#include <machine.h>
 #include <machine/ic.h>
 #include <machine/usb.h>
 #include <machine/cortex/emote3/emote3_sysctrl.h>

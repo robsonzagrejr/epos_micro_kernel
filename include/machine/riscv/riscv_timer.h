@@ -36,7 +36,10 @@ public:
 
     // Registers offsets from CLINT_BASE
     enum {                                // Description
-        // IMPLEMENT
+        MTIME                   = 0xbff8, // Counter (lower 32 bits, unique for all harts)
+        MTIMEH                  = 0xbffc, // Counter (upper 32 bits, unique for all harts)
+        MTIMECMP                = 0x4000, // Compare (32-bit, per hart register)
+        MTIMECMP_CORE_OFFSET    = 8       // Offset in MTIMECMP for each hart's compare register
     };
 
     static const Hertz CLOCK = Traits<Machine>::TIMER_CLOCK;
@@ -85,7 +88,8 @@ public:
     void handler(const Handler & handler) { _handler = handler; }
 
     static void config(const Hertz & frequency) {
-        // IMPLEMENT: set timer to next interrupt
+        // ASM("csrw mcause, zero"); // This clears mcause to ease debugging
+        reg(MTIMECMP + MTIMECMP_CORE_OFFSET * CPU::id()) = reg(MTIME) + (CLOCK / frequency);
     }
 
     static Hertz clock() {

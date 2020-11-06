@@ -297,7 +297,8 @@ void Thread::wakeup_all(Queue * q)
 
 void Thread::reschedule()
 {
-    db<Thread>(TRC) << "Thread::reschedule()" << endl;
+    if(!Criterion::timed || Traits<Thread>::hysterically_debugged)
+        db<Thread>(TRC) << "Thread::reschedule()" << endl;
 
     // lock() must be called before entering this method
     assert(locked());
@@ -347,6 +348,8 @@ void Thread::dispatch(Thread * prev, Thread * next, bool charge)
 
 int Thread::idle()
 {
+    db<Thread>(TRC) << "Thread::idle(this=" << running() << ")" << endl;
+
     while(_thread_count > 1) { // someone else besides idle
         if(Traits<Thread>::trace_idle)
             db<Thread>(TRC) << "Thread::idle(this=" << running() << ")" << endl;
@@ -379,4 +382,5 @@ volatile CPU::Reg This_Thread::id()
 {
     return _not_booting ? CPU::Reg(Thread::self()) : CPU::Reg(CPU::id() + 1);
 }
+
 __END_UTIL

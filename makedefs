@@ -26,6 +26,10 @@ LUTILNAME	:= util
 # Makefile hacks
 APPLICATIONS	:= $(shell find $(APP) -maxdepth 1 -not -name makefile -and -not -name app -printf "%f\n")
 
+ifeq ($(words $(APPLICATIONS)),0)
+$(error EPOS is an application-oriented operating system, but there is no application in $(APP)!)
+endif
+
 ifeq ($(words $(APPLICATIONS)),1)
 ifndef APPLICATION
 APPLICATION	:= $(word 1, $(APPLICATIONS))

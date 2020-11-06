@@ -23,12 +23,22 @@ public:
 
     // MIE interrupt IDs
     enum {
-        // interrupt IDs
+        SUPERVISOR_SOFT_INT     = 1,
+        MACHINE_SOFT_INT        = 3,
+        SUPERVISOR_TIMER_INT    = 5,
+        MACHINE_TIMER_INT       = 7,
+        SUPERVISOR_EXTERNAL_INT = 9,
+        MACHINE_EXTERNAL_INT    = 11
     };
 
     enum {
-        INT_SYS_TIMER   = 0, // IMPLEMENT: FIX this value
-        INT_USER_TIMER0 = 0, // IMPLEMENT: FIX this value
+        INT_MASK            = 0x3f, // maximum of 64 interrupt types (value from RISC-V example)
+        INT_OR_EXCEP_BIT    = 0x1 << 31 // the last bit of the register contains this info
+    };
+
+    enum {
+        INT_SYS_TIMER   = 7,
+        INT_USER_TIMER0 = 7, // it could be 5, if we adopt supervisor execution mode
         INT_USER_TIMER1 = 0,
         INT_USER_TIMER2 = 0,
         INT_USER_TIMER3 = 0,
@@ -43,7 +53,8 @@ public:
         INT_USB0        = 0,
         INT_FIRST_HARD  = 0,
         INT_LAST_HARD   = 0,
-        INT_RESCHEDULER = 0 // IMPLEMENT: FIX this value
+        // An IPI is mapped to the machine with mcause set to MACHINE_SOFT_INT
+        INT_RESCHEDULER = MACHINE_SOFT_INT
     };
 
     // clint offsets
@@ -67,27 +78,50 @@ public:
 
     static void enable() {
         db<IC>(TRC) << "IC::enable()" << endl;
-        // IMPLEMENT
+        // at beggining CLINT is already started, so we are only enabling all interrupts
+        // this is done on MIE register
+        Reg32 flags = (1 << SUPERVISOR_SOFT_INT | 1 << MACHINE_SOFT_INT | 
+                       1 << SUPERVISOR_TIMER_INT | 1 << MACHINE_TIMER_INT );
+        ASM ("csrw mie, %0" : : "r"(flags) : );
     }
     static void enable(Interrupt_Id i) {
         db<IC>(TRC) << "IC::enable(int=" << i << ")" << endl;
         assert(i < INTS);
-        // IMPLEMENT
+        // this is done on MIE register
+        Reg32 flags = (1 << i);
+        ASM ("csrw mie, %0" : : "r"(flags) : );
     }
 
     static void disable() {
         db<IC>(TRC) << "IC::disable()" << endl;
-        // IMPLEMENT
+        // writing 0 to all interrupt enable bits on MIE register
+        Reg32 flags = ~(1 << SUPERVISOR_SOFT_INT | 1 << MACHINE_SOFT_INT | 
+                        1 << SUPERVISOR_TIMER_INT | 1 << MACHINE_TIMER_INT | 
+                        1 << SUPERVISOR_EXTERNAL_INT | 1 << MACHINE_EXTERNAL_INT);
+        ASM ("csrw mie, %0" : : "r"(flags) : );
     }
     static void disable(Interrupt_Id i) {
         db<IC>(TRC) << "IC::disable(int=" << i << ")" << endl;
         assert(i < INTS);
-        // IMPLEMENT
+        Reg32 flags = ~(1 << i);
+        ASM ("csrw mie, %0" : : "r"(flags) : );
     }
 
     static Interrupt_Id int_id() {
-        // IMPLEMENT
-        return 0;
+        Reg32 id;
+        // Id is retrieved from mcause
+        // mip register will have the equivalent bit up
+        // but only with mcause we can know if it is an interrupt or an exception
+        ASM ("csrr %0, mcause" : "=r"(id) : :);
+        if (id & INT_OR_EXCEP_BIT) {
+            return id & INT_MASK; // it is an interrupt
+        } else {
+            // This is done to diferentiate exceptions from interruptions
+            // It will only be useful when working with mtvec mode 0
+            // In this case, interrupts and exceptions are routed to the same handler
+            // return (id & INT_MASK) + INTS;
+            return id & INT_MASK;
+        }
     }
 
     int irq2int(int i) { return i; }
