@@ -52,6 +52,10 @@ template<> struct Traits<Heaps>: public Traits<Build>
     static const bool debugged = hysterically_debugged;
 };
 
+template<> struct Traits<Ciphers>: public Traits<Build>
+{
+};
+
 template<> struct Traits<Observers>: public Traits<Build>
 {
     // Some observed objects are created before initializing the Display

@@ -11,12 +11,12 @@ Timer * Timer::_channels[CHANNELS];
 // Class methods
 void Timer::int_handler(Interrupt_Id i)
 {
-    if(_channels[ALARM]) {
+    if((!Traits<System>::multicore || (Traits<System>::multicore && (CPU::id() == 0))) && _channels[ALARM]) {
         _channels[ALARM]->_current[0] = _channels[ALARM]->_initial;
         _channels[ALARM]->_handler(i);
     }
 
-    if(_channels[USER]) {
+    if((!Traits<System>::multicore || (Traits<System>::multicore && (CPU::id() == 0))) && _channels[USER]) {
         if(_channels[USER]->_retrigger)
             _channels[USER]->_current[0] = _channels[USER]->_initial;
         _channels[USER]->_handler(i);

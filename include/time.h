@@ -29,8 +29,8 @@ public:
 
 class Alarm
 {
-    friend class System;
-    friend class Alarm_Chronometer;
+    friend class System;                        // for init()
+    friend class Alarm_Chronometer;             // for elapsed()
     friend class Scheduling_Criteria::FCFS;     // for ticks() and elapsed()
     friend class Scheduling_Criteria::EDF;      // for ticks() and elapsed()
 
@@ -154,7 +154,7 @@ private:
     Time_Stamp _stop;
 };
 
-class Chronometer: public IF<Traits<TSC>::enabled, TSC_Chronometer, Alarm_Chronometer>::Result {};
+class Chronometer: public IF<Traits<TSC>::enabled && !Traits<System>::multicore, TSC_Chronometer, Alarm_Chronometer>::Result {};
 
 __END_SYS
 

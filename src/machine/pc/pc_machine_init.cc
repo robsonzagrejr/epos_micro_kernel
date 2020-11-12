@@ -17,8 +17,10 @@ void Machine::init()
     if(Traits<PCI>::enabled)
         PCI::init();
 
+#ifdef __SCRATCHPAD_H
     if(Traits<Scratchpad>::enabled)
         Scratchpad::init();
+#endif
 
 #ifdef __KEYBOARD_H
     if(Traits<Keyboard>::enabled)

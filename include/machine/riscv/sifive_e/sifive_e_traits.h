@@ -98,6 +98,11 @@ template<> struct Traits<Serial_Display>: public Traits<Machine_Common>
     static const int TAB_SIZE = 8;
 };
 
+template<> struct Traits<Scratchpad>: public Traits<Machine_Common>
+{
+    static const bool enabled = false;
+};
+
 __END_SYS
 
 #endif

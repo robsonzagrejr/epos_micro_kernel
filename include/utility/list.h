@@ -1005,6 +1005,11 @@ template<typename T,
           typename El = List_Elements::Doubly_Linked_Scheduling<T, R> >
 class Scheduling_List: private Ordered_List<T, R, El>
 {
+    template<typename FT, typename FR, typename FEl, unsigned int FH>
+    friend class Multihead_Scheduling_List;     // for chosen() and remove()
+    template<typename FT, typename FR, typename FEl, typename FL, unsigned int FQ>
+    friend class Scheduling_Multilist;          // for chosen() and remove()
+
 private:
     typedef Ordered_List<T, R, El> Base;
 
@@ -1093,6 +1098,10 @@ public:
     }
 
 private:
+    using Base::remove;
+    void chosen(Element * e) { _chosen = e; }
+
+private:
     Element * volatile _chosen;
 };
 
@@ -1108,6 +1117,9 @@ template<typename T,
           unsigned int H = R::HEADS>
 class Multihead_Scheduling_List: private Ordered_List<T, R, El>
 {
+    template<typename FT, typename FR, typename FEl, typename FL, unsigned int FQ>
+    friend class Scheduling_Multilist;          // for chosen() and remove()
+
 private:
     typedef Ordered_List<T, R, El> Base;
 
@@ -1152,10 +1164,6 @@ public:
                        << ",n=" << (e ? e->next() : (void *) -1)
                        << "}" << endl;
 
-//        unsigned int i = 0;
-//        for(; (i < H) && _chosen[i] != e; i++);
-//        if(i != H)
-//            _chosen[i] = Base::remove_head();
         if(e == _chosen[R::current_head()])
             _chosen[R::current_head()] = Base::remove_head();
         else
@@ -1201,6 +1209,10 @@ public:
 
         return _chosen[R::current_head()];
     }
+
+private:
+    using Base::remove;
+    void chosen(Element * e) { _chosen[R::current_head()] = e; }
 
 private:
     Element * volatile _chosen[H];
@@ -1258,14 +1270,29 @@ public:
      }
 
     Element * choose() {
-        return _list[R::current_queue()].choose();
+    	if(_list[R::current_queue()].chosen()->rank().queue() != R::current_queue()) {
+            insert(_list[R::current_queue()].chosen());
+            _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
+    	}
+
+    	return _list[R::current_queue()].choose();
     }
 
     Element * choose_another() {
-        return _list[R::current_queue()].choose_another();
+        if(_list[R::current_queue()].chosen()->rank().queue() != R::current_queue()) {
+            insert(_list[R::current_queue()].chosen());
+            _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
+        }
+
+    	return _list[R::current_queue()].choose_another();
     }
 
     Element * choose(Element * e) {
+        if(_list[R::current_queue()].chosen()->rank().queue() != R::current_queue()) {
+            insert(_list[R::current_queue()].chosen());
+            _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
+        }
+
         return _list[e->rank().queue()].choose(e);
     }
 
