@@ -17,6 +17,9 @@ IEEE802_15_4_NIC::IEEE802_15_4_NIC(unsigned int unit): _unit(unit), _rx_cur_cons
     for(unsigned int i = 0; i < RX_BUFS; i++)
         _rx_bufs[i] = new (SYSTEM) Buffer(0, 0);
 
+    // Put the radio in FULL power mode (at this point, it was OFF)
+    power(FULL);
+
     // Set Address
     const UUID & id = Machine::uuid();
     _address[0] = id[4] ^ id[5];
@@ -89,9 +92,6 @@ void IEEE802_15_4_NIC::init(unsigned int unit)
 
     // Initialize the device
     IEEE802_15_4_NIC * dev = new (SYSTEM) IEEE802_15_4_NIC(unit);
-
-    // Enable clock to RF module
-    dev->power(FULL);
 
     Timer::init();
 

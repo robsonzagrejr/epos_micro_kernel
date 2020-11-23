@@ -120,6 +120,7 @@ template<> struct Traits<USB>: public Traits<Machine_Common>
     // Enabling debug may cause trouble in some Machines
     static const bool debugged = false;
 
+    static const bool wait_to_sync = true;
     static const unsigned int UNITS = 1;
     static const bool blocking = false;
     static const bool enabled = true;

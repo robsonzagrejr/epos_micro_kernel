@@ -24,7 +24,7 @@ public:
     typedef _UTIL::Observer Observer;
 
 public:
-    GPIO(const Port & port, const Pin & pin, const Direction & dir, const Pull & pull = UP, const Edge & int_edge = NONE)
+    GPIO(Port port, Pin pin, Direction dir, Pull pull = UP, Edge int_edge = NONE)
     : Engine(port, pin, dir, pull, int_edge), _port(port), _pin(pin) {
         if(int_edge != NONE) {
             _gpios[_port][_pin] = this;

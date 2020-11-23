@@ -57,47 +57,41 @@ public:
         config[0] = CTRL_REG5_A;
         config[1] = POWER_MODE_100;
         _i2c->write(I2C_ACC_ADDR, config, 2, true);
-        // Machine::delay(50);
-        for(int i = 0; i < 50; i++) ASM("nop");
+        Machine::delay(50);
+
         // Read CTRL_REG5_A register
         _i2c->put(I2C_ACC_ADDR, CTRL_REG5_A);
-        // Machine::delay(50);
-        for(int i = 0; i < 50; i++) ASM("nop");
+        Machine::delay(50);
 
         // Enable FIFO
         config[0] = CTRL_REG7_A;
         config[1] = FIFO_ENABLE;
         _i2c->write(I2C_ACC_ADDR, config, 2, true);
-        // Machine::delay(50);
-        for(int i = 0; i < 50; i++) ASM("nop");
+        Machine::delay(50);
 
         // Read CTRL_REG7_A register
         _i2c->put(I2C_ACC_ADDR, CTRL_REG7_A);
-        // Machine::delay(50);
-        for(int i = 0; i < 50; i++) ASM("nop");
+        Machine::delay(50);
 
         // Enable FIFO Stream Mode
         config[0] = FIFO_CTRL_REG_A;
         config[1] = STREAM_MODE;
         _i2c->write(I2C_ACC_ADDR, config, 2, true);
-        // Machine::delay(50);
-        for(int i = 0; i < 50; i++) ASM("nop");
+        Machine::delay(50);
 
         // Read FIFO_CTRL_REG_A register
         _i2c->put(I2C_ACC_ADDR, FIFO_CTRL_REG_A);
-        // Machine::delay(50);
-        for(int i = 0; i < 50; i++) ASM("nop");
+        Machine::delay(50);
     }
 
     float accelerometer_x() { // in g
         // LSBX axis
         char x_lsb[2];
         _i2c->put(I2C_ACC_ADDR, REG_OUT_X_L);
-        // Machine::delay(5);
-        for(int i = 0; i < 5; i++) ASM("nop");
+        Machine::delay(5);
+
         _i2c->get(I2C_ACC_ADDR, x_lsb);               // i2c->get(I2C_ACC_ADDR, x_lsb, 2);
-        // Machine::delay(5);
-        for(int i = 0; i < 5; i++) ASM("nop");
+        Machine::delay(5);
 
         if(x_lsb == 0)
             return 0;
@@ -105,11 +99,11 @@ public:
         // MSBX axis
         char x_msb[2];
         _i2c->put(I2C_ACC_ADDR, REG_OUT_X_H);
-        // Machine::delay(5);
-        for(int i = 0; i < 5; i++) ASM("nop");
+        Machine::delay(5);
+
         _i2c->get(I2C_ACC_ADDR, x_msb);              // _i2c->get(I2C_ACC_ADDR, x_msb, 2);
-        // Machine::delay(5);
-        for(int i = 0; i < 5; i++) ASM("nop");
+        Machine::delay(5);
+
         if(x_msb == 0)
             return 0;
 

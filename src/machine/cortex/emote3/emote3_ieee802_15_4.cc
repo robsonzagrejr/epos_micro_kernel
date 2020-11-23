@@ -196,13 +196,16 @@ void IEEE802_15_4_NIC::handle_int()
                     IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
                 }
             } else {
+                db<IEEE802_15_4_NIC>(TRC) << "IEEE802_15_4_NIC::handle_int: dropped" << endl;
                 CC2538RF::drop();
                 IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
             }
         } else {
+            db<IEEE802_15_4_NIC>(TRC) << "IEEE802_15_4_NIC::handle_int: not filtered" << endl;
             IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
         }
     } else {
+        db<IEEE802_15_4_NIC>(TRC) << "IEEE802_15_4_NIC::handle_int: NOT FIFOP" << endl;
         IC::enable(IC::INT_NIC0_TIMER);
     }
 }

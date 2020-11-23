@@ -7,16 +7,12 @@
 
 __BEGIN_SYS
 
-// Class attributes
 Alarm_Timer * Alarm::_timer;
 volatile Alarm::Tick Alarm::_elapsed;
 Alarm::Queue Alarm::_request;
+Spin Alarm::_lock;
 
-// Class Methods
-inline void Alarm::lock() { Thread::lock(); }
-inline void Alarm::unlock() { Thread::unlock(); }
 
-// Methods
 Alarm::Alarm(const Microsecond & time, Handler * handler, unsigned int times)
 : _time(time), _handler(handler), _times(times), _ticks(ticks(time)), _link(this, _ticks)
 {
@@ -79,7 +75,6 @@ void Alarm::period(const Microsecond & p)
 }
 
 
-// Class methods
 void Alarm::delay(const Microsecond & time)
 {
     db<Alarm>(TRC) << "Alarm::delay(time=" << time << ")" << endl;

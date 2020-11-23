@@ -46,6 +46,7 @@ void Thread::init()
     }
 
     // Transition from CPU-based locking to thread-based locking
+    CPU::smp_barrier();
     This_Thread::not_booting();
 }
 

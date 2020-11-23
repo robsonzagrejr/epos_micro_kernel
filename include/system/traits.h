@@ -148,8 +148,8 @@ template<typename Channel, bool connectionless = Channel::connectionless> class 
 template<typename Channel, bool connectionless = Channel::connectionless> class Port;
 
 class SmartData;
-template<typename Transducer, typename Network> class Responsive_SmartData;
-template<typename Transducer, typename Network> class Interested_SmartData;
+template<typename Transducer, typename Network = TSTP> class Responsive_SmartData;
+template<typename Transducer, typename Network = TSTP> class Interested_SmartData;
 
 // Framework
 class Framework;
@@ -173,13 +173,13 @@ struct Traits_Tokens
     enum {LIBRARY, BUILTIN, KERNEL};
 
     // CPU hardware architectures
-    enum {AVR8, H8, ARMv4, ARMv7, ARMv8, IA32, X86_64, SPARCv8, PPC32, RV32};
+    enum {AVR8, H8, ARMv4, ARMv7, ARMv8, IA32, X86_64, SPARCv8, PPC32, RV32, RV64};
 
     // Machines
     enum {eMote1, eMote2, STK500, RCX, Cortex, PC, Leon, Virtex, RISCV};
 
     // Machine models
-    enum {Unique, Legacy_PC, eMote3, LM3S811, Zynq, Realview_PBX, Raspberry_Pi3, SiFive_E};
+    enum {Unique, Legacy_PC, eMote3, LM3S811, Zynq, Realview_PBX, Raspberry_Pi3, SiFive_E, SiFive_U};
 
     // Architecture endianness
     enum {LITTLE, BIG};

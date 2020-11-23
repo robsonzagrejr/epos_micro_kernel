@@ -179,6 +179,17 @@ void USB_Engine::init()
     reset();
 
     _state = USB_2_0::STATE::POWERED;
+
+
+    if (Traits<USB>::wait_to_sync) {
+        //Necessary to use USB early on the execution
+        bool a = CPU::int_disabled();
+        if(a)
+            CPU::int_enable();
+        Machine::delay(2000000);
+        if(a)
+            CPU::int_enable();
+    }
 }
 
 #endif

@@ -75,7 +75,7 @@ static const unsigned MAX_UNSIGNED = -1U;
 static const unsigned long MAX_UNSIGNED_LONG = -1UL;
 static const unsigned long long MAX_UNSIGNED_LONG_LONG = -1ULL;
 
-// Adjusts the basic time type to express time with a resolution of microseconds according to the system's life span,
+// Adjusts the precision of the basic time type according to the system's life span,
 // forcing a compilation error through void when a counter overflow becomes possible.
 typedef IF<(Traits<System>::LIFE_SPAN * 1000000 <= MAX_UNSIGNED_LONG), unsigned long,
            IF<(Traits<System>::LIFE_SPAN * 1000000ULL <= MAX_UNSIGNED_LONG_LONG), unsigned long long,

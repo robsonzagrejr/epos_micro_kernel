@@ -5,18 +5,12 @@
 
 __BEGIN_SYS
 
-// Class attributes
 APIC::Log_Addr APIC::_base;
 IC::Interrupt_Handler IC::_int_vector[IC::INTS];
 
 
-// APIC class methods
 void APIC::ipi_init(volatile int * status)
 {
-//    // Broadcast INIT IPI to all APs excluding self
-//    write(ICR0_31, ICR_OTHERS | ICR_LEVEL | ICR_ASSERT | ICR_INIT);
-//    while((read(ICR0_31) & ICR_PENDING));
-
     status[0] = 0;
 
     // Send INIT IPI to all APs excluding self
@@ -30,22 +24,9 @@ void APIC::ipi_init(volatile int * status)
     i8255::ms_delay(100);
 };
 
+
 void APIC::ipi_start(Log_Addr entry, volatile int * status)
 {
-//    unsigned int vector = (entry >> 12) & 0xff;
-//
-//    // Broadcast STARTUP IPI to all APs excluding self twice
-//    write(ICR0_31, ICR_OTHERS | ICR_LEVEL | ICR_ASSERT | ICR_STARTUP | vector);
-//    while((read(ICR0_31) & ICR_PENDING));
-//
-//    i8255::ms_delay(10); // ~ 10ms delay
-//
-//    write(ICR0_31, ICR_OTHERS | ICR_LEVEL | ICR_ASSERT | ICR_STARTUP | vector);
-//    while((read(ICR0_31) & ICR_PENDING));
-//
-//    // Give other CPUs a time to wake up (> 100ms)
-//    i8255::ms_delay(100);
-
     unsigned int vector = (entry >> 12) & 0xff;
 
     // Send STARTUP IPI to all APs
@@ -72,6 +53,7 @@ void APIC::ipi_start(Log_Addr entry, volatile int * status)
         }
     }
 }
+
 
 void APIC::ipi(unsigned int cpu, unsigned int interrupt)
 {

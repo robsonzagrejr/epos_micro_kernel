@@ -26,6 +26,7 @@ public:
     System_Timer_Engine() { new(systick()) SysTick; }
 
     Count count() const { return systick()->count(); }
+    Count read() const { return systick()->read(); }
 
     void enable() const { systick()->enable(); }
     void disable() const { systick()->disable(); }
@@ -66,6 +67,7 @@ public:
     }
 
     Count count() const { return _gptm->count(); }
+    Count read() const { return _gptm->read(); }
 
     void enable() const { _gptm->enable(); }
     void disable() const { _gptm->disable(); }

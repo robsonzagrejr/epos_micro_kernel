@@ -116,11 +116,11 @@ public:
 
         finc(ready[j]);
         if(id == 0) {
-            while(ready[j] < int(cores));    // wait for all CPUs to be ready
-            i = !i;                     // toggle ready
-            ready[j] = 0;               // signalizes waiting CPUs
+            while(ready[j] < int(cores));       // wait for all CPUs to be ready
+            i = !i;                             // toggle ready
+            ready[j] = 0;                       // signalizes waiting CPUs
         } else {
-            while(ready[j]);            // wait for CPU[0] signal
+            while(ready[j]);                    // wait for CPU[0] signal
         }
     }
 

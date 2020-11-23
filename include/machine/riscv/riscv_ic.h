@@ -59,7 +59,7 @@ public:
 
     // clint offsets
     enum {
-        // CORE WAKEUP OFFSET
+        MSIP_CORE_OFFSET        = 4 // Offset in bytes for the MSIP of each core
     };
 
 public:
@@ -80,8 +80,7 @@ public:
         db<IC>(TRC) << "IC::enable()" << endl;
         // at beggining CLINT is already started, so we are only enabling all interrupts
         // this is done on MIE register
-        Reg32 flags = (1 << SUPERVISOR_SOFT_INT | 1 << MACHINE_SOFT_INT | 
-                       1 << SUPERVISOR_TIMER_INT | 1 << MACHINE_TIMER_INT );
+        Reg32 flags = (1 << MACHINE_SOFT_INT | 1 << MACHINE_TIMER_INT );
         ASM ("csrw mie, %0" : : "r"(flags) : );
     }
     static void enable(Interrupt_Id i) {
@@ -116,9 +115,7 @@ public:
         if (id & INT_OR_EXCEP_BIT) {
             return id & INT_MASK; // it is an interrupt
         } else {
-            // This is done to diferentiate exceptions from interruptions
-            // It will only be useful when working with mtvec mode 0
-            // In this case, interrupts and exceptions are routed to the same handler
+            // This will only be useful when working with mtvec mode 0
             // return (id & INT_MASK) + INTS;
             return id & INT_MASK;
         }
@@ -131,11 +128,15 @@ public:
     static void ipi(unsigned int cpu, Interrupt_Id i) {
         db<IC>(TRC) << "IC::ipi(cpu=" << cpu << ",int=" << i << ")" << endl;
         assert(i < INTS);
-        // IMPLEMENT
+        // accessing a Reg32 pointer as a vector in the core position is the same as applying the offset of a register size
+        reg(cpu * MSIP_CORE_OFFSET) = 0x1 << i; 
     }
 
     static void ipi_eoi(Interrupt_Id i) {
-        // IMPLEMENT
+        // The only thing that is necessary here is to clear the MSIP register for the running core
+        reg(CPU::id() * MSIP_CORE_OFFSET) = 0; 
+        // This helps debug as the flag will be down earlier
+        ASM("csrw mcause, zero" : : : "memory", "cc");
     }
 
 

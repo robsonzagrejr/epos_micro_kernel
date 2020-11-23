@@ -17,6 +17,8 @@
 __BEGIN_SYS
 
 // TI CC2538 IEEE 802.15.4 RF Transceiver
+// TODO: CC2538RF was made into a singleton by declaring its methods "static" to satisfy TSTP
+// but the new ARM hardware mediator's design should allow us to return them to ordinary (object) methods.
 class CC2538RF
 {
 protected:
@@ -598,13 +600,11 @@ public:
         return address;
     }
 
-    // FIXME: methods changed to static because of TSTP_MAC
     static void backoff(const Microsecond & time) {
         Timer::Time_Stamp end = Timer::read() + Timer::us2count(time);
         while(Timer::read() <= end);
     }
 
-    // FIXME: methods changed to static because of TSTP_MAC
     static bool cca(const Microsecond & time) {
         Timer::Time_Stamp end = Timer::read() + Timer::us2count(time);
         while(!(xreg(RSSISTAT) & RSSI_VALID));
@@ -613,13 +613,11 @@ public:
         return channel_free;
     }
 
-    // FIXME: methods changed to static because of TSTP_MAC
     static void transmit_no_cca() {
         xreg(RXMASKCLR) = RXENABLE_SRXON; // Don't return to receive mode after TX
         sfr(RFST) = ISTXON;
     }
 
-    // FIXME: methods changed to static because of TSTP_MAC
     static bool transmit() {
         xreg(RXMASKCLR) = RXENABLE_SRXON; // Don't return to receive mode after TX
         sfr(RFST) = ISTXONCCA;
@@ -665,7 +663,6 @@ public:
         return acked;
     }
 
-    // FIXME: methods changed to static because of TSTP_MAC
     static void listen() { sfr(RFST) = ISRXON; }
 
     /*
@@ -681,7 +678,6 @@ public:
     }
     */
 
-    // FIXME: methods changed to static because of TSTP_MAC
     static bool tx_done() {
         bool tx_ok = (sfr(RFIRQF1) & INT_TXDONE);
         if(tx_ok)
@@ -692,7 +688,6 @@ public:
         return tx_ok || tx_error;
     }
 
-    // FIXME: methods changed to static because of TSTP_MAC
     static bool rx_done() {
         bool ret = (sfr(RFIRQF0) & INT_RXPKTDONE);
         if(ret)
@@ -700,13 +695,11 @@ public:
         return ret;
     }
 
-    // FIXME: methods changed to static because of TSTP_MAC
     static void channel(unsigned int c) {
         assert((c > 10) && (c < 27));
         xreg(FREQCTRL) = 11 + 5 * (c - 11);
     }
 
-    // FIXME: methods changed to static because of TSTP_MAC
     static void copy_to_nic(const void * frame, unsigned int size) {
         assert(size <= 127);
         // Clear TXFIFO
@@ -720,7 +713,6 @@ public:
             sfr(RFDATA) = f[i];
     }
 
-    // FIXME: methods changed to static because of TSTP_MAC
     static unsigned int copy_from_nic(void * frame) {
         char * f = reinterpret_cast<char *>(frame);
         unsigned int first = xreg(RXP1_PTR);
@@ -732,15 +724,18 @@ public:
         return sz;
     }
 
-    // FIXME: methods changed to static because of TSTP_MAC
     static void drop() { sfr(RFST) = ISFLUSHRX; }
 
     bool filter() {
         bool valid_frame = false;
         unsigned int first = xreg(RXP1_PTR);
-        unsigned int last = xreg(RXLAST_PTR);
         volatile unsigned int * rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
         unsigned char mac_frame_size = rxfifo[first];
+        unsigned int last = mac_frame_size + 1; // expected size is in first byte, which is additional.
+        while (xreg(RXLAST_PTR) < last); // wait until buffer is full. RXLAST_PTR is still being updated.
+
+        db<IEEE802_15_4>(INF) << "IEEE802_15_4::filter::first=" << first << ",last:  " << last << "size=" << mac_frame_size << ",crc=" << rxfifo[first + mac_frame_size] << endl;
+
         if(last - first > 1 + sizeof(IEEE802_15_4::CRC)) {
             // On RX, last two bytes in the frame are replaced by info like CRC result
             // (obs: mac frame is preceded by one byte containing the frame length,
@@ -759,7 +754,6 @@ public:
                     Machine::reboot();
             }
         }
-
         return valid_frame;
     }
 

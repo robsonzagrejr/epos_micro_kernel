@@ -259,7 +259,7 @@ protected:
     : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
         db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler) << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
 
-        if(_initial && (unsigned(channel) < CHANNELS) && !_channels[channel])
+        if(_initial && (channel < CHANNELS) && !_channels[channel])
             _channels[channel] = this;
         else
             db<Timer>(WRN) << "Timer not installed!"<< endl;

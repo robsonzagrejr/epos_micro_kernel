@@ -222,12 +222,14 @@ private:
     bool send_byte(char data, int mode) {
         i2c(I2C_DR) = data;
         i2c(I2C_CTRL) = mode;
+        while(ready_to_put());
         while(!ready_to_put());
         return !(i2c(I2C_STAT) & I2C_STAT_ERROR);
     }
 
     bool get_byte(char * data, int mode) {
         i2c(I2C_CTRL) = mode;
+        while(ready_to_get());
         while(!ready_to_get());
         if(i2c(I2C_STAT) & I2C_STAT_ERROR) {
             return false;

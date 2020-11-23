@@ -16,7 +16,7 @@ protected:
     static const unsigned int PORTS = Traits<GPIO>::UNITS;
 
 public:
-    GPIO_Engine(const Port & port, const Pin & pin, const Direction & dir, const Pull & p, const Edge & int_edge)
+    GPIO_Engine(Port port, Pin pin, Direction dir, Pull p, Edge int_edge)
     : _pin_mask(1 << pin) {
         assert(port < PORTS);
         power(FULL);
@@ -44,16 +44,16 @@ public:
 
     void clear() { _gpio->clear(_pin_mask); }
 
-    void direction(const Direction & dir) {
+    void direction(Direction dir) {
         _direction = dir;
         _gpio->direction(_pin_mask, dir);
     }
 
-    void pull(const Pull & p) { _gpio->pull(_pin_mask, p); }
+    void pull(Pull p) { _gpio->pull(_pin_mask, p); }
 
     void int_enable() { _gpio->int_enable(_pin_mask); }
-    void int_enable(const Level & level, bool power_up = false, const Level & power_up_level = HIGH);
-    void int_enable(const Edge & edge, bool power_up = false, const Edge & power_up_edge = RISING);
+    void int_enable(Level level, bool power_up = false, Level power_up_level = HIGH);
+    void int_enable(Edge edge, bool power_up = false, Edge power_up_edge = RISING);
     void int_disable() { _gpio->int_disable(_pin_mask); }
     void clear_interrupts() { _gpio->clear_interrupts(0xff); }
 

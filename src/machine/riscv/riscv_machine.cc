@@ -13,7 +13,7 @@ void Machine::panic()
     if(Traits<System>::reboot)
         reboot();
     else
-        CPU::halt();
+        poweroff();
 }
 
 __END_SYS
