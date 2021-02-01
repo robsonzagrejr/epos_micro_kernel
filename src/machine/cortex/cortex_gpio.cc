@@ -29,7 +29,7 @@ void GPIO::eoi(IC::Interrupt_Id id)
     }
 
     // Clear regular interrupts even if no handler is available
-    pl061->clear_interrupts(0xff);
+    pl061->clear_interrupts(port, 0xff);
 }
 
 __END_SYS

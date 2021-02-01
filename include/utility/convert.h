@@ -28,11 +28,11 @@ template<typename Count, typename Temporary = typename LARGER<Count>::Result>
 inline Count percent2count(const Percent & duty_cycle, const Count & period) { return period - (static_cast<Temporary>(period) * int(duty_cycle) / 100); }
 
 template<typename Hertz, typename Count, typename Time, typename Temporary = typename LARGER<Time>::Result>
-inline Time count2s(const Hertz & frequency, const Count & count) { return static_cast<Temporary>(count) * 1 / frequency; }
+inline Time count2s(const Hertz & frequency, const Count & count) { return static_cast<Temporary>(count) / frequency; }
 template<typename Hertz, typename Count, typename Time, typename Temporary = typename LARGER<Time>::Result>
-inline Time count2ms(const Hertz & frequency, const Count & count) { return static_cast<Temporary>(count) * 1000 / frequency; }
+inline Time count2ms(const Hertz & frequency, const Count & count) { return (static_cast<Temporary>(count) / (frequency / 1000 )) ; }
 template<typename Hertz, typename Count, typename Time, typename Temporary = typename LARGER<Time>::Result>
-inline Time count2us(const Hertz & frequency, const Count & count) { return static_cast<Temporary>(count) * 1000000 / frequency; }
+inline Time count2us(const Hertz & frequency, const Count & count) { return (static_cast<Temporary>(count) / (frequency / 1000000)); }
 };
 
 __END_UTIL

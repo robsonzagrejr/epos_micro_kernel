@@ -23,21 +23,6 @@ class Spin;
 class SREC;
 class Vectors;
 template<typename> class Scheduler;
-namespace Scheduling_Criteria
-{
-    class Priority;
-    class FCFS;
-    class RR;
-    class RM;
-    class DM;
-    class EDF;
-    class GRR;
-    class CPU_Affinity;
-    class GEDF;
-    class PEDF;
-    class CEDF;
-    class PRM;
-};
 
 __END_UTIL
 
@@ -114,6 +99,20 @@ class Active;
 class Periodic_Thread;
 class RT_Thread;
 class Task;
+class Priority;
+class FCFS;
+class RR;
+class RM;
+class DM;
+class EDF;
+class GRR;
+class Fixed_CPU;
+class CPU_Affinity;
+class GEDF;
+class PEDF;
+class CEDF;
+class PRM;
+class EA_PEDF;
 
 class Address_Space;
 class Segment;
@@ -315,6 +314,37 @@ struct Traits_Tokens
         INTERLOCK_CYCLE_ADV_SIMD_FP_INST_CA53,
         INTERLOCK_CYCLE_WR_STAGE_STALL_BC_MISS_CA53,
         INTERLOCK_CYCLE_WR_STAGE_STALL_BC_STR_CA53,
+        // ARMv8 does not have Cortex A9 events.
+        BUS_ACCESS_LD_CA53_v8 = 24,
+        BUS_ACCESS_ST_CA53_v8,
+        BR_INDIRECT_SPEC_CA53_v8,
+        EXC_IRQ_CA53_v8,
+        EXC_FIQ_CA53_v8,
+        EXTERNAL_MEM_REQUEST_CA53_v8,
+        EXTERNAL_MEM_REQUEST_NON_CA53CHEABLE_CA53_v8,
+        PREFETCH_LINEFILL_CA53_v8,
+        ICA53CHE_THROTTLE_CA53_v8,
+        ENTER_READ_ALLOC_MODE_CA53_v8,
+        READ_ALLOC_MODE_CA53_v8,
+        PRE_DECODE_ERROR_CA53_v8,
+        DATA_WRITE_STALL_ST_BUFFER_FULL_CA53_v8,
+        SCU_SNOOPED_DATA_FROM_OTHER_CPU_CA53_v8,
+        CONDITIONAL_BRANCH_EXECUTED_CA53_v8,
+        IND_BR_MISP_CA53_v8,
+        IND_BR_MISP_ADDRESS_MISCOMPARE_CA53_v8,
+        CONDITIONAL_BRANCH_MISP_CA53_v8,
+        L1_ICA53CHE_MEM_ERROR_CA53_v8,
+        L1_DCA53CHE_MEM_ERROR_CA53_v8,
+        TLB_MEM_ERROR_CA53_v8,
+        EMPTY_DPU_IQ_NOT_GUILTY_CA53_v8,
+        EMPTY_DPU_IQ_ICA53CHE_MISS_CA53_v8,
+        EMPTY_DPU_IQ_IMICRO_TLB_MISS_CA53_v8,
+        EMPTY_DPU_IQ_PRE_DECODE_ERROR_CA53_v8,
+        INTERLOCK_CYCLE_NOT_GUILTY_CA53_v8,
+        INTERLOCK_CYCLE_LD_ST_WAIT_AGU_ADDRESS_CA53_v8,
+        INTERLOCK_CYCLE_ADV_SIMD_FP_INST_CA53_v8,
+        INTERLOCK_CYCLE_WR_STAGE_STALL_BC_MISS_CA53_v8,
+        INTERLOCK_CYCLE_WR_STAGE_STALL_BC_STR_CA53_v8,
 
         // Intel Sandy Bridge specific events
         UNHALTED_REFERENCE_CYCLES_SB                    = 1,

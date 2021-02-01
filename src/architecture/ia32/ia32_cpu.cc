@@ -8,8 +8,9 @@
 __BEGIN_SYS
 
 volatile unsigned int CPU::_cores;
-unsigned int CPU::_cpu_clock;
-unsigned int CPU::_bus_clock;
+Hertz CPU::_cpu_clock;
+Hertz CPU::_cpu_current_clock;
+Hertz CPU::_bus_clock;
 
 void CPU::Context::save() volatile
 {

@@ -198,7 +198,7 @@ void populate_strings()
     snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::MEM_TOP);
     set_token_value("MEM_TOP", string);
 
-    snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::MEM_TOP - Traits<Machine>::MEM_BASE);
+    snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::MEM_TOP + 1 - Traits<Machine>::MEM_BASE);
     set_token_value("MEM_SIZE", string);
 
     snprintf(string, STRING_SIZE, "0x%08x", (Traits<Machine>::MEM_TOP + 1 - Traits<Machine>::MEM_BASE) / 1024);

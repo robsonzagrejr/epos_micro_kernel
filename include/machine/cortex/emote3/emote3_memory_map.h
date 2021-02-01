@@ -22,6 +22,7 @@ struct Memory_Map: public Cortex_Memory_Map
         TIMER1_BASE     = 0x40031000, // GPTM
         TIMER2_BASE     = 0x40032000, // GPTM
         TIMER3_BASE     = 0x40033000, // GPTM
+        RF_BASE         = 0x40088000,
         USB0_BASE       = 0x40089000,
         SCR_BASE        = 0x400d2000,
         FLASH_BASE      = 0x400d3000,
@@ -32,6 +33,7 @@ struct Memory_Map: public Cortex_Memory_Map
         GPIOB_BASE      = 0x400da000, // PL061 GPIO Port B
         GPIOC_BASE      = 0x400db000, // PL061 GPIO Port C
         GPIOD_BASE      = 0x400dc000, // PL061 GPIO Port D
+        CCTEST_BASE     = 0x44010000,
         SCB_BASE        = 0xe000e000, // System Control Block
     };
 

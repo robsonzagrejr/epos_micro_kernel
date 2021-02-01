@@ -36,8 +36,8 @@ int USB_Engine::read(char * out, unsigned int max_size)
 {
     lock();
     input();
-
-    while(!(usb(CSOL) & CSOL_OUTPKTRDY));
+    int cont = 15;
+    while(!(usb(CSOL) & CSOL_OUTPKTRDY) && cont) cont--;
     unsigned int i;
     unsigned int sz = (usb(CNTH) << 8) | usb(CNT0_CNTL);
     for(i = 0; (i<sz) && (i<max_size); i++)

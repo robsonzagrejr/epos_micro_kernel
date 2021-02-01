@@ -25,44 +25,44 @@ public:
 
     // I/O Ports
     enum {
-        CNT_0		= 0x40, // Time keeper
-        CNT_1		= 0x41, // Memory refresh
-        CNT_2		= 0x42, // Speaker
-        CTRL		= 0x43  // Control
+        CNT_0           = 0x40, // Time keeper
+        CNT_1           = 0x41, // Memory refresh
+        CNT_2           = 0x42, // Speaker
+        CTRL            = 0x43  // Control
     };
 
     // Control Register Format (8 bits)
     enum {
-        SELECT_MASK	= 0xc0, // Select Counter (2 bits)
-        SC0	    	= 0x00, // counter 0
-        SC1	    	= 0x40, // counter 1
-        SC2	    	= 0x80, // counter 2
-        RB	    	= 0xc0, // read-back
-        RW_MASK		= 0x30, // Read/Write (2 bits)
-        LATCH		= 0x00, // latch counter for reading
-        MSB	    	= 0x10, // read/write MSB only
-        LSB	    	= 0x20, // read/write LSB only
-        LMSB		= 0x30,	// read/write LSB then MSB
-        MODE_MASK	= 0x0e, // 3 bits
-        IOTC		= 0x00, // Interrupt on Terminal Count
-        HROS		= 0x02, // Hardware Retriggerable One-Shot
-        RG	    	= 0x04, // Rate generator
-        CSSW		= 0x06, // Continuous Symmetrical Square Wave
-        STS	    	= 0x08, // Software Triggered Strobe
-        HTS	    	= 0x0a, // Hardware Triggered Strobe
-        COUNT_MODE_MASK	= 0x01, // 1 bit
-        BINARY		= 0x00, // Binary count
-        BCD		    = 0x01, // BCD count
-        DEF_CTRL_C0	= SC0	| LMSB	| CSSW	| BINARY, // Counter 0 default
-        DEF_CTRL_C1	= SC1	| MSB	| RG	| BINARY, // Counter 1 default
-        DEF_CTRL_C2	= SC2	| LMSB	| IOTC	| BINARY  // Counter 2 default
+        SELECT_MASK     = 0xc0, // Select Counter (2 bits)
+        SC0             = 0x00, // counter 0
+        SC1             = 0x40, // counter 1
+        SC2             = 0x80, // counter 2
+        RB              = 0xc0, // read-back
+        RW_MASK         = 0x30, // Read/Write (2 bits)
+        LATCH           = 0x00, // latch counter for reading
+        MSB             = 0x10, // read/write MSB only
+        LSB             = 0x20, // read/write LSB only
+        LMSB            = 0x30, // read/write LSB then MSB
+        MODE_MASK       = 0x0e, // 3 bits
+        IOTC            = 0x00, // Interrupt on Terminal Count
+        HROS            = 0x02, // Hardware Retriggerable One-Shot
+        RG              = 0x04, // Rate generator
+        CSSW            = 0x06, // Continuous Symmetrical Square Wave
+        STS             = 0x08, // Software Triggered Strobe
+        HTS             = 0x0a, // Hardware Triggered Strobe
+        COUNT_MODE_MASK = 0x01, // 1 bit
+        BINARY          = 0x00, // Binary count
+        BCD                 = 0x01, // BCD count
+        DEF_CTRL_C0     = SC0   | LMSB  | CSSW  | BINARY, // Counter 0 default
+        DEF_CTRL_C1     = SC1   | MSB   | RG    | BINARY, // Counter 1 default
+        DEF_CTRL_C2     = SC2   | LMSB  | IOTC  | BINARY  // Counter 2 default
     };
 
     // Default Counters as set by the BIOS (16 bits)
     enum {
-        DEF_CNT_C0	= 0x0000, // CLOCK/65535 ->     18.2 Hz
-        DEF_CNT_C1	= 0x0012, // CLOCK/18    ->  66287.8 Hz
-        DEF_CNT_C2	= 0x0533, // CLOCK/1331  ->    896.5 Hz
+        DEF_CNT_C0      = 0x0000, // CLOCK/65535 ->     18.2 Hz
+        DEF_CNT_C1      = 0x0012, // CLOCK/18    ->  66287.8 Hz
+        DEF_CNT_C2      = 0x0533, // CLOCK/1331  ->    896.5 Hz
     };
 
 public:
@@ -161,7 +161,7 @@ private:
 public:
     // I/O Ports
     enum {
-        PORT_B		= 0x61
+        PORT_B          = 0x61
     };
 
     // Port B (status/control)
@@ -231,7 +231,7 @@ public:
 
 
 // Tick timer used by the system
-class Timer: private Timer_Common
+class Timer: public Timer_Common
 {
     friend class Machine;
     friend class Init_System;
@@ -244,18 +244,8 @@ protected:
     static const unsigned int CHANNELS = 3;
     static const unsigned int FREQUENCY = Traits<Timer>::FREQUENCY;
 
-public:
-    enum {
-        SCHEDULER,
-        ALARM,
-        USER
-    };
-
-    using Timer_Common::Tick;
-    using Timer_Common::Handler;
-
 protected:
-    Timer(unsigned int channel, const Hertz & frequency, const Handler & handler, bool retrigger = true)
+    Timer(Channel channel, Hertz frequency, const Handler & handler, bool retrigger = true)
     : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
         db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler) << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
 
@@ -275,13 +265,10 @@ public:
         _channels[_channel] = 0;
     }
 
-    Hertz frequency() const { return (FREQUENCY / _initial); }
-    void frequency(const Hertz & f) { _initial = FREQUENCY / f; reset(); }
-
     Tick read() { return _current[CPU::id()]; }
 
-    int reset() {
-        db<Timer>(TRC) << "Timer::reset() => {f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler) << ",count=" << _current[CPU::id()] << "}" << endl;
+    int restart() {
+        db<Timer>(TRC) << "Timer::restart() => {f=" << frequency() << ",h=" << reinterpret_cast<void *>(_handler) << ",count=" << _current[CPU::id()] << "}" << endl;
 
         int percentage = _current[CPU::id()] * 100 / _initial;
         _current[CPU::id()] = _initial;
@@ -289,13 +276,17 @@ public:
         return percentage;
     }
 
-    static void enable() { IC::enable(IC::INT_SYS_TIMER); }
-    static void disable() { IC::disable(IC::INT_SYS_TIMER); }
+    static void reset() { db<Timer>(TRC) << "Timer::reset()" << endl; Engine::config(0, Engine::clock() / FREQUENCY); }
+    static void enable() { db<Timer>(TRC) << "Timer::enable()" << endl; IC::enable(IC::INT_SYS_TIMER); }
+    static void disable() { db<Timer>(TRC) << "Timer::disable()" << endl; IC::disable(IC::INT_SYS_TIMER); }
+
+    PPB accuracy();
+    Hertz frequency() const { return (FREQUENCY / _initial); }
+    void frequency(Hertz f) { _initial = FREQUENCY / f; restart(); }
+
+    void handler(const Handler & handler) { _handler = handler; }
 
  private:
-    static Hertz count2freq(const Count & c) { return c ? Engine::clock() / c : 0; }
-    static Count freq2count(const Hertz & f) { return f ? Engine::clock() / f : 0; }
-
     static void int_handler(Interrupt_Id i);
 
     static void init();
@@ -325,12 +316,15 @@ public:
     Alarm_Timer(const Handler & handler): Timer(ALARM, FREQUENCY, handler) {}
 };
 
+
 // Timer available for users
 class User_Timer: public Timer
 {
 public:
-    User_Timer(unsigned int channel, const Microsecond & time, const Handler & handler, bool retrigger = false)
-    : Timer(USER, 1000000 / time, handler, retrigger) {}
+    User_Timer(Channel channel, Microsecond time, const Handler & handler, bool retrigger = false)
+    : Timer(USER, 1000000 / time, handler, retrigger) {
+        assert(channel == USER); // Only one user timer on PC
+    }
 };
 
 __END_SYS

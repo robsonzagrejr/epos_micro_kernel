@@ -11,6 +11,7 @@ void CPU::init()
     db<Init, CPU>(TRC) << "CPU::init()" << endl;
 
     _cpu_clock = System::info()->tm.cpu_clock;
+    _cpu_current_clock = System::info()->tm.cpu_clock;
     _bus_clock = System::info()->tm.bus_clock;
 
     // Initialize the MMU

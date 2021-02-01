@@ -25,42 +25,69 @@ public:
     using Log_Addr = CPU_Common::Log_Addr<Reg>;
     using Phy_Addr = CPU_Common::Phy_Addr<Reg>;
 
-    // Control and Status Register (mstatus)
+    // Control and Status Register (CSR) for machine mode
+    // Status Register (mstatus)
     enum {
-        FLAG_MIE            = 1 << 3,      // Machine Interrupts Enabled
-        FLAG_SIE            = 1 << 1,      // Supervisor Interrupts Enabled
-        FLAG_SPIE           = 1 << 5,      // Supervisor Previous Interrupts Enabled
-        FLAG_MPIE           = 1 << 7,      // Machine Previous Interrupts Enabled
-        FLAG_MPP            = 3 << 11,     // Machine Previous Privilege 
-        FLAG_SPP            = 3 << 12,     // Supervisor Previous Privilege
-        FLAG_MPRV           = 1 << 17,     // Memory Priviledge
-        FLAG_TVM            = 1 << 20,     // Trap Virtual Memory //not allow MMU
-        MSTATUS_DEFAULTS    = (FLAG_MIE | FLAG_SPP | FLAG_MPIE | FLAG_SPIE | FLAG_MPP | FLAG_SIE)
+        MIE             = 1 << 3,      // Machine Interrupts Enabled
+        SIE             = 1 << 1,      // Supervisor Interrupts Enabled
+        SPIE            = 1 << 5,      // Supervisor Previous Interrupts Enabled
+        MPIE            = 1 << 7,      // Machine Previous Interrupts Enabled
+        MPP             = 3 << 11,     // Machine Previous Privilege
+        SPP             = 3 << 12,     // Supervisor Previous Privilege
+        MPRV            = 1 << 17,     // Memory Priviledge
+        TVM             = 1 << 20,     // Trap Virtual Memory //not allow MMU
+        MSTATUS_DEFAULTS= (MIE | MPIE | MPP)
     };
 
-    // Interrupt Enable Register (mie)
+    // Interrupt-Enable, Interrupt-Pending and Machine Cause Registers (mie, mip, and mcause when interrupt bit is set)
     enum {
-        FLAG_SSIE       = 1 << 1,   // Supervisor Software Interrupt Enable
-        FLAG_MSIE       = 1 << 3,   // Machine Software Interrupt Enable
-        FLAG_STIE       = 1 << 5,   // Supervisor Software Interrupt Enable
-        FLAG_MTIE       = 1 << 7,   // Machine Software Interrupt Enable
-        FLAG_SEIE       = 1 << 9,   // Supervisor External Interrupt Enable
-        FLAG_MEIE       = 1 << 11,  // Machine External Interrupt Enable
-        MIE_DEFAULTS    = (FLAG_MSIE | FLAG_MTIE )
+        SSI             = 1 << 1,   // Supervisor Software Interrupt
+        MSI             = 1 << 3,   // Machine Software Interrupt
+        STI             = 1 << 5,   // Supervisor Software Interrupt
+        MTI             = 1 << 7,   // Machine Software Interrupt
+        SEI             = 1 << 9,   // Supervisor External Interrupt
+        MEI             = 1 << 11   // Machine External Interrupt
     };
 
-    // CPU Context
+    // Exceptions (mcause with interrupt = 0)
+    static const unsigned int EXCEPTIONS = 12;
+    enum {
+        EXC_IALIGN      = 0,    // Instruction address misaligned
+        EXC_IFAULT      = 1,    // Instruction access fault
+        EXC_IILLEGAL    = 2,    // Illegal instruction
+        EXC_BREAK       = 3,    // Breakpoint
+        EXC_DRALIGN     = 4,    // Load address misaligned
+        EXC_DRFAULT     = 5,    // Load access fault
+        EXC_DWALIGN     = 6,    // Store/AMO address misaligned
+        EXC_DWFAULT     = 7,    // Store/AMO access fault
+        EXC_ENVU        = 8,    // Environment call from U-mode
+        EXC_ENVS        = 9,    // Environment call from S-mode
+        EXC_ENVH        = 10,   // Environment call from H-mode
+        EXC_ENVM        = 11    // Environment call from M-m
+    };
+
+    // Context
     class Context
     {
     public:
-        Context(const Log_Addr & entry, const Log_Addr & exit): _x1(exit), _pc(entry) {}
+        Context(const Log_Addr & entry, const Log_Addr & exit): _pc(entry), _x1(exit) {
+            if(Traits<Build>::hysterically_debugged || Traits<Thread>::trace_idle) {
+                                                                        _x5 =  5;  _x6 =  6;  _x7 =  7;  _x8 =  8;  _x9 =  9;
+                _x10 = 10; _x11 = 11; _x12 = 12; _x13 = 13; _x14 = 14; _x15 = 15; _x16 = 16; _x17 = 17; _x18 = 18; _x19 = 19;
+                _x20 = 20; _x21 = 21; _x22 = 22; _x23 = 23; _x24 = 24; _x25 = 25; _x26 = 26; _x27 = 27; _x28 = 28; _x29 = 29;
+                _x30 = 30; _x31 = 31;
+            }
+        }
 
         void save() volatile  __attribute__ ((naked));
-        void load() const volatile;
+        void load() const volatile __attribute__ ((naked));
 
         friend Debug & operator<<(Debug & db, const Context & c) {
             db << hex
-               << "{x5="   << c._x5
+               << "{pc="   << c._pc
+               << ",sp="   << &c
+               << ",lr="   << c._x1
+               << ",x5="   << c._x5
                << ",x6="   << c._x6
                << ",x7="   << c._x7
                << ",x8="   << c._x8
@@ -87,47 +114,44 @@ public:
                << ",x29="  << c._x29
                << ",x30="  << c._x30
                << ",x31="  << c._x31
-               << ",sp="  << &c
-               << ",lr="  << c._x1
-               << ",pc="  << c._pc
                << "}" << dec;
             return db;
         }
 
     public:
-        Reg32  _x1; // ABI Link Register (return address)
-        Reg32 _x31; // t6
-        Reg32 _x30; // t5
-        Reg32 _x29; // t4
-        Reg32 _x28; // t3
-        Reg32 _x27; // s11
-        Reg32 _x26; // s10
-        Reg32 _x25; // s9
-        Reg32 _x24; // s8
-        Reg32 _x23; // s7
-        Reg32 _x22; // s6
-        Reg32 _x21; // s5
-        Reg32 _x20; // s4
-        Reg32 _x19; // s3
-        Reg32 _x18; // s2
-        Reg32 _x17; // a7
-        Reg32 _x16; // a6
-        Reg32 _x15; // a5
-        Reg32 _x14; // a4
-        Reg32 _x13; // a3
-        Reg32 _x12; // a2
-        Reg32 _x11; // a1
-        Reg32 _x10; // a0
-        Reg32  _x9; // s1
-        Reg32  _x8; // s0
-        Reg32  _x7; // t2
-        Reg32  _x6; // t1
+        Reg32  _pc; // pc
+    //  Reg32  _x0; // zero
+        Reg32  _x1; // ra, ABI Link Register
+    //  Reg32  _x2; // sp, ABI Stack Pointer, saved as this
+    //  Reg32  _x3; // gp, ABI Global Pointer, managed by the linker
+    //  Reg32  _x4; // tp, ABI Thread Pointer, used in EPOS as a system-level temporary
         Reg32  _x5; // t0
-     // Reg32  _x4; // ABI Thread Pointer, not used in EPOS
-     // Reg32  _x3; // ABI Global Pointer, managed by the linker
-     // Reg32  _x2; // ABI Stack Pointer, saved as this
-     // Reg32  _x0; // zero
-        Reg32 _pc;
+        Reg32  _x6; // t1
+        Reg32  _x7; // t2
+        Reg32  _x8; // s0
+        Reg32  _x9; // s1
+        Reg32 _x10; // a0
+        Reg32 _x11; // a1
+        Reg32 _x12; // a2
+        Reg32 _x13; // a3
+        Reg32 _x14; // a4
+        Reg32 _x15; // a5
+        Reg32 _x16; // a6
+        Reg32 _x17; // a7
+        Reg32 _x18; // s2
+        Reg32 _x19; // s3
+        Reg32 _x20; // s4
+        Reg32 _x21; // s5
+        Reg32 _x22; // s6
+        Reg32 _x23; // s7
+        Reg32 _x24; // s8
+        Reg32 _x25; // s9
+        Reg32 _x26; // s10
+        Reg32 _x27; // s11
+        Reg32 _x28; // t3
+        Reg32 _x29; // t4
+        Reg32 _x30; // t5
+        Reg32 _x31; // t6
     };
 
     // Interrupt Service Routines
@@ -170,16 +194,51 @@ public:
 
 
     // Atomic operations
+    template<typename T>
+    static T tsl(volatile T & lock) {
+        register T old;
+        register T one = 1;
+        ASM("1: lr.w    %0, (%1)        \n"
+            "   sc.w    t3, %2, (%1)    \n"
+            "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&lock), "r"(one) : "t3", "cc", "memory");
+        return old;
+    }
 
-    using CPU_Common::tsl; // IMPLEMENT
+    template<typename T>
+    static T finc(volatile T & value) {
+        register T old;
+        ASM("1: lr.w    %0, (%1)        \n"
+            "   addi    %0, %0, 1       \n"
+            "   sc.w    t3, %0, (%1)    \n"
+            "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&value) : "t3", "cc", "memory");
+        return old - 1;
+    }
 
-    using CPU_Common::finc; // IMPLEMENT
+    template<typename T>
+    static T fdec(volatile T & value) {
+        register T old;
+        ASM("1: lr.w    %0, (%1)        \n"
+            "   addi    %0, %0, -1      \n"
+            "   sc.w    t3, %0, (%1)    \n"
+            "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&value) : "t3", "cc", "memory");
+        return old + 1;
+    }
 
-    using CPU_Common::fdec; // IMPLEMENT
+    template <typename T>
+    static T cas(volatile T & value, T compare, T replacement) {
+        register T old;
+        ASM("1: lr.w    %0, (%1)        \n"
+            "   bne     %0, %2, 2f      \n"
+            "   sc.w    t3, %3, (%1)    \n"
+            "   bnez    t3, 1b          \n"
+            "2:                         \n" : "=&r"(old) : "r"(&value), "r"(compare), "r"(replacement) : "t3", "cc", "memory");
+        return old;
+    }
 
-    using CPU_Common::cas; // IMPLEMENT
+    using CPU_Common::clock;
+    using CPU_Common::min_clock;
+    using CPU_Common::max_clock;
 
-    // Power modes
     static void halt() { ASM("wfi"); }
 
     static unsigned int id() {
@@ -189,7 +248,7 @@ public:
     }
 
     static void mstatus(Reg value) {
-        ASM("csrw mstatus, %0" : : "r"(value) : "cc");
+        ASM("csrs mstatus, %0" : : "r"(value) : "cc");
     }
 
     static Reg mstatus() {
@@ -199,12 +258,22 @@ public:
     }
 
     static void mie(Reg value) {
-        ASM("csrw mie, %0" : : "r"(value) : "cc");
+        ASM("csrs mie, %0" : : "r"(value) : "cc");
+    }
+
+    static void mie_clear(Reg value) {
+        ASM("csrc mie, %0" : : "r"(value) : "cc");
     }
 
     static Reg mie() {
         Reg value;
         ASM("csrr %0, mie" : "=r"(value) : : );
+        return value;
+    }
+
+    static Reg mcause() {
+        Reg value;
+        ASM("csrr %0, mcause" : "=r"(value) : : );
         return value;
     }
 
@@ -214,17 +283,18 @@ public:
 
     static void smp_barrier(unsigned long cores = cores()) { CPU_Common::smp_barrier<&finc>(cores, id()); }
 
-    static void int_enable() { mie(MIE_DEFAULTS); }
-    static void int_disable() { mie(0); }
-
-    static bool int_enabled() { return (mie() & MIE_DEFAULTS) ; }
+    static void int_enable() { ASM("csrs mstatus, %0" : :"r"(MSTATUS_DEFAULTS)); }
+    static void int_disable() { ASM("csrc mstatus, %0" : :"r"(MIE)); }
+    static bool int_enabled() { return (mstatus() & MIE) ; }
     static bool int_disabled() { return !int_enabled(); }
 
     static void csrr31() { ASM("csrr x31, mstatus" : : : "x31"); }
-    static void csrw31() { ASM("csrw mstatus, x31" : : : "cc"); }
+    static void csrw31() { ASM("csrs mstatus, x31" : : : "cc"); }
 
     static unsigned int int_id() { return 0; }
 
+    static void fpu_save();
+    static void fpu_restore();
     static void switch_context(Context ** o, Context * n) __attribute__ ((naked));
 
     template<typename ... Tn>

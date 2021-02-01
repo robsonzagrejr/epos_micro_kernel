@@ -39,19 +39,21 @@ public:
             poweroff();
         }
     }
+
     static void poweroff()
     {
         db<Machine>(WRN) << "Machine::poweroff()" << endl;
-        CPU::Reg32 * reset = reinterpret_cast<CPU::Reg32 *>(Memory_Map::TEST_BASE);
+        CPU::Reg * reset = reinterpret_cast<CPU::Reg *>(Memory_Map::TEST_BASE);
         reset[0] = 0x5555;
-        while (1);
+
+        while(true);
     }
 
     static void smp_barrier_init(unsigned int n_cpus) {
-        db<Machine>(TRC) << "SMP::init()" << endl;
-        IC::int_vector(IC::MACHINE_SOFT_INT, IC::ipi_eoi);
+        db<Machine>(TRC) << "Machine::smp_barrier_init(n=" << n_cpus << ")" << endl;
+        IC::int_vector(IC::INT_RESCHEDULER, IC::ipi_eoi);
         for (unsigned int i = 1; i < n_cpus; i++) {
-            IC::ipi(i, IC::MACHINE_SOFT_INT); // default code for IPI (it could be any value except 0)
+            IC::ipi(i, IC::INT_RESCHEDULER); // default code for IPI (it could be any value except 0)
         }
     }
 

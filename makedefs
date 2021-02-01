@@ -94,7 +94,8 @@ UUID                    = $(shell cat /proc/sys/kernel/random/uuid | sed 's/-//g
 ia32_COMP_PREFIX	:= /usr/bin/x86_64-linux-gnu-
 armv7_COMP_PREFIX	:= /usr/bin/arm-none-eabi-
 armv8_COMP_PREFIX	:= /usr/bin/arm-none-eabi-
-rv32_COMP_PREFIX	:= /usr/bin/riscv32-linux-gnu-
+rv32_COMP_PREFIX	:= /usr/local/rv32/bin/riscv32-unknown-linux-gnu-
+rv64_COMP_PREFIX	:= /usr/bin/riscv64-linux-gnu-
 COMP_PREFIX		= $($(ARCH)_COMP_PREFIX)
 
 # Machine specifics
@@ -181,6 +182,19 @@ riscv_EMULATOR			= qemu-system-riscv32 -machine virt -cpu rv32gcsu-v1.10.0 -smp 
 riscv_DEBUGGER          := $(COMP_PREFIX)gdb
 riscv_FLASHER           := 
 riscv_MAGIC             := --nmagic
+riscv_CODE_NAME := .init
+riscv_DATA_NAME :=
+riscv_IMG_SUFFIX        := .img
+endif
+
+ifeq ($(MMOD),sifive_u)
+riscv_CC_FLAGS          := -mcmodel=medany
+riscv_AS_FLAGS          := 
+riscv_LD_FLAGS          := 
+riscv_EMULATOR          = qemu-system-riscv64 -machine virt -smp $(CPUS) -m $(MEM_SIZE)k -serial mon:stdio -bios none -nographic -no-reboot -kernel 
+riscv_DEBUGGER          := $(COMP_PREFIX)gdb
+riscv_FLASHER           := 
+riscv_MAGIC             := --omagic
 riscv_CODE_NAME := .init
 riscv_DATA_NAME :=
 riscv_IMG_SUFFIX        := .img
@@ -278,11 +292,11 @@ LD		= $(COMP_PREFIX)ld
 LDFLAGS		= $(MACH_LD_FLAGS) -nostdlib -L$(LIB) -Bstatic
 
 MAKE		:= make --print-directory
-MAKECLEAN	:= make -i clean
-MAKETEST	:= make --no-print-directory --silent
+MAKECLEAN	:= make --ignore-errors clean
+MAKETEST	:= make --no-print-directory --silent --stop
 MAKEFLAGS	:= --no-builtin-rules
 
-MKBI		:= $(BIN)/eposmkbi $(EPOS)
+MKBI		= $(BIN)/eposmkbi $(if $(findstring s, $(word 1, $(MAKEFLAGS))), -s) $(EPOS)
 
 OBJCOPY		= $(COMP_PREFIX)objcopy
 OBJCOPYFLAGS	:= -R .note -R .comment
@@ -298,7 +312,11 @@ TCPDUMP		:= tcpdump -tttttennvvvXXr
 
 TEE		:= tee
 
-TERM		:= xterm -e
+ifndef DISPLAY
+TERM        := sh -c
+else
+TERM        := xterm -e
+endif
 
 TOUCH		:= touch
 

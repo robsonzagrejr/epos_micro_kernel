@@ -12,6 +12,8 @@ template<> struct Traits<Machine_Common>: public Traits<Build> {};
 
 template<> struct Traits<Machine>: public Traits<Machine_Common>
 {
+    static const bool cpus_use_local_timer      = false;
+
     static const unsigned int NOT_USED          = 0xffffffff;
     static const unsigned int CPUS              = Traits<Build>::CPUS;
 
@@ -160,17 +162,16 @@ template<> struct Traits<IEEE802_15_4>: public Traits<Machine_Common>
     static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
 };
 
-template<> struct Traits<IEEE802_15_4_NIC>: public Traits<Machine_Common>
+template<> struct Traits<IEEE802_15_4_NIC>: public Traits<IEEE802_15_4>
 {
     static const unsigned int UNITS = Traits<IEEE802_15_4>::DEVICES::Count<IEEE802_15_4_NIC>::Result;
     static const unsigned int RECEIVE_BUFFERS = 20; // per unit
     static const bool gpio_debug = false;
     static const bool reset_backdoor = false;
-    static const unsigned int DEFAULT_CHANNEL = 26;
+    static const unsigned int DEFAULT_CHANNEL = 13;
 
-    static const bool tstp_mac = false;
+    static const bool tstp_mac = true;
     static const bool promiscuous = false;
-
     static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
 };
 

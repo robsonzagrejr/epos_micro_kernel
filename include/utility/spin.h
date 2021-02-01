@@ -25,9 +25,9 @@ public:
     Spin(): _level(0), _owner(0) {}
 
     void acquire() {
-        int me = This_Thread::id();
+        unsigned int me = This_Thread::id();
 
-        while(CPU::cas(_owner, 0, me) != me);
+        while(CPU::cas(_owner, 0U, me) != me);
         _level++;
 
         db<Spin>(TRC) << "Spin::acquire[this=" << this << ",id=" << hex << me << "]() => {owner=" << _owner << dec << ",level=" << _level << "}" << endl;
@@ -46,7 +46,7 @@ public:
 
 private:
     volatile int _level;
-    volatile int _owner;
+    volatile unsigned int _owner;
 };
 
 // Flat Spin Lock

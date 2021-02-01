@@ -15,11 +15,11 @@ void Timer::int_handler(Interrupt_Id i)
 {
     if(_channels[SCHEDULER] && (--_channels[SCHEDULER]->_current[CPU::id()] <= 0)) {
         _channels[SCHEDULER]->_current[CPU::id()] = _channels[SCHEDULER]->_initial;
-#ifdef __mmod_raspberry_pi3__
-        if(CPU::id() == 0) {
+
+        if(!Traits<Machine>::cpus_use_local_timer && (CPU::id() == 0))
             for(unsigned int cpu = 1; cpu < CPU::cores(); cpu++)
                 IC::ipi(cpu, IC::INT_RESCHEDULER);
-#endif
+
         _channels[SCHEDULER]->_handler(i);
     }
 

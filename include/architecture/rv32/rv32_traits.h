@@ -21,6 +21,12 @@ template<> struct Traits<MMU>: public Traits<Build>
     static const unsigned int COLORS = 1;
 };
 
+template<> struct Traits<FPU>: public Traits<Build>
+{
+    static const bool enabled = false;
+    static const bool user_save = true;
+};
+
 template<> struct Traits<TSC>: public Traits<Build>
 {
     static const bool enabled = true;

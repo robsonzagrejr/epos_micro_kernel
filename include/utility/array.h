@@ -57,7 +57,7 @@ public:
 
 private:
     void copy_and_pad(const void * data, unsigned int size) {
-        if(SIZE <= size)
+        if(size > SIZE)
             memcpy(_data, data, SIZE);
         else {
             memset(_data, 0, SIZE);
@@ -67,7 +67,7 @@ private:
 
 private:
     T _data[N];
-};
+} __attribute__((packed));
 
 template<typename T>
 class Array<T, 0> {

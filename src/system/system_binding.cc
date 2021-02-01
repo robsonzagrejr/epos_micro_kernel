@@ -16,39 +16,4 @@ extern "C" {
     // Utility-related methods that differ from kernel and user space.
     // OStream
     void _print(const char * s) { Display::puts(s); }
-    static volatile int _print_lock = -1;
-    void _print_preamble() {
-        static char tag[] = "<0>: ";
-
-        int me = CPU::id();
-        int last = CPU::cas(_print_lock, -1, me);
-        for(int i = 0, owner = last; (i < 10) && (owner != me); i++, owner = CPU::cas(_print_lock, -1, me));
-        if(last != me) {
-            tag[1] = '0' + CPU::id();
-            _print(tag);
-        }
-    }
-    void _print_trailler(bool error) {
-        static char tag[] = " :<0>";
-
-        if(_print_lock != -1) {
-            tag[3] = '0' + CPU::id();
-            _print(tag);
-
-            _print_lock = -1;
-        }
-        if(error)
-            _panic();
-    }
-
-    // Heap
-    static Spin _heap_spin;
-    void _heap_lock() {
-        _heap_spin.acquire();
-        CPU::int_disable();
-    }
-    void _heap_unlock() {
-        _heap_spin.release();
-        CPU::int_enable();
-    }
 }

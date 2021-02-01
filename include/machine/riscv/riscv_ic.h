@@ -1,4 +1,4 @@
-// EPOS RISC-V Mediator Declarations
+// EPOS RISC-V IC Mediator Declarations
 
 #ifndef __riscv_ic_h
 #define __riscv_ic_h
@@ -9,57 +9,55 @@
 
 __BEGIN_SYS
 
-class IC: private IC_Common
+// Core Local Interrupter (CLINT)
+class CLINT
+{
+public:
+    static const unsigned int IRQS = 16;
+
+    // Interrupts (mcause with interrupt = 1)
+    enum {
+        IRQ_USR_SOFT            = 0,
+        IRQ_SUP_SOFT            = 1,
+        IRQ_MAC_SOFT            = 3,
+        IRQ_USR_TIMER           = 4,
+        IRQ_SUP_TIMER           = 5,
+        IRQ_MAC_TIMER           = 7,
+        IRQ_USR_EXT             = 8,
+        IRQ_SUP_EXT             = 9,
+        IRQ_MAC_EXT             = 11,
+        INTERRUPT               = 1 << 31
+    };
+
+    // Registers offsets from CLINT_BASE
+    enum {                                // Description
+        MSIP                    = 0x0000, // Generate machine mode software interrupts
+        MTIMECMP                = 0x4000, // Compare (32-bit, per hart register)
+        MTIME                   = 0xbff8, // Counter (lower 32 bits, shared by all harts)
+        MTIMEH                  = 0xbffc, // Counter (upper 32 bits, shared by all harts)
+        MSIP_CORE_OFFSET        = 4,      // Offset in bytes from MSIP for each hart's software interrupt trigger register
+        MTIMECMP_CORE_OFFSET    = 8       // Offset in bytes from MTIMECMP for each hart's compare register
+    };
+};
+
+class IC: private IC_Common, private CLINT
 {
     friend class Machine;
 
 private:
-    typedef CPU::Reg32 Reg32;
+    typedef CPU::Reg Reg;
 
-    static const unsigned int INTS = Traits<IC>::INTS;
+    static const unsigned int INTS = CPU::EXCEPTIONS + IRQS;
+
 public:
     using IC_Common::Interrupt_Id;
     using IC_Common::Interrupt_Handler;
 
-    // MIE interrupt IDs
     enum {
-        SUPERVISOR_SOFT_INT     = 1,
-        MACHINE_SOFT_INT        = 3,
-        SUPERVISOR_TIMER_INT    = 5,
-        MACHINE_TIMER_INT       = 7,
-        SUPERVISOR_EXTERNAL_INT = 9,
-        MACHINE_EXTERNAL_INT    = 11
-    };
-
-    enum {
-        INT_MASK            = 0x3f, // maximum of 64 interrupt types (value from RISC-V example)
-        INT_OR_EXCEP_BIT    = 0x1 << 31 // the last bit of the register contains this info
-    };
-
-    enum {
-        INT_SYS_TIMER   = 7,
-        INT_USER_TIMER0 = 7, // it could be 5, if we adopt supervisor execution mode
-        INT_USER_TIMER1 = 0,
-        INT_USER_TIMER2 = 0,
-        INT_USER_TIMER3 = 0,
-        INT_GPIOA       = 0,
-        INT_GPIOB       = 0,
-        INT_GPIOC       = 0,
-        INT_GPIOD       = 0,
-        INT_NIC0_RX     = 0,
-        INT_NIC0_TX     = 0,
-        INT_NIC0_ERR    = 0,
-        INT_NIC0_TIMER  = 0,
-        INT_USB0        = 0,
-        INT_FIRST_HARD  = 0,
-        INT_LAST_HARD   = 0,
-        // An IPI is mapped to the machine with mcause set to MACHINE_SOFT_INT
-        INT_RESCHEDULER = MACHINE_SOFT_INT
-    };
-
-    // clint offsets
-    enum {
-        MSIP_CORE_OFFSET        = 4 // Offset in bytes for the MSIP of each core
+        HARD_INT        = CPU::EXCEPTIONS,
+        INT_SYS_TIMER   = HARD_INT + IRQ_MAC_TIMER,
+        INT_RESCHEDULER = HARD_INT + IRQ_MAC_SOFT, // An IPI is mapped to the machine with mcause set to IRQ_MAC_SOFT
+        INT_MASK        = CPU::Reg32(1 << 31) - 1
     };
 
 public:
@@ -78,84 +76,62 @@ public:
 
     static void enable() {
         db<IC>(TRC) << "IC::enable()" << endl;
-        // at beggining CLINT is already started, so we are only enabling all interrupts
-        // this is done on MIE register
-        Reg32 flags = (1 << MACHINE_SOFT_INT | 1 << MACHINE_TIMER_INT );
-        ASM ("csrw mie, %0" : : "r"(flags) : );
+        CPU::mie(CPU::MSI | CPU::MTI | CPU::MEI);
     }
+
     static void enable(Interrupt_Id i) {
         db<IC>(TRC) << "IC::enable(int=" << i << ")" << endl;
         assert(i < INTS);
-        // this is done on MIE register
-        Reg32 flags = (1 << i);
-        ASM ("csrw mie, %0" : : "r"(flags) : );
+        // FIXME: this should be done at PLIC
+        enable();
     }
 
     static void disable() {
         db<IC>(TRC) << "IC::disable()" << endl;
-        // writing 0 to all interrupt enable bits on MIE register
-        Reg32 flags = ~(1 << SUPERVISOR_SOFT_INT | 1 << MACHINE_SOFT_INT | 
-                        1 << SUPERVISOR_TIMER_INT | 1 << MACHINE_TIMER_INT | 
-                        1 << SUPERVISOR_EXTERNAL_INT | 1 << MACHINE_EXTERNAL_INT);
-        ASM ("csrw mie, %0" : : "r"(flags) : );
+        CPU::mie_clear(CPU::MSI | CPU::MTI | CPU::MEI);
     }
+
     static void disable(Interrupt_Id i) {
         db<IC>(TRC) << "IC::disable(int=" << i << ")" << endl;
         assert(i < INTS);
-        Reg32 flags = ~(1 << i);
-        ASM ("csrw mie, %0" : : "r"(flags) : );
+        // FIXME: this should be done at PLIC
+        disable();
     }
 
     static Interrupt_Id int_id() {
-        Reg32 id;
-        // Id is retrieved from mcause
-        // mip register will have the equivalent bit up
-        // but only with mcause we can know if it is an interrupt or an exception
-        ASM ("csrr %0, mcause" : "=r"(id) : :);
-        if (id & INT_OR_EXCEP_BIT) {
-            return id & INT_MASK; // it is an interrupt
-        } else {
-            // This will only be useful when working with mtvec mode 0
-            // return (id & INT_MASK) + INTS;
-            return id & INT_MASK;
-        }
+        // Id is retrieved from mcause even if mip has the equivalent bit up, because only mcause can tell if it is an interrupt or an exception
+        Reg id = CPU::mcause();
+        if(id & INTERRUPT)
+            return (id & INT_MASK) + HARD_INT;
+        else
+            return (id & INT_MASK);
     }
 
-    int irq2int(int i) { return i; }
+    int irq2int(int i) { return i + HARD_INT; }
 
-    int int2irq(int i) { return i; }
+    int int2irq(int i) { return i - HARD_INT; }
 
     static void ipi(unsigned int cpu, Interrupt_Id i) {
         db<IC>(TRC) << "IC::ipi(cpu=" << cpu << ",int=" << i << ")" << endl;
         assert(i < INTS);
-        // accessing a Reg32 pointer as a vector in the core position is the same as applying the offset of a register size
-        reg(cpu * MSIP_CORE_OFFSET) = 0x1 << i; 
+        i -= HARD_INT;
+        reg(MSIP + cpu * MSIP_CORE_OFFSET) = 1 << i;
     }
 
     static void ipi_eoi(Interrupt_Id i) {
-        // The only thing that is necessary here is to clear the MSIP register for the running core
-        reg(CPU::id() * MSIP_CORE_OFFSET) = 0; 
-        // This helps debug as the flag will be down earlier
-        ASM("csrw mcause, zero" : : : "memory", "cc");
+        assert(i < INTS);
+        reg(MSIP + CPU::id() * MSIP_CORE_OFFSET) = 0;
     }
-
 
 private:
     static void dispatch();
 
     // Logical handlers
     static void int_not(Interrupt_Id i);
-    static void hard_fault(Interrupt_Id i);
-    static void undefined_instruction(Interrupt_Id i);
-    static void software_interrupt(Interrupt_Id i);
-    static void prefetch_abort(Interrupt_Id i);
-    static void data_abort(Interrupt_Id i);
-    static void reserved(Interrupt_Id i);
-    static void fiq(Interrupt_Id i);
+    static void exception(Interrupt_Id i);
 
     // Physical handler
     static void entry();
-    static void exception_handling();  // this is a global exception handler sensitive to mcause
 
     static void init();
 

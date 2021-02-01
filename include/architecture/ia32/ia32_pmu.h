@@ -93,33 +93,33 @@ public:
 public:
     Intel_PMU_V1() {}
 
-    static void config(const Channel & channel, const Event & event, const Flags & flags = NONE) {
+    static void config(Channel channel, Event event, Flags flags = NONE) {
         assert((channel < CHANNELS) && (event < EVENTS));
         db<PMU>(TRC) << "PMU::config(c=" << channel << ",e=" << event << ",f=" << flags << ")" << endl;
         wrmsr(EVTSEL0 + channel, _events[event] | USR | OS | ENABLE | flags); // implicitly start counting due to flag ENABLE
     }
 
-    static Count read(const Channel & channel) {
+    static Count read(Channel channel) {
         db<PMU>(TRC) << "PMU::read(c=" << channel << ")" << endl;
         return rdpmc(channel);
     }
 
-    static void write(const Channel & channel, const Count & count) {
+    static void write(Channel channel, Count count) {
         db<PMU>(TRC) << "PMU::write(ch=" << channel << ",ct=" << count << ")" << endl;
         wrmsr(PMC_BASE_ADDR + channel, count);
     }
 
-    static void start(const Channel & channel) {
+    static void start(Channel channel) {
         db<PMU>(TRC) << "PMU::start(c=" << channel << ")" << endl;
         wrmsr(EVTSEL0 + channel, (rdmsr(EVTSEL0 + channel) | ENABLE));
     }
 
-    static void stop(const Channel & channel) {
+    static void stop(Channel channel) {
         db<PMU>(TRC) << "PMU::stop(c=" << channel << ")" << endl;
         wrmsr(EVTSEL0 + channel, (rdmsr(EVTSEL0 + channel) & ~ENABLE));
     }
 
-    static void reset(const Channel & channel) {
+    static void reset(Channel channel) {
         db<PMU>(TRC) << "PMU::reset(c=" << channel << ")" << endl;
         wrmsr(EVTSEL0 + channel, 0);
     }
@@ -229,7 +229,6 @@ public:
     }
 
 protected:
-    // Guto: FIXEDs never trigger ints?
     static Handler * _handlers[CHANNELS - FIXED];
 };
 
@@ -608,7 +607,7 @@ public:
 public:
     Intel_Sandy_Bridge_PMU() {}
 
-    static bool config(const Channel & channel, const Event & event, const Flags & flags = NONE) {
+    static bool config(Channel channel, Event event, Flags flags = NONE) {
         assert((channel < CHANNELS) && (event < EVENTS));
         db<PMU>(TRC) << "PMU::config(c=" << channel << ",e=" << event << ",f=" << flags << ")" << endl;
 
@@ -617,7 +616,7 @@ public:
             return false;
         }
 
-        if(channel >= FIXED){
+        if(channel >= FIXED) {
             wrmsr(EVTSEL0 + channel - FIXED, _events[event] | USR | OS | ENABLE | flags); // implicitly start counting due to flag ENABLE
         }
 
@@ -626,18 +625,18 @@ public:
         return true;
     }
 
-    static Count read(const Channel & channel) {
+    static Count read(Channel channel) {
         assert(channel < CHANNELS);
         db<PMU>(TRC) << "PMU::read(c=" << channel << ")" << endl;
         return channel < FIXED ? rdpmc(channel | (1 << 30)) : rdpmc(channel - FIXED);
     }
 
-    static void write(const Channel & channel, const Count & count) {
+    static void write(Channel channel, Count count) {
         db<PMU>(TRC) << "PMU::write(ch=" << channel << ",ct=" << count << ")" << endl;
         if(channel >= FIXED) wrmsr(PMC_BASE_ADDR + channel - FIXED, count);
     }
 
-    static void start(const Channel & channel) {
+    static void start(Channel channel) {
         assert(channel < CHANNELS);
         db<PMU>(TRC) << "PMU::start(c=" << channel << ")" << endl;
         if(channel < FIXED) {
@@ -649,7 +648,7 @@ public:
         }
     }
 
-    static void stop(const Channel & channel) {
+    static void stop(Channel channel) {
         assert(channel < CHANNELS);
         db<PMU>(TRC) << "PMU::stop(c=" << channel << ")" << endl;
         if(channel < FIXED) {
@@ -659,7 +658,7 @@ public:
             wrmsr(GLOBAL_CTRL, rdmsr(GLOBAL_CTRL) & ~(1ULL << (PMC0_ENABLE + channel - FIXED)));
     }
 
-    static void reset(const Channel & channel) {
+    static void reset(Channel channel) {
         assert(channel < CHANNELS);
         db<PMU>(TRC) << "PMU::reset(c=" << channel << ")" << endl;
         if(channel < FIXED)
@@ -668,7 +667,7 @@ public:
             wrmsr(EVTSEL0 + channel - FIXED, 0);
     }
 
-    static bool overflow(const Channel & channel) {
+    static bool overflow(Channel channel) {
         assert(channel < CHANNELS);
         db<PMU>(TRC) << "PMU::overflow(c=" << channel << ")" << endl;
         return (channel < FIXED) ? (rdmsr(GLOBAL_STATUS) & (1ULL << (CRT0_OVERFLOW + channel))) : (rdmsr(GLOBAL_STATUS) & (1ULL << (channel - FIXED)));
@@ -679,12 +678,12 @@ public:
         return ((rdmsr(GLOBAL_STATUS) & PMC_MASK) != 0);
     }
 
-    static void clear_overflow(const Channel & channel) {
+    static void clear_overflow(Channel channel) {
         assert(channel < CHANNELS);
         wrmsr(GLOBAL_OVF, (PMC_MASK & 1ULL << (channel - FIXED))); //clear OVF flag
     }
 
-    static void handler(Handler * handler, const Channel & channel) { 
+    static void handler(Handler * handler, Channel channel) {
         if((channel - FIXED) < CHANNELS)
             _handlers[channel - FIXED] = handler;
         else

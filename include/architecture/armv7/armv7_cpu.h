@@ -386,6 +386,10 @@ public:
     CPU() {}
 
     static Hertz clock() { return _cpu_clock; }
+    static void clock(const Hertz & frequency); // defined along with each machine's IOCtrl
+    static Hertz max_clock();
+    static Hertz min_clock();
+
     static Hertz bus_clock() { return _bus_clock; }
 
     using Base::flags;
@@ -408,6 +412,18 @@ public:
     using Base::cas;
 
     using Base::halt;
+
+    static void fpu_save() {
+        if(Traits<Build>::MODEL == Traits<Build>::Raspberry_Pi3)
+            ASM("       vpush    {s0-s15}               \n"
+                "       vpush    {s16-s31}              \n");
+    }
+
+    static void fpu_restore() {
+        if(Traits<Build>::MODEL == Traits<Build>::Raspberry_Pi3)
+            ASM("       vpop    {s0-s15}                \n"
+                "       vpop    {s16-s31}               \n");
+    }
 
     static void switch_context(Context ** o, Context * n) __attribute__ ((naked));
 

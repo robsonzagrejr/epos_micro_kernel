@@ -81,6 +81,14 @@ public:
 
     static void halt() { for(;;); }
 
+    static Hertz clock()  { return Traits<CPU>::CLOCK; }
+    static void clock(const Hertz & frequency) {}
+    static Hertz max_clock() { return Traits<CPU>::CLOCK; }
+    static Hertz min_clock() { return Traits<CPU>::CLOCK; }
+
+    static void fpu_save();
+    static void fpu_restore();
+
     static bool tsl(volatile bool & lock) {
         bool old = lock;
         lock = 1;

@@ -24,7 +24,6 @@ void APIC::ipi_init(volatile int * status)
     i8255::ms_delay(100);
 };
 
-
 void APIC::ipi_start(Log_Addr entry, volatile int * status)
 {
     unsigned int vector = (entry >> 12) & 0xff;
@@ -53,7 +52,6 @@ void APIC::ipi_start(Log_Addr entry, volatile int * status)
         }
     }
 }
-
 
 void APIC::ipi(unsigned int cpu, unsigned int interrupt)
 {

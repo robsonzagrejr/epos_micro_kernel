@@ -37,6 +37,7 @@ _start:
         .globl  __epos_app_entry
         .type   __epos_app_entry, function
 __epos_app_entry:
+        bl      __pre_main
         bl      main
         push    {r0}         // save main's return value to be used by exit()
         bl      _fini

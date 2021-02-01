@@ -12,7 +12,7 @@
 __BEGIN_SYS
 
 // Tick timer used by the system
-class Timer: private Timer_Common
+class Timer: private Timer_Common, private CLINT
 {
     friend Machine;
     friend IC;
@@ -32,14 +32,6 @@ public:
     enum {
         SCHEDULER,
         ALARM
-    };
-
-    // Registers offsets from CLINT_BASE
-    enum {                                // Description
-        MTIME                   = 0xbff8, // Counter (lower 32 bits, unique for all harts)
-        MTIMEH                  = 0xbffc, // Counter (upper 32 bits, unique for all harts)
-        MTIMECMP                = 0x4000, // Compare (32-bit, per hart register)
-        MTIMECMP_CORE_OFFSET    = 8       // Offset in MTIMECMP for each hart's compare register
     };
 
     static const Hertz CLOCK = Traits<Machine>::TIMER_CLOCK;
@@ -67,39 +59,28 @@ public:
 
     Tick read() { return _current[CPU::id()]; }
 
-    int reset() {
-        db<Timer>(TRC) << "Timer::reset() => {f=" << frequency()
-                       << ",h=" << reinterpret_cast<void*>(_handler)
-                       << ",count=" << _current[CPU::id()] << "}" << endl;
+    static void reset() { config(FREQUENCY); }
 
-        int percentage = _current[CPU::id()] * 100 / _initial;
-        _current[CPU::id()] = _initial;
+    static void enable() {}
+    static void disable() {}
 
-        return percentage;
-    }
-
-    void enable() {}
-    void disable() {}
-
-    PPB accuracy();
     Hertz frequency() const { return (FREQUENCY / _initial); }
-    void frequency(const Hertz & f) { _initial = FREQUENCY / f; reset(); }
+    void frequency(Hertz f) { _initial = FREQUENCY / f; reset(); }
 
     void handler(const Handler & handler) { _handler = handler; }
 
-    static void config(const Hertz & frequency) {
-        // ASM("csrw mcause, zero"); // This clears mcause to ease debugging
-        reg(MTIMECMP + MTIMECMP_CORE_OFFSET * CPU::id()) = reg(MTIME) + (CLOCK / frequency);
-    }
-
 private:
     static volatile CPU::Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile CPU::Reg32 *>(Memory_Map::CLINT_BASE)[o / sizeof(CPU::Reg32)]; }
+
+    static void config(const Hertz & frequency) {
+        reg(MTIMECMP + MTIMECMP_CORE_OFFSET * CPU::id()) = reg(MTIME) + (CLOCK / frequency);
+    }
 
     static void int_handler(Interrupt_Id i);
 
     static void init();
 
-private:
+protected:
     unsigned int _channel;
     Tick _initial;
     bool _retrigger;
@@ -114,6 +95,15 @@ class Scheduler_Timer: public Timer
 {
 public:
     Scheduler_Timer(const Microsecond & quantum, const Handler & handler): Timer(SCHEDULER, 1000000 / quantum, handler) {}
+
+    int restart() {
+        db<Timer>(TRC) << "Timer::restart() => {f=" << frequency() << ",h=" << reinterpret_cast<void *>(_handler) << ",count=" << _current[CPU::id()] << "}" << endl;
+
+        int percentage = _current[CPU::id()] * 100 / _initial;
+        _current[CPU::id()] = _initial;
+
+        return percentage;
+    }
 };
 
 // Timer used by Alarm

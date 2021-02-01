@@ -15,15 +15,12 @@ void Machine::pre_init(System_Info * si)
     db<Init, Machine>(TRC) << "Machine::pre_init()" << endl;
 
     if(CPU::id() == 0) {
-         // FIXME: Alloc and populate System_Info
-         si->bm.n_cpus = Traits<Build>::CPUS;
-
         if(Traits<IC>::enabled) {
             IC::init();
 
             // Wake up remaining CPUs
             if(Traits<System>::multicore)
-                smp_barrier_init(si->bm.n_cpus);
+                smp_barrier_init(Traits<Build>::CPUS);
         }
     }
 }

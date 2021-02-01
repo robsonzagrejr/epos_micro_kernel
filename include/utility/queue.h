@@ -47,8 +47,9 @@ template<typename T, bool atomic>
 class Queue_Wrapper: private T
 {
 public:
-    typedef typename T::Object_Type Object_Type;
-    typedef typename T::Element Element;
+    using typename T::Object_Type;
+    using typename T::Element;
+    using typename T::Iterator;
 
 public:
     bool empty() { return T::empty(); }
@@ -71,119 +72,6 @@ public:
     Element * choose_another() { return T::choose_another(); }
     Element * choose(Element * e) { return T::choose(e); }
     Element * choose(const Object_Type * obj) {	return T::choose(obj); }
-};
-
-// Wrapper for atomic queues
-template<typename T>
-class Queue_Wrapper<T, true>: private T
-{
-public:
-    typedef typename T::Object_Type Object_Type;
-    typedef typename T::Element Element;
-
-public:
-    bool empty() {
-        enter();
-        bool tmp = T::empty();
-        leave();
-        return tmp;
-    }
-
-    unsigned int size() {
-        enter();
-        unsigned int tmp = T::size();
-        leave();
-        return tmp;
-    }
-
-    Element * head() {
-        enter();
-        Element * tmp = T::head();
-        leave();
-        return tmp;
-    }
-
-    Element * tail() {
-        enter();
-        Element * tmp = T::tail();
-        leave();
-        return tmp;
-    }
-
-    void insert(Element * e) {
-        enter();
-        T::insert(e);
-        leave();
-    }
-
-    Element * remove() {
-        enter();
-        Element * tmp = T::remove();
-        leave();
-        return tmp;
-    }
-
-    Element * remove(const Object_Type * obj) {
-        enter();
-        Element * tmp = T::remove(obj);
-        leave();
-        return tmp;
-    }
-
-    Element * search(const Object_Type * obj) {
-        enter();
-        Element * tmp = T::search(obj);
-        leave();
-        return tmp;
-    }
-
-    Element * volatile & chosen() {
-        enter();
-        Element * volatile & tmp = T::chosen();
-        leave();
-        return tmp;
-    }
-
-    Element * choose() {
-        enter();
-        Element * tmp = T::choose();
-        leave();
-        return tmp;
-    }
-
-    Element * choose_another() {
-        enter();
-        Element * tmp = T::choose_another();
-        leave();
-        return tmp;
-    }
-    Element * choose(Element * e) {
-        enter();
-        Element * tmp = T::choose(e);
-        leave();
-        return tmp;
-    }
-
-    Element * choose(const Object_Type * obj) {
-        enter();
-        Element * tmp = T::choose(obj);
-        leave();
-        return tmp;
-    }
-
-private:
-    void enter() {
-        CPU::int_disable();
-        _lock.acquire();
-    }
-
-    void leave() {
-        _lock.release();
-        CPU::int_enable();
-    }
-
-private:
-    Spin _lock;
 };
 
 

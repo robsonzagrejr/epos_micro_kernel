@@ -42,6 +42,7 @@ public:
         }
         return s;
     }
+
     int write(const char * data, unsigned int size) {
         const char * d = data;
         unsigned int s = 0;

@@ -12,6 +12,8 @@ template<> struct Traits<Machine_Common>: public Traits<Build> {};
 
 template <> struct Traits<Machine>: public Traits<Machine_Common>
 {
+    static const bool cpus_use_local_timer      = false;
+
     static const unsigned int NOT_USED          = 0xffffffff;
     static const unsigned int CPUS              = Traits<Build>::CPUS;
 
@@ -43,6 +45,8 @@ template <> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int SYS               = NOT_USED; // No paging MMU
     static const unsigned int SYS_CODE          = NOT_USED; // No paging MMU
     static const unsigned int SYS_DATA          = NOT_USED; // No paging MMU
+    static const unsigned int SYS_HEAP          = NOT_USED; // No paging MMU
+    static const unsigned int SYS_STACK         = NOT_USED; // No paging MMU
 
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE        = 16 * 1024;

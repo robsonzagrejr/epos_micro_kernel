@@ -16,7 +16,7 @@ private:
     static const bool smp = Traits<System>::multicore;
 
 public:
-    // CPU Native Data Types
+    // Native Data Types
     using CPU_Common::Reg8;
     using CPU_Common::Reg16;
     using CPU_Common::Reg32;
@@ -25,7 +25,7 @@ public:
     using Log_Addr = CPU_Common::Log_Addr<Reg>;
     using Phy_Addr = CPU_Common::Phy_Addr<Reg>;
 
-    // CPU Flags
+    // Flags
     typedef Reg32 Flags;
     enum {
         FLAG_CF     = 1 <<  0, // Carry
@@ -51,7 +51,7 @@ public:
         FLAG_CLEAR      = ~(FLAG_TF | FLAG_IOPL | FLAG_NT | FLAG_RF | FLAG_VM | FLAG_AC)
     };
 
-    // CPU Exceptions
+    // Exceptions
     typedef Reg32 Exceptions;
     enum {
         EXC_BASE    = 0x00,
@@ -77,7 +77,7 @@ public:
         EXC_LAST    = 0x1f
     };
 
-    // CR0 Flags
+    // Flags
     enum {
         CR0_PE      = 1 <<  0, // Protected Mode Enable (0->real mode, 1->protected mode)
         CR0_MP      = 1 <<  1, // Monitor co-processor  (1->WAIT/FWAIT with TS flag)
@@ -265,7 +265,11 @@ public:
     class Context
     {
     public:
-        Context(const Log_Addr & usp, const Log_Addr & entry): _esp3(usp), _eip(entry), _cs(((Traits<Build>::MODE == Traits<Build>::KERNEL) && usp)? SEL_APP_CODE : SEL_SYS_CODE), _eflags(FLAG_DEFAULTS) {}
+        Context(const Log_Addr & usp, const Log_Addr & entry): _esp3(usp), _eip(entry), _cs(((Traits<Build>::MODE == Traits<Build>::KERNEL) && usp)? SEL_APP_CODE : SEL_SYS_CODE), _eflags(FLAG_DEFAULTS) {
+            if(Traits<Build>::hysterically_debugged || Traits<Thread>::trace_idle) {
+                _edi = 1; _esi = 2; _ebp = 3; _ebx = 4; _edx = 5; _ecx = 6; _eax = 7;
+            }
+        }
 
         void save() volatile;
         void load() const volatile;
@@ -340,18 +344,27 @@ public:
     static unsigned int id();
     static unsigned int cores() { return smp ? _cores : 1; }
 
-    static Hertz clock() { return _cpu_clock; }
+    static Hertz clock() { return _cpu_current_clock; }
     static void clock(const Hertz & frequency) {
         Reg64 clock = frequency;
         unsigned int dc;
-        if(clock <= _cpu_clock * 1875 / 10000)
-            dc = 0b10011;   // Minimum duty cycle of 12.5 %
-        else if(clock >= _cpu_clock * 9375 / 10000)
-            dc = 0b01001;   // Disable duty cycling and operate at full speed
-        else
-            dc = 0b10001 | ((clock * 10000 / _cpu_clock + 625) / 625); // Dividing by 625 instead of 1250 eliminates the shift left
+        if(clock <= (_cpu_clock * 1875 / 10000)) {
+            dc = 0b10011;   // minimum duty cycle of 12.5 %
+            _cpu_current_clock = _cpu_clock * 1875 / 10000;
+        } else if(clock >= (_cpu_clock * 9375 / 10000)) {
+            dc = 0b01001;   // disable duty cycling and operate at full speed
+            _cpu_current_clock = _cpu_clock;
+        } else {
+            dc = 0b10001 | ((clock * 10000 / _cpu_clock + 625) / 625); // dividing by 625 instead of 1250 eliminates the shift left
+            _cpu_current_clock = _cpu_clock * ((clock * 10000 / _cpu_clock + 625) / 625) * 625 / 10000;
+            // The ((clock * 10000 / _cpu_clock + 625) / 625) returns the factor, the step is 625/10000
+            // thus, max_clock * factor * step = final clock
+        }
         wrmsr(CLOCK_MODULATION, dc);
     }
+    static Hertz max_clock() { return _cpu_clock; }
+    static Hertz min_clock() { return _cpu_clock * 1250 / 10000;}
+
     static Hertz bus_clock() { return _bus_clock; }
 
     static void int_enable() { ASM("sti"); }
@@ -361,6 +374,8 @@ public:
 
     static void halt() { ASM("hlt"); }
 
+    static void fpu_save() {} // TODO
+    static void fpu_restore() {} // TODO
     static void switch_context(Context * volatile * o, Context * volatile n);
 
     static void syscall(void * message);
@@ -661,8 +676,9 @@ private:
 
 private:
     static volatile unsigned int _cores;
-    static unsigned int _cpu_clock;
-    static unsigned int _bus_clock;
+    static Hertz _cpu_clock;
+    static Hertz _cpu_current_clock;
+    static Hertz _bus_clock;
 };
 
 inline CPU::Reg64 htole64(CPU::Reg64 v) { return CPU::htole64(v); }

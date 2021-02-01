@@ -19,13 +19,14 @@ public:
     GPIO_Engine(const Port & port, const Pin & pin, const Direction & dir, const Pull & p, const Edge & int_edge)
     : _pin_mask(1 << pin) {
         assert(port < PORTS);
+        _port = port;
         power(FULL);
         _gpio = new(reinterpret_cast<void *>(Memory_Map::GPIOA_BASE + port * 0x1000)) PL061;
         _gpio->select_pin_function(_pin_mask, PL061::FUN_GPIO);
         pull(p);
         direction(dir);
         if(int_edge != NONE)
-            _gpio->clear_interrupts(_pin_mask);
+            _gpio->clear_interrupts(_port, _pin_mask);
     }
 
     bool get() const {
@@ -55,7 +56,7 @@ public:
     void int_enable(const Level & level, bool power_up = false, const Level & power_up_level = HIGH);
     void int_enable(const Edge & edge, bool power_up = false, const Edge & power_up_edge = RISING);
     void int_disable() { _gpio->int_disable(_pin_mask); }
-    void clear_interrupts() { _gpio->clear_interrupts(0xff); }
+    void clear_interrupts() { _gpio->clear_interrupts(_port, 0xff); }
 
     void power(const Power_Mode & mode) {
         switch(mode) {

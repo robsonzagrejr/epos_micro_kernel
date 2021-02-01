@@ -4,8 +4,10 @@
 
 #ifdef __mmod_emote3__
 
-#include <machine/cortex/engine/pl061.h>
 #include <machine/ic.h>
+#include <machine/gpio.h>
+#include <transducer.h>
+#include <synchronizer.h>
 
 __BEGIN_SYS
 

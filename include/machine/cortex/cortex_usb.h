@@ -37,7 +37,8 @@ public:
 
 private:
     static void init() {
-        Engine usb; usb.init();
+        Engine usb;
+        usb.init();
         IC::int_vector(IC::INT_USB0, &int_handler);
         IC::enable(IC::INT_USB0);
     }

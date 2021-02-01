@@ -143,7 +143,7 @@ public:
 public:
     ARMv7_A_PMU() {}
 
-    static void config(const Channel & channel, const Event & event, const Flags & flags = NONE) {
+    static void config(Channel channel, const Event event, Flags flags = NONE) {
         assert((static_cast<unsigned int>(channel) < CHANNELS) && (static_cast<unsigned int>(event) < EVENTS));
         db<PMU>(TRC) << "PMU::config(c=" << channel << ",e=" << event << ",f=" << flags << ")" << endl;
         pmselr(channel);
@@ -151,29 +151,29 @@ public:
         start(channel);
     }
 
-    static Count read(const Channel & channel) {
+    static Count read(Channel channel) {
         db<PMU>(TRC) << "PMU::read(c=" << channel << ")" << endl;
         pmselr(channel);
         return pmxevcntr();
     }
 
-    static void write(const Channel & channel, const Count & count) {
+    static void write(Channel channel, Count count) {
         db<PMU>(TRC) << "PMU::write(ch=" << channel << ",ct=" << count << ")" << endl;
         pmselr(channel);
         pmxevcntr(count);
     }
 
-    static void start(const Channel & channel) {
+    static void start(Channel channel) {
         db<PMU>(TRC) << "PMU::start(c=" << channel << ")" << endl;
         pmcntenset(pmcntenset() | (1 << channel));
     }
 
-    static void stop(const Channel & channel) {
+    static void stop(Channel channel) {
         db<PMU>(TRC) << "PMU::stop(c=" << channel << ")" << endl;
         pmcntenclr(pmcntenclr() | (1 << channel));
     }
 
-    static void reset(const Channel & channel) {
+    static void reset(Channel channel) {
         db<PMU>(TRC) << "PMU::reset(c=" << channel << ")" << endl;
         write(channel, 0);
     }
@@ -196,7 +196,7 @@ private:
     static void pmselr(Reg32 reg) { ASM("mcr p15, 0, %0, c9, c12, 5\n\t" : : "r"(reg)); }
     static Reg32 pmselr() { Reg32 reg; ASM("mrc p15, 0, %0, c9, c12, 5\n\t" : "=r"(reg) : ); return reg; }
 
-    static void pmxevtyper(Reg32 reg) { ASM("mcr p15, 0, %0, c9, c13, 1\n\t" : : "r"(reg)); }
+    static void pmxevtyper(const Reg32 reg) { ASM("mcr p15, 0, %0, c9, c13, 1\n\t" : : "r"(reg)); }
     static Reg32 pmxevtyper() { Reg32 reg; ASM("mrc p15, 0, %0, c9, c13, 1\n\t" : "=r"(reg) : ); return reg; }
 
     static void pmxevcntr(Reg32 reg) { ASM("mcr p15, 0, %0, c9, c13, 2\n\t" : : "r"(reg)); }
