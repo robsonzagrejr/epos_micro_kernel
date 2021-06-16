@@ -8,7 +8,7 @@
 
 __BEGIN_SYS
 
-void GPIO_Engine::int_enable(const Edge & edge, bool power_up, const Edge & power_up_edge)
+void GPIO_Engine::int_enable(Edge edge, bool power_up, Edge power_up_edge)
 {
     _gpio->int_enable(_port, _pin_mask, edge, power_up, power_up_edge);
 }

@@ -11,14 +11,12 @@ __END_UTIL
 
 __BEGIN_SYS
 
-// Class attributes
 Scheduler_Timer * Thread::_timer;
 
 Thread* volatile Thread::_running;
 Thread::Queue Thread::_ready;
 Thread::Queue Thread::_suspended;
 
-// Methods
 void Thread::constructor_prologue(unsigned int stack_size)
 {
     lock();
@@ -227,8 +225,6 @@ void Thread::dispatch(Thread * prev, Thread * next)
         // parameters on the stack anyway).
         CPU::switch_context(const_cast<Context **>(&prev->_context), next->_context);
     }
-
-    unlock();
 }
 
 
@@ -249,8 +245,10 @@ __END_SYS
 
 // Id forwarder to the spin lock
 __BEGIN_UTIL
-unsigned int This_Thread::id()
+
+volatile CPU::Reg This_Thread::id()
 {
-    return _not_booting ? reinterpret_cast<volatile unsigned int>(Thread::self()) : CPU::id() + 1;
+    return _not_booting ? CPU::Reg(Thread::self()) : CPU::Reg(CPU::id() + 1);
 }
+
 __END_UTIL

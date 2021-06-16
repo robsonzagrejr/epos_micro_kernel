@@ -9,6 +9,8 @@
 #undef __adc_common_only__
 #include <machine/gpio.h>
 #include <system/memory_map.h>
+#include <machine/cortex/engine/pl061.h>
+#include "emote3_ioctrl.h"
 
 __BEGIN_SYS
 
@@ -176,12 +178,12 @@ public:
     unsigned short read(const Channel & channel, const Reference & reference, const Resolution & resolution) {
         adc(ADCCON3) = (reference * ADCCON3_EREF) | (resolution * ADCCON3_EDIV) | (channel * ADCCON3_ECH);
         while(!(adc(ADCCON1) & ADCCON1_EOC));
-        unsigned short ret = (adc(ADCH) << 8) + adc(ADCL);
+        unsigned short ret = (adc(ADCH) << 8) | adc(ADCL);
         switch(resolution) {
-            case BITS_7:  ret &= 0xfe00; break;
-            case BITS_9:  ret &= 0xff80; break;
-            case BITS_10: ret &= 0xffc0; break;
-            case BITS_12: ret &= 0xfff0; break;
+            case BITS_7:  ret >>= 9; break;
+            case BITS_9:  ret >>= 7; break;
+            case BITS_10: ret >>= 6; break;
+            case BITS_12: ret >>= 4; break;
         }
         return ret;
     }
@@ -208,11 +210,13 @@ class ADC_Engine: public CC2538_ADC
 public:
     ADC_Engine(unsigned int unit, const Reference & reference, unsigned int bits)
     : _channel(static_cast<Channel>(unit)), _reference(reference), _resolution((bits <= 7) ? BITS_7 : (bits <= 9) ? BITS_9 : (bits <= 10) ? BITS_10 : BITS_12) {
-        _adc = new(reinterpret_cast<void *>(Memory_Map::ADC_BASE)) CC2538_ADC;
+        _adc = new(reinterpret_cast<CC2538_ADC *>(Memory_Map::ADC_BASE)) CC2538_ADC;
         // Configure GPIO port A for ADC
-        PL061 * pl061 = new(reinterpret_cast<void *>(Memory_Map::GPIOA_BASE)) PL061;
+        PL061 * pl061 = new(reinterpret_cast<PL061 *>(Memory_Map::GPIOA_BASE)) PL061;
         pl061->direction(1 << unit, PL061::IN);
         pl061->pull(1 << unit, PL061::FLOATING);
+        IOCtrl * ioc = new(reinterpret_cast<IOCtrl *>(Memory_Map::IOC_BASE)) IOCtrl;
+        ioc->gpio_floating(0, unit);
     }
 
     unsigned short read() { return _adc->read(_channel, _reference, _resolution); }

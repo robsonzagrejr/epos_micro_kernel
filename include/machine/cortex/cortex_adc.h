@@ -23,7 +23,7 @@ public:
 
 
 public:
-    ADC(unsigned int unit = 0, const Reference & reference = INTERNAL, unsigned int bits = 16): Engine(unit, reference, bits) {}
+    ADC(unsigned int unit = 0, const Reference & reference = INTERNAL, unsigned int bits = 12): Engine(unit, reference, bits) {}
 
     using Engine::read;
     using Engine::convert;

@@ -12,42 +12,42 @@ template<> struct Traits<Machine_Common>: public Traits<Build> {};
 
 template<> struct Traits<Machine>: public Traits<Machine_Common>
 {
+    static const bool cpus_use_local_timer      = false;
+
     static const unsigned int NOT_USED          = 0xffffffff;
     static const unsigned int CPUS              = Traits<Build>::CPUS;
+
+    // Physical Memory
+    static const unsigned int MEM_BASE          = 0x00000000;
+    static const unsigned int MEM_TOP           = 0x10000000; 	// 256 MB (MAX for 32-bit is 0x70000000 / 1792 MB)
+    static const unsigned int MIO_BASE          = NOT_USED;	// defined by SETUP	
+    static const unsigned int MIO_TOP           = NOT_USED;	// defined by SETUP
 
     // Boot Image
     static const unsigned int BOOT_LENGTH_MIN   = 512;
     static const unsigned int BOOT_LENGTH_MAX   = 512;
-    static const unsigned int BOOT_IMAGE_ADDR   = 0x00008000;
-    static const unsigned int RAMDISK           = 0x0fa28000; // MEMDISK-dependent
+    static const unsigned int BOOT_STACK        = NOT_USED;     // defined by BOOT and by SETUP
+    static const unsigned int RAMDISK           = 0x0fa28000;   // MEMDISK-dependent
     static const unsigned int RAMDISK_SIZE      = 0x003c0000;
-
-    // Physical Memory
-    static const unsigned int MEM_BASE          = 0x00000000;
-    static const unsigned int MEM_TOP           = 0x10000000; // 256 MB (MAX for 32-bit is 0x70000000 / 1792 MB)
-    static const unsigned int BOOT_STACK        = NOT_USED;   // not used (defined by BOOT and by SETUP)
 
     // Logical Memory Map
     static const unsigned int BOOT              = 0x00007c00;
-    static const unsigned int SETUP             = 0x00100000; // 1 MB
-    static const unsigned int INIT              = 0x00200000; // 2 MB
+    static const unsigned int IMAGE             = 0x00008000;
+    static const unsigned int SETUP             = 0x00100000; 	// 1 MB
+    static const unsigned int INIT              = 0x00200000; 	// 2 MB
 
     static const unsigned int APP_LOW           = 0x00000000;
-    static const unsigned int APP_CODE          = 0x00000000;
-    static const unsigned int APP_DATA          = 0x00400000; // 4 MB
-    static const unsigned int APP_HIGH          = 0x0fffffff; // 256 MB
+    static const unsigned int APP_CODE          = APP_LOW;
+    static const unsigned int APP_DATA          = APP_LOW + 4 * 1024 * 1024;
+    static const unsigned int APP_HIGH          = 0x0fffffff; 	// 256 MB
 
-    static const unsigned int PHY_MEM           = 0x80000000; // 2 GB
-    static const unsigned int IO_BASE           = 0xf0000000; // 4 GB - 256 MB
-    static const unsigned int IO_TOP            = 0xff400000; // 4 GB - 12 MB
-
-    static const unsigned int SYS               = IO_TOP;     // 4 GB - 12 MB
-    static const unsigned int SYS_CODE          = 0xff700000;
-    static const unsigned int SYS_DATA          = 0xff740000;
+    static const unsigned int PHY_MEM           = 0x80000000; 	// 2 GB
+    static const unsigned int IO                = 0xf0000000; 	// 4 GB - 256 MB
+    static const unsigned int SYS               = 0xff400000;   // 4 GB - 12 MB
 
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE        = 16 * 1024;
-    static const unsigned int HEAP_SIZE         = 16 * 1024 * 1024;
+    static const unsigned int HEAP_SIZE         = 4 * 1024 * 1024;
     static const unsigned int MAX_THREADS       = 16;
 };
 
@@ -143,50 +143,44 @@ template<> struct Traits<Ethernet>: public Traits<Machine_Common>
     static const unsigned int UNITS = DEVICES::Length;
 
     static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
+
+    static const bool promiscuous = false;
 };
 
-template<> struct Traits<PCNet32>: public Traits<Machine_Common>
+template<> struct Traits<PCNet32>: public Traits<Ethernet>
 {
-    static const unsigned int UNITS = Traits<Ethernet>::DEVICES::Count<PCNet32>::Result;
+    static const unsigned int UNITS = DEVICES::Count<PCNet32>::Result;
+    static const bool enabled = Traits<Ethernet>::enabled && (UNITS > 0);
+
     static const unsigned int SEND_BUFFERS = 64; // per unit
     static const unsigned int RECEIVE_BUFFERS = 256; // per unit
-
-    static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
-
-    static const bool promiscuous = false;
 };
 
-template<> struct Traits<E100>: public Traits<Machine_Common>
+template<> struct Traits<E100>: public Traits<Ethernet>
 {
-    static const unsigned int UNITS = Traits<Ethernet>::DEVICES::Count<E100>::Result;
+    static const unsigned int UNITS = DEVICES::Count<E100>::Result;
+    static const bool enabled = Traits<Ethernet>::enabled && (UNITS > 0);
+
     static const unsigned int SEND_BUFFERS = 64; // per unit
     static const unsigned int RECEIVE_BUFFERS = 64; // per unit
-
-    static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
-
-    static const bool promiscuous = false;
-    static const bool qemu = true;
 };
 
-template<> struct Traits<C905>: public Traits<Machine_Common>
+template<> struct Traits<C905>: public Traits<Ethernet>
 {
-    static const unsigned int UNITS = Traits<Ethernet>::DEVICES::Count<C905>::Result;
+    static const unsigned int UNITS = DEVICES::Count<C905>::Result;
+    static const bool enabled = Traits<Ethernet>::enabled && (UNITS > 0);
+
     static const unsigned int SEND_BUFFERS = 64; // per unit
     static const unsigned int RECEIVE_BUFFERS = 64; // per unit
-
-    static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
-
-    static const bool promiscuous = false;
 };
 
-template<> struct Traits<RTL8139>: public Traits<Machine_Common>
+template<> struct Traits<RTL8139>: public Traits<Ethernet>
 {
-    static const unsigned int UNITS = Traits<Ethernet>::DEVICES::Count<RTL8139>::Result;
+    static const unsigned int UNITS = DEVICES::Count<RTL8139>::Result;
+    static const bool enabled = Traits<Ethernet>::enabled && (UNITS > 0);
+
     static const unsigned int SEND_BUFFERS = 4; // per unit
     static const unsigned int RECEIVE_BUFFERS = 8192; // no descriptor, just a memory block of 8192 bits
-
-    static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
-    static const bool promiscuous = false;
 };
 
 template<> struct Traits<FPGA>: public Traits<Machine_Common>

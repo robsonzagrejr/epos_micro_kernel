@@ -27,7 +27,8 @@ template<> struct Traits<MMU>: public Traits<Build>
 
 template<> struct Traits<FPU>: public Traits<Build>
 {
-    static const bool enabled = false;
+    static const bool enabled = true;
+    static const bool user_save = true;
 };
 
 template<> struct Traits<PMU>: public Traits<Build>

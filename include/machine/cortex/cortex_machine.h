@@ -16,7 +16,7 @@ __BEGIN_SYS
 class Machine: private Machine_Model
 {
     friend class Init_System;
-    friend class First_Object;
+    friend class Init_Begin;
 
 private:
     static const bool smp = Traits<System>::multicore;

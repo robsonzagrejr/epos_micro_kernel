@@ -285,7 +285,7 @@ private:
     bool handle_ep0(const USB_2_0::Request::Device_Request & data);
 
 private:
-    static volatile bool _ready_to_put; //FIXME: wrong semantics
+    static volatile bool _ready_to_put; // TODO: isn't it the wrong semantics?
     static volatile bool _ready_to_put_next;
     static volatile bool _locked;
     static volatile USB_2_0::STATE _state;

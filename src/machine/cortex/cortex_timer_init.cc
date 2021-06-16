@@ -11,7 +11,7 @@ void Timer::init()
 
     IC::int_vector(IC::INT_SYS_TIMER, int_handler);
     IC::enable(IC::INT_SYS_TIMER);
-    Engine::init(FREQUENCY);
+    Engine::init();
 }
 
 __END_SYS

@@ -51,21 +51,21 @@ public:
 
 public:
     unsigned char get();
-    bool get(const Pin & mask);
+    bool get(Pin mask);
     void set(unsigned char value);
-    void set(const Pin & mask, bool value);
+    void set(Pin mask, bool value);
     void clear();
-    void clear(const Pin & mask);
+    void clear(Pin mask);
 
-    void direction(const Pin & mask, const Direction & dir);
+    void direction(Pin mask, Direction dir);
 
-    void int_enable(const Pin & mask);
-    void int_disable(const Pin & mask);
-    void int_enable(const Level & level, bool power_up = false, const Level & power_up_level = HIGH);
-    void int_enable(const Edge & edge, bool power_up = false, const Edge & power_up_edge = RISING);
+    void int_enable(Pin mask);
+    void int_disable(Pin mask);
+    void int_enable(Level level, bool power_up = false, Level power_up_level = HIGH);
+    void int_enable(Edge edge, bool power_up = false, Edge power_up_edge = RISING);
 
-    void pull(const Pin & mask, const Pull & p);
-    void clear_interrupts(const Pin & mask);
+    void pull(Pin mask, Pull p);
+    void clear_interrupts(Pin mask);
 };
 
 __END_SYS

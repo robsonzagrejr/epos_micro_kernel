@@ -7,6 +7,7 @@
 #include <machine/cortex/engine/pl061.h>
 #include "emote3_sysctrl.h"
 #include <system/memory_map.h>
+#include "emote3_ioctrl.h"
 
 __BEGIN_SYS
 
@@ -16,16 +17,16 @@ protected:
     static const unsigned int PORTS = Traits<GPIO>::UNITS;
 
 public:
-    GPIO_Engine(const Port & port, const Pin & pin, const Direction & dir, const Pull & p, const Edge & int_edge)
-    : _pin_mask(1 << pin) {
+    GPIO_Engine(Port port, Pin pin, Direction dir, Pull p, Edge int_edge)
+    : _port(port), _pin(pin), _pin_mask(1 << pin) {
         assert(port < PORTS);
         power(FULL);
         _gpio = new(reinterpret_cast<void *>(Memory_Map::GPIOA_BASE + port * 0x1000)) PL061;
         _gpio->select_pin_function(_pin_mask, PL061::FUN_GPIO);
-        pull(p);
         direction(dir);
+        pull(p);
         if(int_edge != NONE)
-            _gpio->clear_interrupts(_pin_mask);
+            _gpio->clear_interrupts(port, _pin_mask);
     }
 
     bool get() const {
@@ -44,18 +45,31 @@ public:
 
     void clear() { _gpio->clear(_pin_mask); }
 
-    void direction(const Direction & dir) {
+    void direction(Direction dir) {
         _direction = dir;
         _gpio->direction(_pin_mask, dir);
     }
 
-    void pull(const Pull & p) { _gpio->pull(_pin_mask, p); }
+    void pull(Pull p) {
+        IOCtrl * ioc = new(reinterpret_cast<IOCtrl *> (Memory_Map::IOC_BASE)) IOCtrl;
+        switch(p) {
+        case UP:
+            ioc->gpio_pull_up(_port, _pin);
+            break;
+        case DOWN:
+            ioc->gpio_pull_down(_port, _pin);
+            break;
+        case FLOATING:
+            ioc->gpio_floating(_port, _pin);
+            break;
+        }
+    }
 
     void int_enable() { _gpio->int_enable(_pin_mask); }
-    void int_enable(const Level & level, bool power_up = false, const Level & power_up_level = HIGH);
-    void int_enable(const Edge & edge, bool power_up = false, const Edge & power_up_edge = RISING);
+    void int_enable(Level level, bool power_up = false, Level power_up_level = HIGH);
+    void int_enable(Edge edge, bool power_up = false, Edge power_up_edge = RISING);
     void int_disable() { _gpio->int_disable(_pin_mask); }
-    void clear_interrupts() { _gpio->clear_interrupts(0xff); }
+    void clear_interrupts() { _gpio->clear_interrupts(_port, 0xff); }
 
     void power(const Power_Mode & mode) {
         switch(mode) {
@@ -78,6 +92,7 @@ public:
 
 private:
     Port _port;
+    Pin _pin;
     Pin _pin_mask;
     Direction _direction;
     PL061 * _gpio;

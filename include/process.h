@@ -4,10 +4,9 @@
 #define __process_h
 
 #include <architecture.h>
+#include <machine.h>
 #include <utility/queue.h>
 #include <utility/handler.h>
-#include <machine/machine.h>
-#include <machine/timer.h>
 
 extern "C" { void __exit(); }
 
@@ -15,11 +14,11 @@ __BEGIN_SYS
 
 class Thread
 {
-    friend class Init_First;
-    friend class Init_System;
-    friend class Synchronizer_Common;
-    friend class Alarm;
-    friend class System;
+    friend class Init_End;              // context->load()
+    friend class Init_System;           // for init() on CPU != 0
+    friend class Synchronizer_Common;   // for lock() and sleep()
+    friend class Alarm;                 // for lock()
+    friend class System;                // for init()
 
 protected:
     static const bool reboot = Traits<System>::reboot;
@@ -48,6 +47,9 @@ public:
         LOW = 31
     };
 
+    // Thread Queue
+    typedef Ordered_Queue<Thread, Priority> Queue;
+
     // Thread Configuration
     struct Configuration {
         Configuration(const State & s = READY, const Priority & p = NORMAL, unsigned int ss = STACK_SIZE)
@@ -58,8 +60,6 @@ public:
         unsigned int stack_size;
     };
 
-    // Thread Queue
-    typedef Ordered_Queue<Thread, Priority> Queue;
 
 public:
     template<typename ... Tn>

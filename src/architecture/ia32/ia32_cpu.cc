@@ -8,8 +8,9 @@
 __BEGIN_SYS
 
 volatile unsigned int CPU::_cores;
-unsigned int CPU::_cpu_clock;
-unsigned int CPU::_bus_clock;
+Hertz CPU::_cpu_clock;
+Hertz CPU::_cpu_current_clock;
+Hertz CPU::_bus_clock;
 
 void CPU::Context::save() volatile
 {
@@ -35,11 +36,11 @@ void CPU::Context::save() volatile
 void CPU::Context::load() const volatile
 {
     // Reload Segment Registers with user-level selectors
-    if(Traits<System>::multitask)
-        ASM("        mov     %0, %%ds                                        \n"
-            "        mov     %0, %%es                                        \n"
-            "        mov     %0, %%fs                                        \n"
-            "        mov     %0, %%gs                                        \n" : : "r"(SEL_APP_DATA));
+if(Traits<System>::multitask)
+    ASM("        mov     %0, %%ds                                        \n"
+        "        mov     %0, %%es                                        \n"
+        "        mov     %0, %%fs                                        \n"
+        "        mov     %0, %%gs                                        \n" : : "r"(SEL_APP_DATA));
 
     // The thread's context in on its stack
     ASM("        mov     4(%esp), %esp         # sp = this               \n");
@@ -48,10 +49,10 @@ void CPU::Context::load() const volatile
     ASM("        pop     %0                                              \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0 + CPU::id() * sizeof(MMU::Page))->esp) : );
 
     // Adjust the system-level stack pointer in the dummy TSS (that will be used by system calls and interrupts) for this Thread
-    if(Traits<System>::multitask)
-        ASM("        mov     %%esp, %%eax                                    \n"
-            "        add     $52, %%eax                                      \n"
-            "        movl    %%eax, %0                                       \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0 + CPU::id() * sizeof(MMU::Page))->esp0) : : "eax");
+if(Traits<System>::multitask)
+    ASM("        mov     %%esp, %%eax                                    \n"
+        "        add     $52, %%eax                                      \n"
+        "        movl    %%eax, %0                                       \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0 + CPU::id() * sizeof(MMU::Page))->esp0) : : "eax");
 
     // Perform a possibly cross-level return (from kernel to user-level)
     // Stack contents depend on the CPL in CS, either ss, esp, eflags, cs, eip (for cross-level)
@@ -62,8 +63,7 @@ void CPU::Context::load() const volatile
 
 void CPU::switch_context(Context * volatile * o, Context * volatile n)
 {
-    // Recover the return address from the stack and
-    // save the previously running thread context ("o") into its stack
+    // Recover the return address from the stack and save the previously running thread context ("o") into its stack
     // PUSHA saves an extra SP (which is always "this"), but saves several instruction fetches
     ASM("        pop     %esi                    # eip                   \n"
         "        pushf                                                   \n"
@@ -78,11 +78,11 @@ void CPU::switch_context(Context * volatile * o, Context * volatile n)
     ASM("        mov     52(%esp), %esp          # new	                 \n");
     ASM("        pop     %0                                              \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0 + CPU::id() * sizeof(MMU::Page))->esp) : );
 
+if(Traits<System>::multitask)
     // Adjust the system-level stack pointer in the dummy TSS (that will be used by system calls and interrupts) for this Thread
-    if(Traits<System>::multitask)
-        ASM("        mov     %%esp, %%eax                                    \n"
-            "        add     $52, %%eax                                      \n"
-            "        movl    %%eax, %0                                       \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0 + CPU::id() * sizeof(MMU::Page))->esp0) : : "eax");
+    ASM("        mov     %%esp, %%eax                                    \n"
+        "        add     $52, %%eax                                      \n"
+        "        movl    %%eax, %0                                       \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0 + CPU::id() * sizeof(MMU::Page))->esp0) : : "eax");
 
     // Change context through the IRET, will pop FLAGS, CS, and IP
     ASM("        popa                                                    \n"

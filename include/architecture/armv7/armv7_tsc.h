@@ -18,8 +18,8 @@ class TSC: private TSC_Common
     friend class IC;
 
 private:
-    static const unsigned int CLOCK = Traits<CPU>::CLOCK / (Traits<Build>::MODEL == Traits<Build>::Zynq ? 2 : 1);
-    static const unsigned int ACCURACY = 40000; // ppb
+    static const Hertz CLOCK = Traits<CPU>::CLOCK / (Traits<Build>::MODEL == Traits<Build>::Zynq ? 2 : 1);
+    static const PPB ACCURACY = 40000; // ppb
 
     enum {
         TSC_BASE = Traits<Build>::MODEL == Traits<Build>::eMote3  ?      0x40033000 // TIMER3_BASE

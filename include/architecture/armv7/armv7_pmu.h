@@ -143,7 +143,7 @@ public:
 public:
     ARMv7_A_PMU() {}
 
-    static void config(const Channel & channel, const Event & event, const Flags & flags = NONE) {
+    static void config(Channel channel, const Event event, Flags flags = NONE) {
         assert((static_cast<unsigned int>(channel) < CHANNELS) && (static_cast<unsigned int>(event) < EVENTS));
         db<PMU>(TRC) << "PMU::config(c=" << channel << ",e=" << event << ",f=" << flags << ")" << endl;
         pmselr(channel);
@@ -151,29 +151,29 @@ public:
         start(channel);
     }
 
-    static Count read(const Channel & channel) {
+    static Count read(Channel channel) {
         db<PMU>(TRC) << "PMU::read(c=" << channel << ")" << endl;
         pmselr(channel);
         return pmxevcntr();
     }
 
-    static void write(const Channel & channel, const Count & count) {
+    static void write(Channel channel, Count count) {
         db<PMU>(TRC) << "PMU::write(ch=" << channel << ",ct=" << count << ")" << endl;
         pmselr(channel);
         pmxevcntr(count);
     }
 
-    static void start(const Channel & channel) {
+    static void start(Channel channel) {
         db<PMU>(TRC) << "PMU::start(c=" << channel << ")" << endl;
         pmcntenset(pmcntenset() | (1 << channel));
     }
 
-    static void stop(const Channel & channel) {
+    static void stop(Channel channel) {
         db<PMU>(TRC) << "PMU::stop(c=" << channel << ")" << endl;
         pmcntenclr(pmcntenclr() | (1 << channel));
     }
 
-    static void reset(const Channel & channel) {
+    static void reset(Channel channel) {
         db<PMU>(TRC) << "PMU::reset(c=" << channel << ")" << endl;
         write(channel, 0);
     }
@@ -196,110 +196,14 @@ private:
     static void pmselr(Reg32 reg) { ASM("mcr p15, 0, %0, c9, c12, 5\n\t" : : "r"(reg)); }
     static Reg32 pmselr() { Reg32 reg; ASM("mrc p15, 0, %0, c9, c12, 5\n\t" : "=r"(reg) : ); return reg; }
 
-    static void pmxevtyper(Reg32 reg) { ASM("mcr p15, 0, %0, c9, c13, 1\n\t" : : "r"(reg)); }
+    static void pmxevtyper(const Reg32 reg) { ASM("mcr p15, 0, %0, c9, c13, 1\n\t" : : "r"(reg)); }
     static Reg32 pmxevtyper() { Reg32 reg; ASM("mrc p15, 0, %0, c9, c13, 1\n\t" : "=r"(reg) : ); return reg; }
 
     static void pmxevcntr(Reg32 reg) { ASM("mcr p15, 0, %0, c9, c13, 2\n\t" : : "r"(reg)); }
     static Reg32 pmxevcntr() { Reg32 reg; ASM("mrc p15, 0, %0, c9, c13, 2\n\t" : "=r"(reg) : ); return reg; }
 
 private:
-    static constexpr Event _events[EVENTS] = {
-        INSTRUCTIONS_ARCHITECTURALLY_EXECUTED,  // 0
-        IMMEDIATE_BRANCH,                       // 1
-        CYCLE,                                  // 2
-        BRANCHES_ARCHITECTURALLY_EXECUTED,      // 3
-        MISPREDICTED_BRANCH,                    // 4
-        L1D_ACCESS,                             // 5
-        L2D_ACCESS,                             // 6
-        L1D_REFILL,                             // 7
-        DATA_MEMORY_ACCESS,                     // 8 (LLC MISS)
-        L1I_REFILL,                             // 9
-        L1I_TLB_REFILL,                         // 10
-        PREDICTABLE_BRANCH_EXECUTED,            // 11
-        L1D_WRITEBACK,                          // 12
-        L2D_WRITEBACK,                          // 13
-        L2D_REFILL,                             // 14
-        UNALIGNED_LOAD_STORE,                   // 15
-        L1I_ACCESS,                             // 16
-        L1D_TLB_REFILL,                         // 17
-        EXCEPTION_TAKEN,                        // 18
-        BUS_ACCESS,                             // 19
-        LOCAL_MEMORY_ERROR,                     // 20
-        INSTRUCTION_SPECULATIVELY_EXECUTED,     // 21
-        BUS_CYCLE,                              // 22
-        CHAIN,                                  // 23
-        // Cortex-A9 specific events
-        JAVA_BYTECODE_EXECUTE,                  // 24
-        SOFTWARE_JAVA_BYTECODE_EXECUTED,        // 25
-        JAZELLE_BACKWARDS_BRANCHES_EXECUTED,    // 26
-        COHERENT_LINEFILL_MISS,                 // 27
-        COHERENT_LINEFILL_HIT,                  // 28
-        ICACHE_DEPENDENT_STALL_CYCLES,          // 29
-        DCACHE_DEPENDENT_STALL_CYCLES,          // 30
-        MAIN_TLB_MISS_STALL_CYCLES,             // 31
-        STREX_PASSED,                           // 32
-        STREX_FAILED,                           // 33
-        DATA_EVICTION,                          // 34
-        ISSUE_DOESNT_DISPATCH,                  // 35
-        ISSUE_EMPTY,                            // 36
-        ISSUE_CORE_RENAMING,                    // 37
-        PREDICTABLE_FUNCTION_RETURNS,           // 38
-        MAIN_EXECUTION_UNIT_RETURNS,            // 39
-        SECOND_EXECUTION_UNIT_RETURNS,          // 40
-        LOAD_STORE_INSTRUCTIONS,                // 41
-        FLOATING_POINT_INSTRUCTIONS,            // 42
-        NEON_INSTRUCTIONS,                      // 43
-        PROCESSOR_STALL_PLD,                    // 44
-        PROCESSOR_STALL_WRITE_MEMORY,           // 45
-        PROCESSOR_STALL_ITLB_MISS,              // 46
-        PROCESSOR_STALL_DTLB_MISS,              // 47
-        PROCESSOR_STALL_IUTLB_MISS,             // 48
-        PROCESSOR_STALL_DUTLB_MISS,             // 49
-        PROCESSOR_STALL_DMB,                    // 50
-        INTEGER_CLOCK_ENABLED,                  // 51
-        DATA_ENGINE_CLOCK_ENABLED,              // 52
-        ISB_INSTRUCTIONS,                       // 53
-        DSB_INSTRUCTIONS,                       // 54
-        DMB_INSTRUCTIONS,                       // 55
-        EXTERNAL_INTERRUPTS,                    // 56
-        PLE_CACHE_LINE_REQUEST_COMPLETED,       // 57
-        PLE_CACHE_LINE_REQUEST_SKIPPED,         // 58
-        PLE_FIFO_FLUSH,                         // 59
-        PLE_REQUEST_COMPLETED,                  // 60
-        PLE_FIFO_OVERFLOW,                      // 61
-        PLE_REQUEST_PROGRAMMED,                 // 62
-        // ARM Cortex-A53 specific events
-        BUS_ACCESS_LD,                          // 63
-        BUS_ACCESS_ST,                          // 64
-        BR_INDIRECT_SPEC,                       // 65
-        EXC_IRQ,                                // 66
-        EXC_FIQ,                                // 67
-        EXTERNAL_MEM_REQUEST,                   // 68
-        EXTERNAL_MEM_REQUEST_NON_CACHEABLE,     // 69
-        PREFETCH_LINEFILL,                      // 70
-        ICACHE_THROTTLE,                        // 71
-        ENTER_READ_ALLOC_MODE,                  // 72
-        READ_ALLOC_MODE,                        // 73
-        PRE_DECODE_ERROR,                       // 74
-        DATA_WRITE_STALL_ST_BUFFER_FULL,        // 75
-        SCU_SNOOPED_DATA_FROM_OTHER_CPU,        // 76
-        CONDITIONAL_BRANCH_EXECUTED,            // 77
-        IND_BR_MISP,                            // 78
-        IND_BR_MISP_ADDRESS_MISCOMPARE,         // 79
-        CONDITIONAL_BRANCH_MISP,                // 80
-        L1_ICACHE_MEM_ERROR,                    // 81
-        L1_DCACHE_MEM_ERROR,                    // 82
-        TLB_MEM_ERROR,                          // 83
-        EMPTY_DPU_IQ_NOT_GUILTY,                // 84
-        EMPTY_DPU_IQ_ICACHE_MISS,               // 85
-        EMPTY_DPU_IQ_IMICRO_TLB_MISS,           // 86
-        EMPTY_DPU_IQ_PRE_DECODE_ERROR,          // 87
-        INTERLOCK_CYCLE_NOT_GUILTY,             // 88
-        INTERLOCK_CYCLE_LD_ST_WAIT_AGU_ADDRESS, // 89
-        INTERLOCK_CYCLE_ADV_SIMD_FP_INST,       // 90
-        INTERLOCK_CYCLE_WR_STAGE_STALL_BC_MISS, // 91
-        INTERLOCK_CYCLE_WR_STAGE_STALL_BC_STR   // 92
-    };
+    static const Event _events[EVENTS];
 };
 
 

@@ -9,8 +9,11 @@ __BEGIN_SYS
 
 class ARMv7: protected CPU_Common
 {
+    friend class Init_System; // for CPU::init()
+
 private:
-    static const bool smp = Traits<System>::multicore;
+    static const bool multicore = Traits<System>::multicore;
+    static const bool multitask = Traits<System>::multitask;
 
 public:
     // CPU Native Data Types
@@ -18,42 +21,25 @@ public:
     using CPU_Common::Reg16;
     using CPU_Common::Reg32;
     using CPU_Common::Reg64;
-    using CPU_Common::Log_Addr;
-    using CPU_Common::Phy_Addr;
+    using Reg = CPU_Common::Reg32;
+    using Log_Addr = CPU_Common::Log_Addr<Reg>;
+    using Phy_Addr = CPU_Common::Phy_Addr<Reg>;
 
 protected:
     ARMv7() {};
 
 public:
     // Register access
-    static Reg32 sp() {
-        Reg32 value;
-        ASM("mov %0, sp" : "=r"(value) :);
-        return value;
-    }
-    static void sp(const Reg32 & sp) {
-        ASM("mov sp, %0" : : "r"(sp) : "sp");
-        ASM("isb");
-    }
+    static Log_Addr pc() { Reg32 r; ASM("mov %0, pc" : "=r"(r) :); return r; } // due to RISC pipelining, PC is read with a +8 (4 for thumb) offset
 
-    static Reg32 fr() {
-        Reg32 value;
-        ASM("mov %0, r0" : "=r"(value));
-        return value;
-    }
-    static void fr(const Reg32 & fr) {
-        ASM("mov r0, %0" : : "r"(fr) : "r0");
-    }
+    static Reg32 sp() { Reg32 r; ASM("mov %0, sp" : "=r"(r) :); return r; }
+    static void sp(Reg32 sp) {   ASM("mov sp, %0" : : "r"(sp)); ASM("isb"); }
 
-    static Log_Addr ip() { // due to RISC pipelining, PC is read with a +8 (4 for thumb) offset
-        Reg32 value;
-        ASM("mov %0, pc" : "=r"(value) :);
-        return value;
-    }
+    static Reg32 fr() { Reg32 r; ASM("mov %0, r0" : "=r"(r)); return r; }
+    static void fr(Reg32 fr) {   ASM("mov r0, %0" : : "r"(fr) : "r0"); }
 
     static Reg32 pdp() { return 0; }
-    static void pdp(const Reg32 & pdp) {}
-
+    static void pdp(Reg32 pdp) {}
 
     // Atomic operations
     template<typename T>
@@ -145,7 +131,6 @@ public:
         return old;
     }
 
-
     // Power modes
     static void halt() { ASM("wfi"); }
 };
@@ -186,20 +171,14 @@ protected:
     ARMv7_M() {};
 
 public:
-    static Flags flags() {
-        register Reg32 value;
-        ASM("mrs %0, xpsr" : "=r"(value) :);
-        return value;
-    }
-    static void flags(const Flags & flags) {
-        ASM("msr xpsr_nzcvq, %0" : : "r"(flags) : "cc");
-    }
+    static Flags flags() { Reg32 r;  ASM("mrs %0, xpsr"       : "=r"(r) :); return r; }
+    static void flags(Flags r) {     ASM("msr xpsr_nzcvq, %0" : : "r"(r) : "cc"); }
 
     static unsigned int id() { return 0; }
 
     static unsigned int cores() { return 1; }
 
-    static void int_enable() { ASM("cpsie i"); }
+    static void int_enable()  { ASM("cpsie i"); }
     static void int_disable() { ASM("cpsid i"); }
 
     static void smp_barrier(unsigned long cores = cores()) { assert(cores == 1); }
@@ -223,7 +202,7 @@ public:
     // CPU Flags
     typedef Reg32 Flags;
     enum {
-        FLAG_M          = 0x1f << 0,       // Processor Mode
+        FLAG_M          = 0x1f << 0,       // Processor Mode (5 bits)
         FLAG_T          = 1    << 5,       // Thumb state
         FLAG_F          = 1    << 6,       // FIQ disable
         FLAG_I          = 1    << 7,       // IRQ disable
@@ -266,23 +245,17 @@ protected:
     ARMv7_A() {};
 
 public:
-    static Flags flags() {
-        register Reg32 value;
-        ASM("mrs %0, cpsr_all" : "=r"(value) :);
-        return value;
-    }
-    static void flags(const Flags & flags) {
-        ASM("msr cpsr_all, %0" : : "r"(flags) : "cc");
-    }
+    static Flags flags() { Reg32 r;  ASM("mrs %0, cpsr_all" : "=r"(r) :); return r; }
+    static void flags(Flags flags) { ASM("msr cpsr_all, %0" : : "r"(flags) : "cc"); }
 
     static unsigned int id() {
-        int id;
+        Reg32 id;
         ASM("mrc p15, 0, %0, c0, c0, 5" : "=r"(id) : : );
         return id & 0x3;
     }
 
     static unsigned int cores() {
-        int n;
+        Reg32 n;
         ASM("mrc p15, 4, %0, c15, c0, 0 \t\n\
              ldr %0, [%0, #0x004]" : "=r"(n) : : );
         return (n & 0x3) + 1;
@@ -290,16 +263,16 @@ public:
 
     static void smp_barrier(unsigned long cores = cores()) { CPU_Common::smp_barrier<&finc>(cores, id()); }
 
-    static void int_enable() { flags(flags() & ~0xc0); }
-    static void int_disable() { flags(flags() | 0xc0); }
+    static void int_enable() {  flags(flags() & ~(FLAG_F | FLAG_I)); }
+    static void int_disable() { flags(flags() | (FLAG_F | FLAG_I)); }
 
     static bool int_enabled() { return !int_disabled(); }
-    static bool int_disabled() { return flags() & 0xc0; }
+    static bool int_disabled() { return flags() & (FLAG_F | FLAG_I); }
 
     static void mrs12() { ASM("mrs r12, cpsr_all" : : : "r12"); }
     static void msr12() { ASM("msr cpsr_all, r12" : : : "cc"); }
 
-    static unsigned int int_id() { return 0; }
+//    static unsigned int int_id() { return 0; }
 };
 
 #ifndef __armv8_h
@@ -317,6 +290,7 @@ public:
     using Base::Reg16;
     using Base::Reg32;
     using Base::Reg64;
+    using Base::Reg;
     using Base::Log_Addr;
     using Base::Phy_Addr;
 
@@ -324,8 +298,12 @@ public:
     class Context
     {
     public:
-        Context(const Log_Addr & entry, const Log_Addr & exit): _flags(FLAG_DEFAULTS), _lr(exit | (thumb ? 1 : 0)), _pc(entry | (thumb ? 1 : 0)) {}
-//        _r0(0), _r1(1), _r2(2), _r3(3), _r4(4), _r5(5), _r6(6), _r7(7), _r8(8), _r9(9), _r10(10), _r11(11), _r12(12),
+        Context(){}
+        Context(Log_Addr  entry, Log_Addr exit, Log_Addr usp): _flags(FLAG_DEFAULTS), _lr(exit | (thumb ? 1 : 0)), _pc(entry | (thumb ? 1 : 0)) {
+            if(Traits<Build>::hysterically_debugged || Traits<Thread>::trace_idle) {
+                _r0 = 0; _r1 = 1; _r2 = 2; _r3 = 3; _r4 = 4; _r5 = 5; _r6 = 6; _r7 = 7; _r8 = 8; _r9 = 9; _r10 = 10; _r11 = 11; _r12 = 12;
+            }
+        }
 
         void save() volatile  __attribute__ ((naked));
         void load() const volatile;
@@ -372,9 +350,6 @@ public:
         Reg32 _pc;
     };
 
-    // I/O ports
-    typedef Reg16 IO_Irq;
-
     // Interrupt Service Routines
     typedef void (ISR)();
 
@@ -384,45 +359,61 @@ public:
 public:
     CPU() {}
 
-    static Hertz clock() { return _cpu_clock; }
-    static Hertz bus_clock() { return _bus_clock; }
-
+    using Base::pc;
     using Base::flags;
+    using Base::sp;
+    using Base::fr;
+    using Base::pdp;
+
     using Base::id;
     using Base::cores;
+
+    static Hertz clock() { return _cpu_clock; }
+    static void clock(const Hertz & frequency); // defined along with each machine's IOCtrl
+    static Hertz max_clock();
+    static Hertz min_clock();
+
+    static Hertz bus_clock() { return _bus_clock; }
 
     using Base::int_enable;
     using Base::int_disable;
     using Base::int_enabled;
     using Base::int_disabled;
 
-    using Base::sp;
-    using Base::fr;
-    using Base::ip;
-    using Base::pdp;
+    using Base::halt;
 
     using Base::tsl;
     using Base::finc;
     using Base::fdec;
     using Base::cas;
 
-    using Base::halt;
+    static void fpu_save() {
+        if(Traits<Build>::MODEL == Traits<Build>::Raspberry_Pi3)
+            ASM("       vpush    {s0-s15}               \n"
+                "       vpush    {s16-s31}              \n");
+    }
+
+    static void fpu_restore() {
+        if(Traits<Build>::MODEL == Traits<Build>::Raspberry_Pi3)
+            ASM("       vpop    {s0-s15}                \n"
+                "       vpop    {s16-s31}               \n");
+    }
 
     static void switch_context(Context ** o, Context * n) __attribute__ ((naked));
 
     template<typename ... Tn>
-    static Context * init_stack(const Log_Addr & usp, Log_Addr sp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
-        sp -= sizeof(Context);
-        Context * ctx = new(sp) Context(entry, exit);
+    static Context * init_stack(Log_Addr usp, Log_Addr ksp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
+        ksp -= sizeof(Context);
+        Context * ctx = new(ksp) Context(entry, exit, usp);
         init_stack_helper(&ctx->_r0, an ...);
         return ctx;
     }
     template<typename ... Tn>
-    static Log_Addr init_user_stack(Log_Addr sp, void (* exit)(), Tn ... an) {
-        sp -= sizeof(Context);
-        Context * ctx = new(sp) Context(0, exit);
+    static Log_Addr init_user_stack(Log_Addr usp, void (* exit)(), Tn ... an) {
+        usp -= sizeof(Context);
+        Context * ctx = new(usp) Context(0, exit, 0);
         init_stack_helper(&ctx->_r0, an ...);
-        return sp;
+        return usp;
     }
 
     static int syscall(void * message);

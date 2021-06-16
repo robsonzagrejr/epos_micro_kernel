@@ -62,15 +62,15 @@ LINKER="$TOOLS_PREFIX""ld"
 
 LINKER_LIBRARY=$LINKER
 LINK_FLGS_LIBRARY="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --section-start $MACH_CODE_NAME=$APP_CODE"
-if [ "$MACH_DATA_NAME" != "" ] ; then
+if [ "$SETUP" != "" -a "$MACH_DATA_NAME" != "" ] ; then
     LINK_FLGS_LIBRARY="$LINK_FLGS_LIBRARY --section-start $MACH_DATA_NAME=$APP_DATA"
 fi
 if [ "$BOOT_STACK" != "" ] ; then
     LINK_FLGS_LIBRARY="$LINK_FLGS_LIBRARY --defsym=__boot_stack__=$BOOT_STACK"
 fi
-LINK_OBJI_LIBRARY="$LIB/crt0_$MMOD.o $LIB/crtbegin_$MMOD.o $LIB/init_first_$MMOD.o"
-LINK_OBJN_LIBRARY="$LIB/application_$MMOD.o $LIB/init_application_$MMOD.o $LIB/init_system_$MMOD.o"
-LINK_OBJL_LIBRARY="$LIB/system_$MMOD.o $LIB/crtend_$MMOD.o"
+LINK_OBJI_LIBRARY="$LIB/crt0_$MMOD.o $LIB/crtbegin_$MMOD.o $LIB/init_end_$MMOD.o"
+LINK_OBJN_LIBRARY="$LIB/application_$MMOD.o $LIB/init_application_$MMOD.o $LIB/init_system_$MMOD.o $LIB/system_$MMOD.o $LIB/init_begin_$MMOD.o"
+LINK_OBJL_LIBRARY="$LIB/crtend_$MMOD.o"
 LINK_LIBS_LIBRARY="util_$MMOD sys_$MMOD init_$MMOD sys_$MMOD mach_$MMOD arch_$MMOD util_$MMOD gcc"
 if [ "$SETUP" = "" ] ; then
     LINK_OBJI_LIBRARY="$LIB/setup_$MMOD.o $LINK_OBJI_LIBRARY"
@@ -79,12 +79,9 @@ fi
 LINKER_BUILTIN=$LINKER
 LINK_FLGS_BUILTIN="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
 LINK_OBJI_BUILTIN="$LIB/crt0_$MMOD.o $LIB/crtbegin_$MMOD.o"
-LINK_OBJN_BUILTIN="$LIB/application_$MMOD.o $LIB/init_application_$MMOD.o -R$SRC/system/system_$MMOD"
-LINK_OBJL_BUILTIN="$LIB/crtend_$MMOD.o"
+LINK_OBJN_BUILTIN="$LIB/application_$MMOD.o $LIB/init_application_$MMOD.o"
+LINK_OBJL_BUILTIN="$LIB/crtend_$MMOD.o -R$SRC/system/system_$MMOD"
 LINK_LIBS_BUILTIN="util_$MMOD gcc"
-if [ "$SETUP" = "" ] ; then
-LINK_OBJN_BUILTIN="$LIB/setup_$MMOD.o $LINK_OBJN_BUILTIN"
-fi
 
 LINKER_KERNEL=$LINKER
 LINK_FLGS_KERNEL="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
@@ -340,7 +337,7 @@ link_objs="$LINK_OBJI $link_objs $LINK_OBJN"
 for lib in $LINK_LIBS ; do
   link_libs="$link_libs -l$lib"
 done
-link_libs="$LINK_OBJL $link_libs"
+link_libs="$link_libs $LINK_OBJL"
 
 if [ $need_compile = 1 -a ! -f "$key_file" ] ; then
     need_analyze=1

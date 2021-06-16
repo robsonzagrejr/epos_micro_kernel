@@ -8,9 +8,8 @@ __BEGIN_SYS
 void Machine::pre_init(System_Info * si)
 {
     Engine::pre_init();
-
     if(CPU::id() == 0)
-        Display::init();
+         Display::init();
 
     db<Init, Machine>(TRC) << "Machine::pre_init()" << endl;
 
@@ -19,7 +18,6 @@ void Machine::pre_init(System_Info * si)
             IC::init();
 
             // Wake up remaining CPUs
-            si->bm.n_cpus = Traits<Build>::CPUS;
             if(Traits<System>::multicore)
                 smp_barrier_init(Traits<Build>::CPUS);
         }

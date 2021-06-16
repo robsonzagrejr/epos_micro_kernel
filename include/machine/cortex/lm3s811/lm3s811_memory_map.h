@@ -9,9 +9,8 @@ __BEGIN_SYS
 
 struct Memory_Map: public Cortex_Memory_Map
 {
-    // Physical Memory
-    // Base addresses for memory-mapped control and I/O devices
     enum {
+        // Base addresses for memory-mapped control and I/O devices
         WDT0_BASE                   = 0x40000000, // Watchdog Timer
         I2C0_BASE                   = 0x40002000, // I2C
         GPIOA_BASE                  = 0x40004000, // PrimeCell PL061 GPIO
@@ -32,9 +31,14 @@ struct Memory_Map: public Cortex_Memory_Map
         FLASH0_BASE                 = 0x400fd000, // Flash Controller
         SCR_BASE                    = 0x400fe000, // System Control
         SCB_BASE                    = 0xe000e000, // System Control Block
-    };
 
-    // Logical Address Space
+        // Logical Address Space
+        SYS_CODE        = NOT_USED,
+        SYS_INFO        = NOT_USED,
+        SYS_DATA        = NOT_USED,
+        SYS_STACK       = NOT_USED,
+        SYS_HEAP        = NOT_USED
+    };
 };
 
 __END_SYS

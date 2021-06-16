@@ -26,6 +26,10 @@ LUTILNAME	:= util
 # Makefile hacks
 APPLICATIONS	:= $(shell find $(APP) -maxdepth 1 -not -name makefile -and -not -name app -printf "%f\n")
 
+ifeq ($(words $(APPLICATIONS)),0)
+$(error EPOS is an application-oriented operating system, but there is no application in $(APP)!)
+endif
+
 ifeq ($(words $(APPLICATIONS)),1)
 ifndef APPLICATION
 APPLICATION	:= $(word 1, $(APPLICATIONS))
@@ -80,6 +84,7 @@ LUTIL		= $(LUTILNAME)_$(MMOD)
 # Boot Memory Map
 MEM_SIZE                = $(shell $(BIN)/eposcfg MEM_SIZE_KB 2> /dev/null)
 BOOT_ADDR               = $(shell $(BIN)/eposcfg BOOT 2> /dev/null)
+IMAGE_ADDR              = $(shell $(BIN)/eposcfg IMAGE 2> /dev/null)
 SETUP_ADDR              = $(shell $(BIN)/eposcfg SETUP 2> /dev/null)
 INIT_ADDR               = $(shell $(BIN)/eposcfg INIT 2> /dev/null)
 SYS_CODE_ADDR           = $(shell $(BIN)/eposcfg SYS_CODE 2> /dev/null)
@@ -89,8 +94,9 @@ UUID                    = $(shell cat /proc/sys/kernel/random/uuid | sed 's/-//g
 # Compiler prefixes
 ia32_COMP_PREFIX	:= /usr/bin/x86_64-linux-gnu-
 armv7_COMP_PREFIX	:= /usr/bin/arm-none-eabi-
-armv8_COMP_PREFIX	:= /usr/local/arm/gcc-7.2.0/bin/arm-
-avr8_COMP_PREFIX	:= /usr/local/avr/gcc-4.4.4/bin/avr-
+armv8_COMP_PREFIX	:= /usr/bin/arm-none-eabi-
+rv32_COMP_PREFIX	:= /usr/local/rv32/bin/riscv32-unknown-linux-gnu-
+rv64_COMP_PREFIX	:= /usr/bin/riscv64-linux-gnu-
 COMP_PREFIX		= $($(ARCH)_COMP_PREFIX)
 
 # Machine specifics
@@ -134,8 +140,8 @@ ifeq ($(MMOD),raspberry_pi3)
 cortex_CC_FLAGS		:= -mcpu=cortex-a53 -mfloat-abi=hard -mfpu=vfp
 cortex_AS_FLAGS		:= -mcpu=cortex-a53
 cortex_LD_FLAGS		:=
-cortex_EMULATOR		= qemu-system-aarch64 -machine type=virt -cpu cortex-a53 -smp $(CPUS) -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel 
-cortex_DEBUGGER		:= arm-none-eabi-gdb
+cortex_EMULATOR		= qemu-system-aarch64 -M raspi2 -cpu cortex-a53 -smp 4 -m 1G -serial null -serial mon:stdio -nographic -no-reboot -kernel 
+cortex_DEBUGGER		:= gdb
 cortex_FLASHER		= $(TLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f
 cortex_MAGIC		:= --omagic
 cortex_CODE_NAME	:= .init
@@ -169,6 +175,32 @@ cortex_DATA_NAME	:= .data
 cortex_IMG_SUFFIX	:= .img
 endif
 
+ifeq ($(MMOD),sifive_e)
+riscv_CC_FLAGS          := -Wl, -mno-relax
+riscv_AS_FLAGS          := 
+riscv_LD_FLAGS          := --no-relax
+riscv_EMULATOR			= qemu-system-riscv32 -machine virt -cpu rv32 -smp $(CPUS) -m $(MEM_SIZE)k -serial mon:stdio -bios none -nographic -no-reboot -device loader,file=$(IMAGE),addr=$(IMAGE_ADDR),force-raw=on -kernel 
+riscv_DEBUGGER          := $(COMP_PREFIX)gdb
+riscv_FLASHER           := 
+riscv_MAGIC             := --nmagic
+riscv_CODE_NAME	        := .init
+riscv_DATA_NAME         := .data
+riscv_IMG_SUFFIX        := .img
+endif
+
+ifeq ($(MMOD),sifive_u)
+riscv_CC_FLAGS          := -Wl, -mno-relax
+riscv_AS_FLAGS          := 
+riscv_LD_FLAGS          := --no-relax
+riscv_EMULATOR          = qemu-system-riscv64 -machine virt -cpu rv32 -smp $(CPUS) -m $(MEM_SIZE)k -serial mon:stdio -bios none -nographic -no-reboot -kernel 
+riscv_DEBUGGER          := $(COMP_PREFIX)gdb
+riscv_FLASHER           := 
+riscv_MAGIC             := --nmagic
+riscv_CODE_NAME         := .init
+riscv_DATA_NAME         := .data
+riscv_IMG_SUFFIX        := .img
+endif
+
 atmega_CC_FLAGS		:= -mmcu=atmega128 -Wno-inline
 atmega_AS_FLAGS		:= -mmcu=atmega128
 atmega_LD_FLAGS		:= -m avr5
@@ -180,15 +212,15 @@ atmega_CODE_NAME	:= .init
 atmega_DATA_NAME	:= .data
 atmega_IMG_SUFFIX	:= .hex
 
-MACH_CC_FLAGS           := $($(MACH)_CC_FLAGS) -O -nostdinc -Wno-builtin-declaration-mismatch -Wno-array-bounds
-MACH_CXX_FLAGS          := $($(MACH)_CC_FLAGS) -O -std=c++14 -nostdinc --no-exceptions --no-rtti --no-use-cxa-atexit --no-asynchronous-unwind-tables -fdata-sections -ffunction-sections -Wall -Werror -Wno-builtin-declaration-mismatch -Wno-array-bounds -Wno-attribute-alias -Wno-placement-new -Wno-class-memaccess 
+MACH_CC_FLAGS           := $($(MACH)_CC_FLAGS) -O -nostdinc -fno-stack-protector -fno-pie -Wno-builtin-declaration-mismatch -Wno-array-bounds -Wno-address-of-packed-member
+MACH_CXX_FLAGS          := $($(MACH)_CC_FLAGS) -O -std=c++14 -nostdinc --no-exceptions --no-rtti --no-use-cxa-atexit --no-asynchronous-unwind-tables -fno-stack-protector -fno-pie -fdata-sections -ffunction-sections -Wall -Werror -Wno-builtin-declaration-mismatch -Wno-array-bounds -Wno-attribute-alias -Wno-placement-new -Wno-class-memaccess -Wno-address-of-packed-member
 MACH_AS_FLAGS           := $($(MACH)_AS_FLAGS)
 MACH_LD_FLAGS           := $($(MACH)_LD_FLAGS)
 MACH_CODE_NAME          := $($(MACH)_CODE_NAME)
 MACH_DATA_NAME          := $($(MACH)_DATA_NAME)
-MACH_EMULATOR           := $($(MACH)_EMULATOR)
+MACH_EMULATOR           = $($(MACH)_EMULATOR)
 MACH_DEBUGGER           := $(TERM) $($(MACH)_DEBUGGER) -ex "target remote:1235" -ex "set confirm off"
-MACH_FLASHER            := $($(MACH)_FLASHER)
+MACH_FLASHER            = $($(MACH)_FLASHER)
 MACH_MAGIC              := $($(MACH)_MAGIC)
 MACH_IMGSUFF            := $($(MACH)_IMG_SUFFIX)
 
@@ -196,7 +228,7 @@ ifeq ($(DEBUG),1)
 MACH_CC_FLAGS		:= -g -feliminate-unused-debug-symbols $(MACH_CC_FLAGS)
 MACH_CXX_FLAGS          := -g -feliminate-unused-debug-symbols $(MACH_CXX_FLAGS)
 MACH_AS_FLAGS		:= -g $(MACH_AS_FLAGS)
-MACH_EMULATOR           := $(subst -m ,-gdb tcp::1235 -S -m ,$(MACH_EMULATOR))
+MACH_EMULATOR           = $(subst -m ,-gdb tcp::1235 -S -m ,$($(MACH)_EMULATOR))
 endif
 
 # Architecture specifics
@@ -221,10 +253,9 @@ TLDFLAGS	:= -m32
 
 # Tools and flags to compile applications
 ACC		= $(BIN)/eposcc $(MACH_CC_FLAGS)  -c -ansi -O
-ACXX		= $(BIN)/eposcc $(MACH_CXX_FLAGS) -c -ansi -O
-AF77		= $(BIN)/eposcc $(MACH_CC_FLAGS)  -c -ansi -O
-ALD		= $(BIN)/eposcc --$(SMOD) --no-warn-mismatch 
-ALDFLAGS	:= --gc-sections $(MACH_MAGIC)
+ACCFLAGS	= $(MACH_CXX_FLAGS)
+ALD		= $(BIN)/eposcc --$(SMOD) --no-warn-mismatch
+ALDFLAGS	:= --gc-sections --undefined=__boot_time_system_info $(MACH_MAGIC)
 
 # Tools and flags to compile the system
 AR		= $(COMP_PREFIX)ar
@@ -261,11 +292,11 @@ LD		= $(COMP_PREFIX)ld
 LDFLAGS		= $(MACH_LD_FLAGS) -nostdlib -L$(LIB) -Bstatic
 
 MAKE		:= make --print-directory
-MAKECLEAN	:= make -i clean
-MAKETEST	:= make --no-print-directory --silent
+MAKECLEAN	:= make --ignore-errors clean
+MAKETEST	:= make --no-print-directory --silent --stop
 MAKEFLAGS	:= --no-builtin-rules
 
-MKBI		:= $(BIN)/eposmkbi $(EPOS)
+MKBI		= $(BIN)/eposmkbi $(if $(findstring s, $(word 1, $(MAKEFLAGS))), -s) $(EPOS)
 
 OBJCOPY		= $(COMP_PREFIX)objcopy
 OBJCOPYFLAGS	:= -R .note -R .comment
@@ -281,7 +312,11 @@ TCPDUMP		:= tcpdump -tttttennvvvXXr
 
 TEE		:= tee
 
-TERM		:= xterm -e
+ifndef DISPLAY
+TERM        := sh -c
+else
+TERM        := konsole -e
+endif
 
 TOUCH		:= touch
 

@@ -21,6 +21,12 @@ template<> struct Traits<MMU>: public Traits<Build>
     static const unsigned int COLORS = 1;
 };
 
+template<> struct Traits<FPU>: public Traits<Build>
+{
+    static const bool enabled = (Traits<Build>::MODEL == Traits<Build>::Raspberry_Pi3);;
+    static const bool user_save = true;
+};
+
 template<> struct Traits<TSC>: public Traits<Build>
 {
     // In order to use Machine::delay, TSC must be enabled

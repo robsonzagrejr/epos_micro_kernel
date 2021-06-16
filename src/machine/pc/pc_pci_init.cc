@@ -7,7 +7,7 @@ __BEGIN_SYS
 
 void PCI::init()
 {
-    _phy_io_mem = System::info()->pmm.io_base;
+    _phy_io_mem = System::info()->bm.mio_base;
 
     db<Init, PCI>(TRC) << "PCI::init(pmm.io_mem=" << _phy_io_mem << ")" << endl;
 

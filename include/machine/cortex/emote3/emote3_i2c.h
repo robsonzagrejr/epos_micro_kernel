@@ -176,7 +176,7 @@ public:
     bool put(unsigned char slave_address, char data, bool stop = true) {
         // Specify the slave address and that the next operation is a write (last bit = 0)
         i2c(I2C_SA) = (slave_address << 1);
-        return send_byte(data, I2C_CTRL_RUN | I2C_CTRL_START | (stop ? I2C_CTRL_STOP : 0));
+        return put_byte(data, I2C_CTRL_RUN | I2C_CTRL_START | (stop ? I2C_CTRL_STOP : 0));
     }
 
     bool read(char slave_address, char * data, unsigned int size, bool stop) {
@@ -200,18 +200,12 @@ public:
     bool write(unsigned char slave_address, const char * data, unsigned int size, bool stop) {
         bool ret = true;
         // Specify the slave address and that the next operation is a write (last bit = 0)
-        i2c(I2C_SA) = (slave_address << 1) & 0xFE;
-        for(unsigned int i = 0; i < size; i++) {
-            if(i == 0) //first byte to be sent
-                ret = send_byte(data[i], I2C_CTRL_RUN | I2C_CTRL_START);
-            else if(i + 1 == size)
-                ret = send_byte(data[i], I2C_CTRL_RUN | (stop ? I2C_CTRL_STOP : 0));
-            else
-                ret = send_byte(data[i], I2C_CTRL_RUN);
-
-            if(!ret)
-                return false;
-        }
+        i2c(I2C_SA) = slave_address << 1;
+        ret = put_byte(data[0], I2C_CTRL_RUN | I2C_CTRL_START);
+        for(unsigned int i = 1; !ret && (i < size - 1); i++)
+            ret = put_byte(data[i], I2C_CTRL_RUN);
+        if(!ret)
+            ret = put_byte(data[size-1], I2C_CTRL_RUN  | I2C_CTRL_STOP);
         return ret;
     }
 
@@ -219,17 +213,25 @@ public:
     bool ready_to_put() { return !(i2c(I2C_STAT) & I2C_STAT_BUSY); }
 
 private:
-    bool send_byte(char data, int mode) {
+    bool put_byte(char data, int mode) {
+        // assumes that slave address already written to I2CMSA
         i2c(I2C_DR) = data;
         i2c(I2C_CTRL) = mode;
-        while(!ready_to_put());
-        return !(i2c(I2C_STAT) & I2C_STAT_ERROR);
+        int timeout = 1000;
+        while(ready_to_put() && timeout--);
+        timeout = 1000;
+        while(!ready_to_put() && timeout--);
+        return (i2c(I2C_STAT) & (I2C_STAT_ERROR | I2C_STAT_ADRACK | I2C_STAT_DATACK));
     }
 
     bool get_byte(char * data, int mode) {
         i2c(I2C_CTRL) = mode;
-        while(!ready_to_get());
-        if(i2c(I2C_STAT) & I2C_STAT_ERROR) {
+        int timeout = 1000;
+        while(!ready_to_get() && timeout--);
+        timeout = 1000;
+        while(ready_to_get() && timeout--);
+        if(i2c(I2C_STAT) & (I2C_STAT_ERROR | I2C_STAT_ADRACK | I2C_STAT_DATACK)) {
+            *data = 0;
             return false;
         } else {
             *data = i2c(I2C_DR);
@@ -269,9 +271,9 @@ public:
         scr()->clock_i2c();
 
         sda->select_pin_function(1 << sda_pin, PL061::FUN_ALTERNATE);
-        sda->direction(1 << sda_pin, PL061::INOUT);
+        sda->direction(1 << sda_pin, PL061::IN);
         scl->select_pin_function(1 << scl_pin, PL061::FUN_ALTERNATE);
-        scl->direction(1 << scl_pin, PL061::INOUT);
+        scl->direction(1 << scl_pin, PL061::IN);
 
         ioc()->enable_i2c((sda_port - 'A'), sda_pin, (scl_port - 'A'), scl_pin);
 

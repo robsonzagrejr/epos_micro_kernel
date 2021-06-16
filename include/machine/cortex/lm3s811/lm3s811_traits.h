@@ -15,35 +15,37 @@ template<> struct Traits<Machine_Common>: public Traits<Build>
 
 template<> struct Traits<Machine>: public Traits<Machine_Common>
 {
+    static const bool cpus_use_local_timer      = false;
+
     static const unsigned int NOT_USED          = 0xffffffff;
     static const unsigned int CPUS              = Traits<Build>::CPUS;
+
+    // Physical Memory
+    static const unsigned int MEM_BASE          = 0x20000000;
+    static const unsigned int MEM_TOP           = 0x20001fff;   // 8 KB (MAX for 32-bit is 0x70000000 / 1792 MB)
+    static const unsigned int MIO_BASE          = 0x40000000;
+    static const unsigned int MIO_TOP           = 0x440067ff;
 
     // Boot Image
     static const unsigned int BOOT_LENGTH_MIN   = NOT_USED;
     static const unsigned int BOOT_LENGTH_MAX   = NOT_USED;
-
-    // Physical Memory
-    static const unsigned int MEM_BASE          = 0x20000000;
-    static const unsigned int MEM_TOP           = 0x20001fff; // 8 KB (MAX for 32-bit is 0x70000000 / 1792 MB)
-    static const unsigned int BOOT_STACK        = 0x20001ffc; // MEM_TOP - sizeof(int)
+    static const unsigned int BOOT_STACK        = 0x20001ffc;   // MEM_TOP - sizeof(int)
 
     // Logical Memory Map
     static const unsigned int BOOT              = NOT_USED;
+    static const unsigned int IMAGE             = NOT_USED;
     static const unsigned int SETUP             = NOT_USED;
     static const unsigned int INIT              = NOT_USED;
 
-    static const unsigned int APP_LOW           = 0x20000000;
-    static const unsigned int APP_CODE          = 0x00000000;
-    static const unsigned int APP_DATA          = 0x20000000;
-    static const unsigned int APP_HIGH          = 0x20001fff; // 8 KB
+    static const unsigned int APP_LOW           = MEM_BASE;
+    static const unsigned int APP_CODE          = 0x00000000;   // Flash
+    static const unsigned int APP_DATA          = APP_LOW;
+    static const unsigned int APP_HIGH          = MEM_TOP;
+    static const unsigned int VECTOR_TABLE      = 0x00200000;
 
-    static const unsigned int PHY_MEM           = 0x20000000;
-    static const unsigned int IO_BASE           = 0x40000000;
-    static const unsigned int IO_TOP            = 0x440067ff;
-
-    static const unsigned int SYS               = 0x00200000;
-    static const unsigned int SYS_CODE          = 0x00200000; // Library mode only => APP + SYS
-    static const unsigned int SYS_DATA          = 0x20000000; // Library mode only => APP + SYS
+    static const unsigned int PHY_MEM           = NOT_USED;     // this machine only supports the library architecture of EPOS
+    static const unsigned int IO                = NOT_USED;     // this machine only supports the library architecture of EPOS
+    static const unsigned int SYS               = NOT_USED;     // this machine only supports the library architecture of EPOS
 
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE        = 512;

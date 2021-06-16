@@ -103,14 +103,14 @@ public:
     };
 
 public:
-    unsigned char get() { return gpio(DATA); }
-    bool get(const Pin & mask) { return gpio(DATA + (mask << 2)); }
+    unsigned char get() { return gpio(DATA + (0xff << 2)); }
+    bool get(Pin mask) { return gpio(DATA + (mask << 2)); }
     void set() { gpio(DATA) = 0xff; }
-    void set(const Pin & mask, bool value = true) { gpio(DATA + (mask << 2)) = value * 0xff; }
+    void set(Pin mask, bool value = true) { gpio(DATA + (mask << 2)) = value * 0xff; }
     void clear() { gpio(DATA) = 0; }
-    void clear(const Pin & mask) { set(mask, false); }
+    void clear(Pin mask) { set(mask, false); }
 
-    void direction(const Pin & mask, const Direction & dir) {
+    void direction(Pin mask, Direction dir) {
         switch(dir) {
             case OUT:
                 gpio(DIR) |= mask;
@@ -122,10 +122,10 @@ public:
         }
     }
 
-    void int_enable(const Pin & mask) { gpio(IM) |= mask; }
-    void int_disable(const Pin & mask) { gpio(IM) &= ~mask; }
-    void int_enable(const Port & port, const Pin & mask, const Level & level, bool power_up = false, const Level & power_up_level = HIGH);
-    void int_enable(const Port & port, const Pin & mask, const Edge & edge, bool power_up = false, const Edge & power_up_edge = RISING) {
+    void int_enable(Pin mask) { gpio(IM) |= mask; }
+    void int_disable(Pin mask) { gpio(IM) &= ~mask; }
+    void int_enable(Port port, Pin mask, Level level, bool power_up = false, Level power_up_level = HIGH);
+    void int_enable(Port port, Pin mask, Edge edge, bool power_up = false, Edge power_up_edge = RISING) {
         gpio(IS) &= ~mask; // Set interrupt to edge-triggered
 
         switch(edge) {
@@ -154,15 +154,14 @@ public:
         }
     }
 
-    void select_pin_function(const Pin & mask, const Function & fun) {
+    void select_pin_function(Pin mask, Function fun) {
         if(fun == FUN_ALTERNATE) {
             gpio(AFSEL) |= mask;
-            gpio(DEN)   |= mask;
         } else
             gpio(AFSEL) &= ~mask;
     }
 
-    void pull(const Pin & mask, const Pull & p) {
+    void pull(Pin mask, Pull p) {
         switch(p) {
             case UP:
                 gpio(PUR) &= mask;
@@ -176,7 +175,7 @@ public:
         }
     }
 
-    void clear_interrupts(const Pin & mask) {
+    void clear_interrupts(Port port, Pin mask) {
         gpio(ICR) = mask;
 
         // There is something weird going on here.
@@ -186,7 +185,7 @@ public:
         // Also, clearing only the bit that is set or replacing the statement below with
         // regs[irq_number](IRQ_DETECT_ACK) = 0;
         // does not work!
-        gpio(IRQ_DETECT_ACK) &= ~mask;
+        gpio(IRQ_DETECT_ACK) &=  ~(mask << (8 * port));
     }
 
     unsigned int pending_regular_interrupts() { return gpio(MIS); }

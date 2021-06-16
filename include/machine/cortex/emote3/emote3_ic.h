@@ -42,7 +42,7 @@ public:
     static void enable() { nvic()->enable(); }
     static void enable(Interrupt_Id id)  { nvic()->enable(id); }
     static void disable() { nvic()->disable(); }
-    static void disable(Interrupt_Id id) { nvic()->disable(); }
+    static void disable(Interrupt_Id id) { nvic()->disable(id); }
 
     // Only works in handler mode (inside IC::entry())
     static Interrupt_Id int_id() { return CPU::flags() & 0x3f; }

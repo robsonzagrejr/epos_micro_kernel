@@ -1,5 +1,6 @@
 // EPOS EPOSMote III (ARM Cortex-M3) USB Mediator Declarations
 
+#include <machine.h>
 #include <machine/ic.h>
 #include <machine/usb.h>
 #include <machine/cortex/emote3/emote3_sysctrl.h>
@@ -178,6 +179,17 @@ void USB_Engine::init()
     reset();
 
     _state = USB_2_0::STATE::POWERED;
+
+
+    if (Traits<USB>::wait_to_sync) {
+        //Necessary to use USB early on the execution
+        bool a = CPU::int_disabled();
+        if(a)
+            CPU::int_enable();
+        Machine::delay(2000000);
+        if(a)
+            CPU::int_enable();
+    }
 }
 
 #endif

@@ -1,6 +1,7 @@
 // EPOS OStream Implementation
 
 #include <utility/ostream.h>
+#include <architecture/cpu.h>
 
 __BEGIN_UTIL
 
@@ -85,7 +86,7 @@ int OStream::llutoa(unsigned long long int v, char * s, unsigned int i)
 
 int OStream::ptoa(const void * p, char * s)
 {
-    unsigned int j, v = reinterpret_cast<unsigned int>(p);
+    CPU::Reg j, v = reinterpret_cast<CPU::Reg>(p);
 
     s[0] = '0';
     s[1] = 'x';

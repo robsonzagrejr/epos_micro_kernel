@@ -17,6 +17,8 @@ __BEGIN_SYS
 class System_Timer_Engine: public Timer_Common
 {
 private:
+    static const unsigned int FREQUENCY = Traits<Timer>::FREQUENCY;
+
     typedef IC_Common::Interrupt_Id Interrupt_Id;
 
 public:
@@ -25,19 +27,22 @@ public:
 public:
     System_Timer_Engine() { new(systick()) SysTick; }
 
-    Count count() const { return systick()->count(); }
+    static Count count() { return systick()->count(); }
+    static Count read() { return systick()->read(); }
 
-    void enable() const { systick()->enable(); }
-    void disable() const { systick()->disable(); }
+    static void reset() { systick()->config(systick()->clock() / FREQUENCY, true, true); }
+    static void enable() { systick()->enable(); }
+    static void disable() { systick()->disable(); }
 
-    Hertz clock() const { return systick()->clock(); }
+    static Hertz clock() { return systick()->clock(); }
 
 protected:
     static void eoi(Interrupt_Id id) { systick()->eoi(id); };
 
-    static void init(const Hertz & frequency) {
-        systick()->config(systick()->clock() / frequency, true, true);
-        systick()->enable();
+    static void init() {
+        disable();
+        reset();
+        enable();
     }
 
 private:
@@ -66,6 +71,7 @@ public:
     }
 
     Count count() const { return _gptm->count(); }
+    Count read() const { return _gptm->read(); }
 
     void enable() const { _gptm->enable(); }
     void disable() const { _gptm->disable(); }

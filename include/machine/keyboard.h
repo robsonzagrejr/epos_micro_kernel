@@ -16,7 +16,7 @@ protected:
 
 class Serial_Keyboard: public Keyboard_Common
 {
-    friend class PC_Setup;
+    friend class Setup;
     friend class Machine;
 
 public:
@@ -44,7 +44,7 @@ __END_SYS
 // If the machine does not feature a Keyboard, then use the serial console
 #ifndef __KEYBOARD_H
 __BEGIN_SYS
-class Keyboard: public IF<Traits<Serial_Keyboard>::enabled, Serial_Keyboard, Dummy>::Result {};
+class Keyboard: public IF<Traits<Serial_Keyboard>::enabled, Serial_Keyboard, Dummy<>>::Result {};
 __END_SYS
 #endif
 

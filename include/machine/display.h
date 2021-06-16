@@ -33,7 +33,7 @@ public:
 
 class Serial_Display: public Display_Common
 {
-    friend class PC_Setup;
+    friend class Setup;
     friend class Serial_Keyboard;
     friend class Machine;
 
@@ -158,7 +158,7 @@ __END_SYS
 // If the machine does not feature a Keyboard, then use the serial console
 #ifndef __DISPLAY_H
 __BEGIN_SYS
-class Display: public IF<Traits<Serial_Display>::enabled, Serial_Display, Dummy>::Result {};
+class Display: public IF<Traits<Serial_Display>::enabled, Serial_Display, Dummy<>>::Result {};
 __END_SYS
 #endif
 

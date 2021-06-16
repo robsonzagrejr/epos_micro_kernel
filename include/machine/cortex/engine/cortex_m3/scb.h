@@ -108,7 +108,7 @@ public:
 
     void enter_thread_state() { scs(CCR) |= BASETHR; }
 
-    void vector_table_offset() { scs(VTOR) = (Traits<Machine>::SYS_CODE) & ~(1 << 29); }  // Must be 512-byte aligned!
+    void vector_table_offset() { scs(VTOR) = (Traits<Machine>::VECTOR_TABLE) & ~(1 << 29); }  // Must be 512-byte aligned!
 
 private:
     volatile Reg32 & scs(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(this)[o / sizeof(Reg32)]; }

@@ -50,6 +50,7 @@ public:
 
             return *this;
         }
+
         Forward operator++(int) {
             Forward tmp = *this; ++*this; return tmp;
         }
@@ -72,7 +73,12 @@ public:
 public:
     Simple_Hash() {}
 
-    Iterator begin() { return Iterator(this, Iterator::BEGIN); }
+    Iterator begin() {
+        Iterator it = Iterator(this, Iterator::BEGIN); // this sets on position 0, which may not be used in a Hash;
+        it++;  // sends Iterator to the first valid element, or END if empty;
+        return it;
+    }
+
     Iterator end() { return Iterator(this, Iterator::END); }
 
     bool empty() const {
@@ -139,11 +145,13 @@ public:
     typedef El Element;
     typedef L List;
 
+    // TODO: a forward iterator is missing here!
+
 public:
     Hash() {}
 
     bool empty() const {
-        for(unsigned int i; i < SIZE; i++)
+        for(unsigned int i = 0; i < SIZE; i++)
             if(!_table[i].empty())
         	return false;
         return true;
@@ -151,7 +159,7 @@ public:
 
     unsigned int size() const {
         unsigned int size = 0;
-        for(unsigned int i; i < SIZE; i++)
+        for(unsigned int i = 0; i < SIZE; i++)
             size += _table[i].size();
         return size;
     }

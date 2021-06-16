@@ -12,13 +12,19 @@ Check the **Setting up EPOS** section of the [manual](https://epos.lisha.ufsc.br
 
     Fedora packs compilers for x86 that can be installed with ```dnf install binutils-x86_64-linux-gnu gcc-c++-x86_64-linux-gnu``` and ARM compilers that can be installed with: ```dnf install arm-none-eabi-binutils-cs arm-none-eabi-gcc-cs-c++ arm-none-eabi-newlib```.
 
+    On ubuntu 18.04 the x86 packs can be installed with ```apt install binutils-x86-64-linux-gnu```, and ARM compilers can be installed with ```apt install binutils-arm-none-eabi gcc-arm-none-eabi```. Make sure your ubuntu has the ```make``` package already installed.
+
 * **32-bit development libs** (if your development platform is 64-bit)
 
     For fedora: ```dnf install libc-devel.i686 libstdc++.i686 libstdc++-devel zlib.i686```
 
+    For ubuntu 18.04: ```apt install lib32stdc++6 libc6-i386 libc6-dev-i386 lib32z1 lib32ncurses5 libbz2-1.0:i386 gcc-multilib g++-multilib```
+
 * **Intel 8086** tools (to compile the bootstrap, only if you intend to use x86)
 
     For fedora: ```dnf install dev86```
+
+    For ubuntu: ```apt install bin86```
 
 ### Installing
 
@@ -32,7 +38,7 @@ You can also built for specific applications using ```make APPLICATION=<app>```,
 
 ### Running
 
-After building an application-oriented instance of EPOS, you can run the application with the tailored EPOS on QEMU using: ```make run```
+After building an application-oriented instance of EPOS, you can run the application with the tailored EPOS on QEMU using: ```make APPLICATION=<app> run```
 
 ## Contributing
 

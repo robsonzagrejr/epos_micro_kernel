@@ -5,7 +5,7 @@ include	../../makedefs
 ifeq ($(MAKE),$(MAKECLEAN))
 SUBDIRS := $(shell find * -maxdepth 0 -type d)
 else
-SUBDIRS := $(ARCH)
+SUBDIRS := common $(ARCH)
 endif
 
 all:		$(SUBDIRS)

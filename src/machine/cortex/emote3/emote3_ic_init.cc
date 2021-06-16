@@ -6,7 +6,6 @@
 #include <machine/timer.h>
 #include <machine/usb.h>
 #include <machine/gpio.h>
-#include <machine/nic.h>
 
 __BEGIN_SYS
 

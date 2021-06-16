@@ -93,33 +93,33 @@ public:
 public:
     Intel_PMU_V1() {}
 
-    static void config(const Channel & channel, const Event & event, const Flags & flags = NONE) {
+    static void config(Channel channel, Event event, Flags flags = NONE) {
         assert((channel < CHANNELS) && (event < EVENTS));
         db<PMU>(TRC) << "PMU::config(c=" << channel << ",e=" << event << ",f=" << flags << ")" << endl;
         wrmsr(EVTSEL0 + channel, _events[event] | USR | OS | ENABLE | flags); // implicitly start counting due to flag ENABLE
     }
 
-    static Count read(const Channel & channel) {
+    static Count read(Channel channel) {
         db<PMU>(TRC) << "PMU::read(c=" << channel << ")" << endl;
         return rdpmc(channel);
     }
 
-    static void write(const Channel & channel, const Count & count) {
+    static void write(Channel channel, Count count) {
         db<PMU>(TRC) << "PMU::write(ch=" << channel << ",ct=" << count << ")" << endl;
         wrmsr(PMC_BASE_ADDR + channel, count);
     }
 
-    static void start(const Channel & channel) {
+    static void start(Channel channel) {
         db<PMU>(TRC) << "PMU::start(c=" << channel << ")" << endl;
         wrmsr(EVTSEL0 + channel, (rdmsr(EVTSEL0 + channel) | ENABLE));
     }
 
-    static void stop(const Channel & channel) {
+    static void stop(Channel channel) {
         db<PMU>(TRC) << "PMU::stop(c=" << channel << ")" << endl;
         wrmsr(EVTSEL0 + channel, (rdmsr(EVTSEL0 + channel) & ~ENABLE));
     }
 
-    static void reset(const Channel & channel) {
+    static void reset(Channel channel) {
         db<PMU>(TRC) << "PMU::reset(c=" << channel << ")" << endl;
         wrmsr(EVTSEL0 + channel, 0);
     }
@@ -229,7 +229,6 @@ public:
     }
 
 protected:
-    // Guto: FIXEDs never trigger ints?
     static Handler * _handlers[CHANNELS - FIXED];
 };
 
@@ -608,7 +607,7 @@ public:
 public:
     Intel_Sandy_Bridge_PMU() {}
 
-    static bool config(const Channel & channel, const Event & event, const Flags & flags = NONE) {
+    static bool config(Channel channel, Event event, Flags flags = NONE) {
         assert((channel < CHANNELS) && (event < EVENTS));
         db<PMU>(TRC) << "PMU::config(c=" << channel << ",e=" << event << ",f=" << flags << ")" << endl;
 
@@ -617,7 +616,7 @@ public:
             return false;
         }
 
-        if(channel >= FIXED){
+        if(channel >= FIXED) {
             wrmsr(EVTSEL0 + channel - FIXED, _events[event] | USR | OS | ENABLE | flags); // implicitly start counting due to flag ENABLE
         }
 
@@ -626,18 +625,18 @@ public:
         return true;
     }
 
-    static Count read(const Channel & channel) {
+    static Count read(Channel channel) {
         assert(channel < CHANNELS);
         db<PMU>(TRC) << "PMU::read(c=" << channel << ")" << endl;
         return channel < FIXED ? rdpmc(channel | (1 << 30)) : rdpmc(channel - FIXED);
     }
 
-    static void write(const Channel & channel, const Count & count) {
+    static void write(Channel channel, Count count) {
         db<PMU>(TRC) << "PMU::write(ch=" << channel << ",ct=" << count << ")" << endl;
         if(channel >= FIXED) wrmsr(PMC_BASE_ADDR + channel - FIXED, count);
     }
 
-    static void start(const Channel & channel) {
+    static void start(Channel channel) {
         assert(channel < CHANNELS);
         db<PMU>(TRC) << "PMU::start(c=" << channel << ")" << endl;
         if(channel < FIXED) {
@@ -649,7 +648,7 @@ public:
         }
     }
 
-    static void stop(const Channel & channel) {
+    static void stop(Channel channel) {
         assert(channel < CHANNELS);
         db<PMU>(TRC) << "PMU::stop(c=" << channel << ")" << endl;
         if(channel < FIXED) {
@@ -659,7 +658,7 @@ public:
             wrmsr(GLOBAL_CTRL, rdmsr(GLOBAL_CTRL) & ~(1ULL << (PMC0_ENABLE + channel - FIXED)));
     }
 
-    static void reset(const Channel & channel) {
+    static void reset(Channel channel) {
         assert(channel < CHANNELS);
         db<PMU>(TRC) << "PMU::reset(c=" << channel << ")" << endl;
         if(channel < FIXED)
@@ -668,7 +667,7 @@ public:
             wrmsr(EVTSEL0 + channel - FIXED, 0);
     }
 
-    static bool overflow(const Channel & channel) {
+    static bool overflow(Channel channel) {
         assert(channel < CHANNELS);
         db<PMU>(TRC) << "PMU::overflow(c=" << channel << ")" << endl;
         return (channel < FIXED) ? (rdmsr(GLOBAL_STATUS) & (1ULL << (CRT0_OVERFLOW + channel))) : (rdmsr(GLOBAL_STATUS) & (1ULL << (channel - FIXED)));
@@ -679,234 +678,19 @@ public:
         return ((rdmsr(GLOBAL_STATUS) & PMC_MASK) != 0);
     }
 
-    static void clear_overflow(const Channel & channel) {
+    static void clear_overflow(Channel channel) {
         assert(channel < CHANNELS);
         wrmsr(GLOBAL_OVF, (PMC_MASK & 1ULL << (channel - FIXED))); //clear OVF flag
     }
 
-    static void handler(Handler * handler, const Channel & channel) { 
+    static void handler(Handler * handler, Channel channel) {
         if((channel - FIXED) < CHANNELS)
             _handlers[channel - FIXED] = handler;
         else
             db<Init, Intel_PMU_V1>(WRN) << "Intel_PMU_V1::handler = Bad PMC value, handler not addressed!" << endl;
     }
 private:
-    static constexpr Event _events[EVENTS] = {
-        // Architecture                              // NUM
-        INSTRUCTIONS_RETIRED,                        // 000
-        UNHALTED_REFERENCE_CYCLES,                   // 001
-        UNHALTED_CORE_CYCLES,                        // 002
-        BRANCH_INSTRUCTIONS_RETIRED,                 // 003
-        BRANCH_MISSES_RETIRED,                       // 004
-        MEM_LOAD_UOPS_RETIRED_L1_HIT,                // 005
-        MEM_LOAD_UOPS_RETIRED_L2_HIT,                // 006
-        LLC_REFERENCES,                              // 007
-        LLC_MISSES,                                  // 008
-        ICACHE_MISSES,                               // 009
-        OTHER_ASSISTS_ITLB_MISS_RETIRED,             // 010
-        BR_INST_EXEC_COND,                           // 011
-        L2_TRANS_L1D_WB,                             // 012
-        L2_TRANS_L2_WB,                              // 013
-        MEM_UOP_RETIRED_ALL,                         // 014
-        L1D_EVICTION,                                // 015
-        IDQ_UOPS_NOT_DELIVERED_CORE,                 // 016
-        IDQ_EMPTY,                                   // 017
-        BR_MISP_EXEC_RETURN_NEAR,                    // 018
-        FP_COMP_OPS_EXE_X87,                         // 019
-        DTLB_STORE_MISSES_WALK_DURATION,             // 020
-        DTLB_LOAD_MISSES_MISS_WALK_DURATION,         // 021
-        BR_INST_EXEC_RETURN_NEAR,                    // 022
-        RESOURCE_STALLS_SB,                          // 023
-        XSNP_HIT,                                    // 024
-        BR_MISP_EXEC_INDIRECT_JMP_NON_CALL_RET,      // 025
-        BR_MISP_RETIRED_CONDITIONAL,                 // 026
-        LD_BLOCKS_DATA_UNKNOWN,                      // 027
-        LD_BLOCKS_STORE_FORWARD,                     // 028
-        LD_BLOCKS_NO_SR,                             // 029
-        LD_BLOCKS_ALL_BLOCK,                         // 030
-        MISALIGN_MEM_REF_LOADS,                      // 031
-        MISALIGN_MEM_REF_STORES,                     // 032
-        LD_BLOCKS_PARTIAL_ADDRESS_ALIAS,             // 033
-        LD_BLOCKS_PARTIAL_ALL_STA_BLCOK,             // 034
-        DTLB_LOAD_MISSES_MISS_CAUSES_A_WALK,         // 035
-        DTLB_LOAD_MISSES_MISS_WALK_COMPLETED,        // 036
-        DTLB_LOAD_MISSES_MISS_STLB_HIT,              // 037
-        INT_MISC_RECOVERY_CYCLES,                    // 038
-        INT_MISC_RAT_STALL_CYCLES,                   // 039
-        UOPS_ISSUED_ANY,                             // 040
-        FP_COMP_OPS_EXE_SSE_FP_PACKED_DOUBLE,        // 041
-        FP_COMP_OPS_EXE_SSE_FP_SCALAR_SINGLE,        // 042
-        FP_COMP_OPS_EXE_SSE_PACKED_SINGLE,           // 043
-        FP_COMP_OPS_EXE_SSE_SCALAR_DOUBLE,           // 044
-        SIMD_FP_256_PACKED_SINGLE,                   // 045
-        SIMD_FP_256_PACKED_DOUBLE,                   // 046
-        ARITH_FPU_DIV_ACTIVE,                        // 047
-        INSTS_WRITTEN_TO_IQ_INSTS,                   // 048
-        L2_RQSTS_DEMAND_DATA_RD_HIT,                 // 049
-        L2_RQSTS_ALL_DEMAND_DATA_RD,                 // 050
-        L2_RQSTS_RFO_HITS,                           // 051
-        L2_RQSTS_RFO_MISS,                           // 052
-        L2_RQSTS_ALL_RFO,                            // 053
-        L2_RQSTS_CODE_RD_HIT,                        // 054
-        L2_RQSTS_CODE_RD_MISS,                       // 055
-        L2_RQSTS_ALL_CODE_RD,                        // 056
-        L2_RQSTS_PF_HIT,                             // 057
-        L2_RQSTS_PF_MISS,                            // 058
-        L2_RQSTS_ALL_PF,                             // 059
-        L2_STORE_LOCK_RQSTS_MISS,                    // 060
-        L2_STORE_LOCK_RQSTS_HIT_E,                   // 061
-        L2_STORE_LOCK_RQSTS_HIT_M,                   // 062
-        L2_STORE_LOCK_RQSTS_ALL,                     // 063
-        L2_L1D_WB_RQSTS_HIT_E,                       // 064
-        L2_L1D_WB_RQSTS_HIT_M,                       // 065
-        L2_TRANS_DEMAND_DATA_RD,                     // 066
-        L2_TRANS_RFO,                                // 067
-        L2_TRANS_CODE_RD,                            // 068
-        L2_TRANS_ALL_PF,                             // 069
-        L2_TRANS_L2_FILL,                            // 070
-        L2_TRANS_ALL_REQ_UESTS,                      // 071
-        L2_LINES_IN_I,                               // 072
-        L2_LINES_IN_S,                               // 073
-        L2_LINES_IN_E,                               // 074
-        L2_LINES_IN_ALL,                             // 075
-        L2_LINES_OUT_DEMAND_CLEAN,                   // 076
-        L2_LINES_OUT_DEMAND_DIRTY,                   // 077
-        L2_LINES_OUT_DEMAND_PF_CLEAN,                // 078
-        L2_LINES_OUT_DEMAND_PF_DIRTY,                // 079
-        L2_LINES_OUT_DEMAND_DIRTY_ALL,               // 080
-        LONGEST_LAT_CACHE_REFERENCE,                 // 081
-        LONGEST_LAT_CACHE_MISS,                      // 082
-        CPU_CLK_UNHALTED_THREAD_P,                   // 083
-        CPU_CLK_THREAD_UNHALTED_REF_XCLK,            // 084
-        L1D_PEND_MISS_PENDING,                       // 085
-        DTLB_STORE_MISSES_MISS_CAUSES_A_WALK,        // 086
-        DTLB_STORE_MISSES_WALK_COMPLETED,            // 087
-        DTLB_STORE_MISSES_TLB_HIT,                   // 088
-        LOAD_HIT_PRE_SW_PF,                          // 089
-        LOAD_HIT_PREHW_PF,                           // 090
-        HW_PRE_REQ_DL1_MISS,                         // 091
-        L1D_REPLACEMENT,                             // 092
-        L1D_ALLOCATED_IN_M,                          // 093
-        L1D_ALL_M_REPLACEMENT,                       // 094
-        PARTIAL_RAT_STALLS_FLAGS_MERGE_UOP,          // 095
-        PARTIAL_RAT_STALLS_SLOW_LEA_WINDOW,          // 096
-        PARTIAL_RAT_STALLS_MUL_SINGLE_UOP,           // 097
-        RESOURCE_STALLS2_ALL_FL_EMPTY,               // 098
-        RESOURCE_STALLS2_ALL_PRF_CONTROL,            // 099
-        RESOURCE_STALLS2_BOB_FULL,                   // 100
-        RESOURCE_STALLS2_OOO_RSRC,                   // 101
-        CPL_CYCLES_RING0,                            // 102
-        CPL_CYCLES_RING123,                          // 103
-        RS_EVENTS_EMPTY_CYCLES,                      // 104
-        OFFCORE_REQUESTS_OUTSTANDING_DEMAND_DATA_RD, // 105
-        OFFCORE_REQUESTS_OUTSTANDING_DEMAND_RFO,     // 106
-        OFFCORE_REQUESTS_OUTSTANDING_ALL_DATA_RD,    // 107
-        LOCK_CYCLES_SPLIT_LOCK_UC_LOCK_DURATION,     // 108
-        LOCK_CYCLES_CACHE_LOCK_DURATION,             // 109
-        IDQ_MITE_UOPS,                               // 110
-        IDQ_DSB_UOPS,                                // 111
-        IDQ_MS_DSB_UOPS,                             // 112
-        IDQ_MS_MITE_UOPS,                            // 113
-        IDQ_MS_UOPS,                                 // 114
-        ITLB_MISSES_MISS_CAUSES_A_WALK,              // 115
-        ITLB_MISSES_WALK_COMPLETED,                  // 116
-        ITLB_MISSES_WALK_DURATION,                   // 117
-        ITLB_MISSES_STLB_HIT,                        // 118
-        ILD_STALL_LCP,                               // 119
-        ILD_STALL_IQ_FULL,                           // 120
-        BR_INST_EXEC_DIRECT_JMP,                     // 121
-        BR_INST_EXEC_INDIRECT_JMP_NON_CALL_RET,      // 122
-        BR_INST_EXEC_DIRECT_NEAR_CALL,               // 123
-        BR_INST_EXEC_INDIRECT_NEAR_CALL,             // 124
-        BR_INST_EXEC_NON_TAKEN,                      // 125
-        BR_INST_EXEC_TAKEN,                          // 126
-        BR_INST_EXEC_ALL_BRANCHES,                   // 127
-        BR_MISP_EXEC_COND,                           // 128
-        BR_MISP_EXEC_DIRECT_NEAR_CALL,               // 129
-        BR_MISP_EXEC_INDIRECT_NEAR_CALL,             // 130
-        BR_MISP_EXEC_NON_TAKEN,                      // 131
-        BR_MISP_EXEC_TAKEN,                          // 132
-        BR_MISP_EXEC_ALL_BRANCHES,                   // 133
-        UOPS_DISPATCHED_PORT_PORT_0,                 // 134
-        UOPS_DISPATCHED_PORT_PORT_1,                 // 135
-        UOPS_DISPATCHED_PORT_PORT_2_LD,              // 136
-        UOPS_DISPATCHED_PORT_PORT_2_STA,             // 137
-        UOPS_DISPATCHED_PORT_PORT_2,                 // 138
-        UOPS_DISPATCHED_PORT_PORT_3_LD,              // 139
-        UOPS_DISPATCHED_PORT_PORT_3_STA,             // 140
-        UOPS_DISPATCHED_PORT_PORT_3,                 // 141
-        UOPS_DISPATCHED_PORT_PORT_4,                 // 142
-        UOPS_DISPATCHED_PORT_PORT_5,                 // 143
-        RESOURCE_STALLS_ANY,                         // 144
-        RESOURCE_STALLS_LB,                          // 145
-        RESOURCE_STALLS_RS,                          // 146
-        RESOURCE_STALLS_ROB,                         // 147
-        RESOURCE_STALLS_FCSW,                        // 148
-        RESOURCE_STALLS_MXCSR,                       // 149
-        RESOURCE_STALLS_OTHER,                       // 150
-        DSB2MITE_SWITCHES_COUNT,                     // 151
-        DSB2MITE_SWITCHES_PENALTY_CYCLES,            // 152
-        DSB_FILL_OTHER_CANCEL,                       // 153
-        DSB_FILL_EXCEED_DSB_LINES,                   // 154
-        DSB_FILL_ALL_CANCEL,                         // 155
-        ITLB_ITLB_FLUSH,                             // 156
-        OFFCORE_REQUESTS_DEMAND_DATA_RD,             // 157
-        OFFCORE_REQUESTS_DEMAND_RFO,                 // 158
-        OFFCORE_REQUESTS_ALL_DATA_RD,                // 159
-        UOPS_DISPATCHED_THREAD,                      // 160
-        UOPS_DISPATCHED_CORE,                        // 161
-        OFFCORE_REQUESTS_BUFFER_SQ_FULL,             // 162
-        AGU_BYPASS_CANCEL_COUNT,                     // 163
-        OFF_CORE_RESPONSE_0,                         // 164
-        OFF_CORE_RESPONSE_1,                         // 165
-        TLB_FLUSH_DTLB_THREAD,                       // 166
-        TLB_FLUSH_STLB_ANY,                          // 167
-        L1D_BLOCKS_BANK_CONFLICT_CYCLES,             // 168
-        INST_RETIRED_ANY_P,                          // 169
-        INST_RETIRED_PREC_DIST,                      // 170
-        OTHER_ASSISTS_AVX_STORE,                     // 171
-        OTHER_ASSISTS_AVX_TO_SSE,                    // 172
-        OTHER_ASSISTS_SSE_TO_AVX,                    // 173
-        UOPS_RETIRED_ALL,                            // 174
-        UOPS_RETIRED_RETIRE_SLOTS,                   // 175
-        MACHINE_CLEARS_MEMORY_ORDERING,              // 176
-        MACHINE_CLEARS_SMC,                          // 177
-        MACHINE_CLEARS_MASKMOV,                      // 178
-        BR_INST_RETIRED_ALL_BRANCHES_ARCH,           // 179
-        BR_INST_RETIRED_CONDITIONAL,                 // 180
-        BR_INST_RETIRED_NEAR_CALL,                   // 181
-        BR_INST_RETIRED_ALL_BRANCHES,                // 182
-        BR_INST_RETIRED_NEAR_RETURN,                 // 183
-        BR_INST_RETIRED_NOT_TAKEN,                   // 184
-        BR_INST_RETIRED_NEAR_TAKEN,                  // 185
-        BR_INST_RETIRED_FAR_BRANCH,                  // 186
-        BR_MISP_RETIRED_ALL_BRANCHES_ARCH,           // 187
-        BR_MISP_RETIRED_NEAR_CALL,                   // 188
-        BR_MISP_RETIRED_ALL_BRANCHES,                // 189
-        BR_MISP_RETIRED_NOT_TAKEN,                   // 190
-        BR_MISP_RETIRED_TAKEN,                       // 191
-        FP_ASSIST_X87_OUTPUT,                        // 192
-        FP_ASSIST_X87_INPUT,                         // 193
-        FP_ASSIST_SIMD_OUTPUT,                       // 194
-        FP_ASSIST_SIMD_INPUT,                        // 195
-        FP_ASSIST_ANY,                               // 196
-        ROB_MISC_EVENTS_LBR_INSERTS,                 // 197
-        MEM_TRANS_RETIRED_LOAD_LATENCY,              // 198
-        MEM_TRANS_RETIRED_PRECISE_STORE,             // 199
-        MEM_UOP_RETIRED_LOADS,                       // 200
-        MEM_UOP_RETIRED_STORES,                      // 201
-        MEM_UOP_RETIRED_STLB_MISS,                   // 202
-        MEM_UOP_RETIRED_LOCK,                        // 203
-        MEM_UOP_RETIRED_SPLIT,                       // 204
-        MEM_UOPS_RETIRED_ALL_LOADS,                  // 205
-        MEM_LOAD_UOPS_RETIRED_L3_HIT,                // 206
-        MEM_LOAD_UOPS_RETIRED_HIT_LFB,               // 207
-        XSNP_MISS,                                   // 208
-        XSNP_HITM,                                   // 209
-        XSNP_NONE,                                   // 210
-        MEM_LOAD_UOPS_MISC_RETIRED_LLC_MISS,         // 211
-        SQ_MISC_SPLIT_LOCK                           // 212
-    };
+    static const Event _events[EVENTS];
 };
 
 template<int VERSION>

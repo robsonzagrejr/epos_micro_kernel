@@ -3,25 +3,13 @@
 #include <utility/ostream.h>
 #include <utility/heap.h>
 #include <machine.h>
+#include <process.h>
 #include <system.h>
 
 __BEGIN_SYS
 
-// This class purpose is simply to define a well-known entry point for
-// the system. It must be declared as the first global object in
-// system_scaffold.cc
-class First_Object
-{
-public:
-    First_Object() {
-        Machine::pre_init(reinterpret_cast<System_Info *>(Memory_Map::SYS_INFO));
-    }
-};
-
 // Global objects
-// These objects might be reconstructed several times in SMP configurations,
-// so their constructors must be stateless!
-First_Object __entry;
+// These objects might be reconstructed several times in multicore configurations, so their constructors must be stateless!
 OStream kout;
 OStream kerr;
 
@@ -31,3 +19,18 @@ char System::_preheap[];
 Heap * System::_heap;
 
 __END_SYS
+
+// Bindings
+extern "C" {
+    __USING_SYS;
+
+    // Libc legacy
+    void _panic() { Machine::panic(); }
+    void _exit(int s) { Thread::exit(s); for(;;); }
+    void __exit() { Thread::exit(CPU::fr()); }  // must be handled by the Page Fault handler for user-level tasks
+    void __cxa_pure_virtual() { db<void>(ERR) << "Pure Virtual method called!" << endl; }
+
+    // Utility-related methods that differ from kernel and user space.
+    // OStream
+    void _print(const char * s) { Display::puts(s); }
+}

@@ -10,6 +10,7 @@
 
 // Traits are included in config.h
 #include <system/config.h>
+#include <system/memory_map.h>
 
 // Using only bare C to avoid conflicts with EPOS
 #include <stdio.h>
@@ -21,7 +22,7 @@ using namespace EPOS::S;
 using namespace EPOS::S::U;
 
 // Constants
-const unsigned int TOKENS = 24;
+const unsigned int TOKENS = 31;
 const unsigned int COMPONENTS = 62;
 const unsigned int STRING_SIZE = 128;
 
@@ -40,14 +41,21 @@ char tokens[TOKENS][STRING_SIZE] = {
     "MEM_TOP",
     "MEM_SIZE",
     "MEM_SIZE_KB",
+    "MIO_BASE",
+    "MIO_TOP",
+    "MIO_SIZE",
+    "MIO_SIZE_KB",
     "BOOT_STACK",
     "BOOT",
+    "IMAGE",
     "SETUP",
     "INIT",
     "APP_CODE",
     "APP_DATA",
     "SYS_CODE",
     "SYS_DATA",
+    "SYS_STACK",
+    "SYS_HEAP",
     "BOOT_LENGTH_MIN",
     "BOOT_LENGTH_MAX",
     "EXPECTED_SIMULATION_TIME"
@@ -192,65 +200,95 @@ void populate_strings()
     snprintf(string, STRING_SIZE, "%i", Traits<CPU>::WORD_SIZE);
     set_token_value("WORD_SIZE", string);
 
-    snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::MEM_BASE);
+    snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::MEM_BASE);
     set_token_value("MEM_BASE", string);
 
-    snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::MEM_TOP);
+    snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::MEM_TOP);
     set_token_value("MEM_TOP", string);
 
-    snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::MEM_TOP - Traits<Machine>::MEM_BASE);
+    snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::MEM_TOP + 1 - Memory_Map::MEM_BASE);
     set_token_value("MEM_SIZE", string);
 
-    snprintf(string, STRING_SIZE, "0x%08x", (Traits<Machine>::MEM_TOP + 1 - Traits<Machine>::MEM_BASE) / 1024);
+    snprintf(string, STRING_SIZE, "0x%08x", (Memory_Map::MEM_TOP + 1 - Memory_Map::MEM_BASE) / 1024);
     set_token_value("MEM_SIZE_KB", string);
 
-    if(Traits<Machine>::BOOT_STACK != Traits<Machine>::NOT_USED)
-        snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::BOOT_STACK);
+    snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::MIO_BASE);
+    set_token_value("MIO_BASE", string);
+
+    snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::MIO_TOP);
+    set_token_value("MIO_TOP", string);
+
+    snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::MIO_TOP + 1 - Memory_Map::MIO_BASE);
+    set_token_value("MIO_SIZE", string);
+
+    snprintf(string, STRING_SIZE, "0x%08x", (Memory_Map::MIO_TOP + 1 - Memory_Map::MIO_BASE) / 1024);
+    set_token_value("MIO_SIZE_KB", string);
+
+    if(Memory_Map::BOOT_STACK != Memory_Map::NOT_USED)
+        snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::BOOT_STACK);
     else
         string[0] = '\0';
     set_token_value("BOOT_STACK", string);
 
-    if(Traits<Machine>::BOOT != Traits<Machine>::NOT_USED)
-        snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::BOOT);
+    if(Memory_Map::BOOT != Memory_Map::NOT_USED)
+        snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::BOOT);
     else
         string[0] = '\0';
     set_token_value("BOOT", string);
 
-    if(Traits<Machine>::SETUP != Traits<Machine>::NOT_USED)
-        snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::SETUP);
+    if(Memory_Map::IMAGE != Memory_Map::NOT_USED)
+        snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::IMAGE);
+    else
+        string[0] = '\0';
+    set_token_value("IMAGE", string);
+
+    if(Memory_Map::SETUP != Memory_Map::NOT_USED)
+        snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::SETUP);
     else
         string[0] = '\0';
     set_token_value("SETUP", string);
 
-    if(Traits<Machine>::INIT != Traits<Machine>::NOT_USED)
-        snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::INIT);
+    if(Memory_Map::INIT != Memory_Map::NOT_USED)
+        snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::INIT);
     else
         string[0] = '\0';
     set_token_value("INIT", string);
 
-    if(Traits<Machine>::APP_CODE != Traits<Machine>::NOT_USED)
-        snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::APP_CODE);
+    if(Memory_Map::APP_CODE != Memory_Map::NOT_USED)
+        snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::APP_CODE);
     else
         string[0] = '\0';
     set_token_value("APP_CODE", string);
 
-    if(Traits<Machine>::APP_DATA != Traits<Machine>::NOT_USED)
-        snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::APP_DATA);
+    if(Memory_Map::APP_DATA != Memory_Map::NOT_USED)
+        snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::APP_DATA);
     else
         string[0] = '\0';
     set_token_value("APP_DATA", string);
 
-    if(Traits<Machine>::SYS_CODE != Traits<Machine>::NOT_USED)
-        snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::SYS_CODE);
+    if(Memory_Map::SYS_CODE != Memory_Map::NOT_USED)
+        snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::SYS_CODE);
     else
         string[0] = '\0';
     set_token_value("SYS_CODE", string);
 
-    if(Traits<Machine>::SYS_DATA != Traits<Machine>::NOT_USED)
-        snprintf(string, STRING_SIZE, "0x%08x", Traits<Machine>::SYS_DATA);
+    if(Memory_Map::SYS_DATA != Memory_Map::NOT_USED)
+        snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::SYS_DATA);
     else
         string[0] = '\0';
     set_token_value("SYS_DATA", string);
+
+    if(Memory_Map::SYS_STACK != Memory_Map::NOT_USED)
+        snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::SYS_STACK);
+    else
+        string[0] = '\0';
+    set_token_value("SYS_STACK", string);
+
+    if(Memory_Map::SYS_HEAP != Memory_Map::NOT_USED)
+        snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::SYS_HEAP);
+    else
+        string[0] = '\0';
+    set_token_value("SYS_HEAP", string);
 
     if(Traits<Machine>::BOOT_LENGTH_MIN != Traits<Machine>::NOT_USED)
         snprintf(string, STRING_SIZE, "%i", Traits<Machine>::BOOT_LENGTH_MIN);
@@ -283,6 +321,8 @@ void populate_strings()
     case Traits<Build>::ARMv4:          set_token_value("ARCH", "armv4");       break;
     case Traits<Build>::ARMv7:          set_token_value("ARCH", "armv7");       break;
     case Traits<Build>::ARMv8:          set_token_value("ARCH", "armv8");       break;
+    case Traits<Build>::RV32:           set_token_value("ARCH", "rv32");        break;
+    case Traits<Build>::RV64:           set_token_value("ARCH", "rv64");        break;
     case Traits<Build>::SPARCv8:        set_token_value("ARCH", "sparc8");      break;
     case Traits<Build>::PPC32:          set_token_value("ARCH", "ppc32");       break;
     default:                            set_token_value("ARCH", "unsuported");  break;
@@ -296,7 +336,8 @@ void populate_strings()
     case Traits<Build>::RCX:            set_token_value("MACH", "rcx");              break;
     case Traits<Build>::Leon:           set_token_value("MACH", "leon");             break;
     case Traits<Build>::Virtex:         set_token_value("MACH", "virtex");           break;
-    case Traits<Build>::Cortex:         set_token_value("MACH", "cortex");         break;
+    case Traits<Build>::Cortex:         set_token_value("MACH", "cortex");           break;
+    case Traits<Build>::RISCV:          set_token_value("MACH", "riscv");            break;
     default:                            set_token_value("MACH", "unsuported");       break;
     }
 
@@ -307,7 +348,9 @@ void populate_strings()
     case Traits<Build>::LM3S811:        set_token_value("MMOD", "lm3s811");            break;
     case Traits<Build>::Zynq:           set_token_value("MMOD", "zynq");               break;
     case Traits<Build>::Realview_PBX:   set_token_value("MMOD", "realview_pbx");       break;
-    case Traits<Build>::Raspberry_Pi3:  set_token_value("MMOD", "raspberry_pi3");       break;
+    case Traits<Build>::Raspberry_Pi3:  set_token_value("MMOD", "raspberry_pi3");     break;
+    case Traits<Build>::SiFive_E:       set_token_value("MMOD", "sifive_e");           break;
+    case Traits<Build>::SiFive_U:       set_token_value("MMOD", "sifive_u");           break;
     default:                            set_token_value("MMOD", "unsuported");         break;
     }
 

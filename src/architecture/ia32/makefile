@@ -3,8 +3,7 @@
 include ../../../makedefs
 
 OBJS := $(subst .cc,.o,$(shell find *.cc | grep -v _init | grep -v _test))
-CRTS := $(subst .S,.o,$(shell find *.S | grep crt))
-CRTS += $(subst .c,.o,$(shell find *.c | grep crt))
+CRTS := $(subst .S,.o,$(shell find *.S | grep crt)) $(ARCH)_crtbegin.o $(ARCH)_crtend.o 
 CRTSI := $(subst .S,.s,$(shell find *.S | grep crt))
 INITS := $(subst .cc,.o,$(shell find *.cc | grep _init))
 
@@ -17,12 +16,18 @@ crts:		$(CRTS)
 
 .INTERMEDIATE:	$(CRTSI)
 
-$(LIBARCH):	$(LIBARCH)($(OBJS))	
+$(LIBARCH):	$(LIBARCH)($(OBJS))
 
 $(LIBINIT):	$(LIBINIT)($(INITS))
 
 cpu.o		: cpu.cc
 		$(CXX) $(CXXFLAGS) -fomit-frame-pointer $<
+
+$(ARCH)_crtbegin.o: ../common/crtbegin.c
+		$(CC) $(CCFLAGS) $< -o $@
+
+$(ARCH)_crtend.o: ../common/crtend.c
+		$(CC) $(CCFLAGS) $< -o $@
 
 clean:
 		$(CLEAN) *.o *.s *_test

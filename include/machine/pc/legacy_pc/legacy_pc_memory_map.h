@@ -9,37 +9,45 @@ __BEGIN_SYS
 
 struct Memory_Map
 {
-    // Physical Memory
     enum {
-        MEM_BASE      = Traits<Machine>::MEM_BASE,
-        MEM_TOP       = Traits<Machine>::MEM_TOP
-    };
+        NOT_USED        = Traits<Machine>::NOT_USED,
 
-    // Logical Address Space
-    enum {
-        APP_LOW       = Traits<Machine>::APP_LOW,
-        APP_CODE      = Traits<Machine>::APP_CODE,
-        APP_DATA      = Traits<Machine>::APP_DATA,
-        APP_HIGH      = Traits<Machine>::APP_HIGH,
+        // Physical Memory
+        MEM_BASE        = Traits<Machine>::MEM_BASE,
+        MEM_TOP         = Traits<Machine>::MEM_TOP,
+        MIO_BASE        = Traits<Machine>::MIO_BASE,
+        MIO_TOP         = Traits<Machine>::MIO_TOP,
+        BOOT_STACK      = Traits<Machine>::BOOT_STACK,
 
-        PHY_MEM       = Traits<Machine>::PHY_MEM,
-        IO            = Traits<Machine>::IO_BASE,
-        APIC          = IO,
-        IO_APIC       = APIC    +  4 * 1024,
-        VGA           = IO_APIC +  4 * 1024,
-        PCI           = VGA + 32 * 1024, // VGA text mode
+        // Logical Address Space
+        BOOT            = Traits<Machine>::BOOT,
+        IMAGE           = Traits<Machine>::IMAGE,
+        SETUP           = Traits<Machine>::SETUP,
+        INIT            = Traits<Machine>::INIT,
 
-        SYS           = Traits<Machine>::SYS,
-        IDT           = SYS + 0x00000000,
-        GDT           = SYS + 0x00001000,
-        SYS_PT        = SYS + 0x00002000,
-        SYS_PD        = SYS + 0x00003000,
-        SYS_INFO      = SYS + 0x00004000,
-        TSS0          = SYS + 0x00005000,
-        SYS_CODE      = SYS + 0x00300000,
-        SYS_DATA      = SYS + 0x00340000,
-        SYS_STACK     = SYS + 0x003c0000,
-        SYS_HEAP      = SYS + 0x00400000
+        APP_LOW         = Traits<Machine>::APP_LOW,
+        APP_CODE        = APP_LOW,
+        APP_DATA        = APP_LOW + 4 * 1024 * 1024,
+        APP_HIGH        = Traits<Machine>::APP_HIGH,
+
+        PHY_MEM         = Traits<Machine>::PHY_MEM,
+        IO              = Traits<Machine>::IO,
+        APIC            = IO,
+        IO_APIC         = APIC    +  4 * 1024,
+        VGA             = IO_APIC +  4 * 1024,
+        PCI             = VGA + 32 * 1024, // VGA text mode
+
+        SYS             = Traits<Machine>::SYS,
+        IDT             = SYS + 0x00000000,
+        GDT             = SYS + 0x00001000,
+        SYS_PT          = SYS + 0x00002000,
+        SYS_PD          = SYS + 0x00003000,
+        SYS_INFO        = SYS + 0x00004000,
+        TSS0            = SYS + 0x00005000,
+        SYS_CODE        = SYS + 0x00100000,
+        SYS_DATA        = SYS + 0x00200000,
+        SYS_STACK       = SYS + 0x00300000,
+        SYS_HEAP        = SYS + 0x00400000
     };
 };
 

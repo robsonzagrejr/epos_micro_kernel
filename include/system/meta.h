@@ -5,6 +5,105 @@
 
 __BEGIN_SYS
 
+// Native type wrapper (POD)
+template <typename T1>
+class Native_Wrapper
+{
+public:
+	typedef T1 Type;
+
+public:
+    Native_Wrapper() {}
+    Native_Wrapper(const Native_Wrapper & value): _value(value._value) {}
+    Native_Wrapper(const T1 & value): _value(value) {}
+    template<typename T2>
+    Native_Wrapper(const T2 & value): _value(T1(value)) {}
+
+    operator T1() { return _value; }
+    operator const T1 &() const { return _value; }
+    operator T1() volatile { return _value; }
+
+    template<typename T2>
+    void operator =(T2 value) { _value = T1(value); }
+
+    template<typename T2>
+    bool operator==(T2 value) const { return (_value == T1(value)); }
+    template<typename T2>
+    bool operator!=(T2 value) const { return (_value != T1(value)); }
+    template<typename T2>
+    bool operator< (T2 value) const { return (_value < T1(value)); }
+    template<typename T2>
+    bool operator> (T2 value) const { return (_value > T1(value)); }
+    template<typename T2>
+    bool operator>=(T2 value) const { return (_value >= T1(value)); }
+    template<typename T2>
+    bool operator<=(T2 value) const { return (_value <= T1(value)); }
+
+    template<typename T2>
+    bool operator==(T2 value) volatile { return (_value == T1(value)); }
+    template<typename T2>
+    bool operator!=(T2 value) volatile { return (_value != T1(value)); }
+    template<typename T2>
+    bool operator< (T2 value) volatile { return (_value < T1(value)); }
+    template<typename T2>
+    bool operator> (T2 value) volatile { return (_value > T1(value)); }
+    template<typename T2>
+    bool operator>=(T2 value) volatile { return (_value >= T1(value)); }
+    template<typename T2>
+    bool operator<=(T2 value) volatile { return (_value <= T1(value)); }
+
+    template<typename T2>
+    Native_Wrapper operator+(T2 value) const { return _value + T1(value); }
+    template<typename T2>
+    Native_Wrapper operator-(T2 value) const { return _value - T1(value); }
+    template<typename T2>
+    Native_Wrapper operator*(T2 value) const { return _value * T1(value); }
+    template<typename T2>
+    Native_Wrapper operator/(T2 value) const { return _value / T1(value); }
+    template<typename T2>
+    Native_Wrapper operator%(T2 value) const { return _value % T1(value); }
+
+    template<typename T2>
+    Native_Wrapper operator+(T2 value) volatile { return _value + T1(value); }
+    template<typename T2>
+    Native_Wrapper operator-(T2 value) volatile { return _value - T1(value); }
+    template<typename T2>
+    Native_Wrapper operator*(T2 value) volatile { return _value * T1(value); }
+    template<typename T2>
+    Native_Wrapper operator/(T2 value) volatile { return _value / T1(value); }
+    template<typename T2>
+    Native_Wrapper operator%(T2 value) volatile { return _value % T1(value); }
+
+    T1 operator++() { return ++_value; }
+    T1 operator--() { return --_value; }
+    T1 operator++(int value) { return _value++; }
+    T1 operator--(int value) { return _value--; }
+
+    template<typename T2>
+    Native_Wrapper & operator+=(T2 value) { _value += T1(value); return *this; }
+    template<typename T2>
+    Native_Wrapper & operator-=(T2 value) { _value -= T1(value); return *this; }
+    template<typename T2>
+    Native_Wrapper & operator*=(T2 value) { _value *= T1(value); return *this; }
+    template<typename T2>
+    Native_Wrapper & operator/=(T2 value) { _value /= T1(value); return *this; }
+    template<typename T2>
+    Native_Wrapper & operator%=(T2 value) { _value %= T1(value); return *this; }
+
+    template<typename T2>
+    Native_Wrapper & operator&=(T2 value) { _value &= T1(value); return *this; }
+    template<typename T2>
+    Native_Wrapper & operator|=(T2 value) { _value |= T1(value); return *this; }
+
+    Native_Wrapper & operator[](int i) { return *(this + i); }
+
+    template<typename T3>
+    friend T3 & operator<<(T3 & os, const Native_Wrapper & value) { os << value._value; return os; }
+
+private:
+    T1 _value;
+};
+
 // Conditional Type
 template<bool condition, typename Then, typename Else>
 struct IF
@@ -214,12 +313,12 @@ public:
 inline void SERIALIZE(char * buf, int index) {}
 
 template<typename T>
-void SERIALIZE(char * buf, int index, T && a) {
+void SERIALIZE(char * buf, int index, const T & a) {
     __builtin_memcpy(&buf[index], &a, sizeof(T));
 }
 
 template<typename T, typename ... Tn>
-void SERIALIZE(char * buf, int index, const T && a, Tn & ... an) {
+void SERIALIZE(char * buf, int index, const T & a, const Tn & ... an) {
     __builtin_memcpy(&buf[index], &a, sizeof(T));
     SERIALIZE(buf, index + sizeof(T), an ...);
 }

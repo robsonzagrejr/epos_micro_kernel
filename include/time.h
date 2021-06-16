@@ -5,6 +5,7 @@
 
 #include <machine/rtc.h>
 #include <machine/timer.h>
+#include <process.h>
 #include <utility/queue.h>
 #include <utility/handler.h>
 
@@ -29,8 +30,9 @@ public:
 
 class Alarm
 {
-    friend class System;
-    friend class Alarm_Chronometer;
+    friend class System;                        // for init()
+    friend class Alarm_Chronometer;             // for elapsed()
+    friend class FCFS;                          // for ticks() and elapsed()
 
 private:
     typedef Timer_Common::Tick Tick;
@@ -50,17 +52,19 @@ public:
     static void delay(const Microsecond & time);
 
 private:
-    static void init();
+    unsigned int times() const { return _times; }
 
     static volatile Tick & elapsed() { return _elapsed; }
 
     static Microsecond timer_period() { return 1000000 / frequency(); }
     static Tick ticks(const Microsecond & time) { return (time + timer_period() / 2) / timer_period(); }
 
-    static void lock();
-    static void unlock();
+    static void lock() { Thread::lock(); }
+    static void unlock() { Thread::unlock(); }
 
     static void handler(IC::Interrupt_Id i);
+
+    static void init();
 
 private:
     Microsecond _time;
