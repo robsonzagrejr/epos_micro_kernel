@@ -241,8 +241,8 @@ public:
 
     static void halt() { ASM("wfi"); }
 
-    static void fpu_save();
-    static void fpu_restore();
+    static void fpu_save() {} // TODO: implement at first need
+    static void fpu_restore() {}
     static void switch_context(Context ** o, Context * n) __attribute__ ((naked));
 
     static void syscall(void * message);

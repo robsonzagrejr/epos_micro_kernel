@@ -11,19 +11,33 @@ unsigned int CPU::_bus_clock;
 // Class methods
 void CPU::Context::save() volatile
 {
+    // we are not making pushes and pops since we don't want to write things on stack!
+    // Instead, we are using the address of the context object that called the function.
     ASM("       str     r12, [sp,#-68]          \n"
         "       mov     r12, pc                 \n");
 if(thumb)
     ASM("       orr r12, #1                     \n");
 
-    ASM("       push    {r12}                   \n"
-        "       ldr     r12, [sp,#-64]          \n"
-        "       push    {r0-r12, lr}            \n");
+    ASM("       str     r12, [%0, #-64]         \n"
+        "       ldr     r12, [sp,#-68]          \n"
+        "       str     lr, [%0, #-60]          \n"
+        "       str     r12, [%0, #-56]         \n"
+        "       str     r11, [%0, #-52]         \n"
+        "       str     r10, [%0, #-48]         \n"
+        "       str     r9, [%0, #-44]          \n"
+        "       str     r8, [%0, #-40]          \n"
+        "       str     r7, [%0, #-36]          \n"
+        "       str     r6, [%0, #-32]          \n"
+        "       str     r5, [%0, #-28]          \n"
+        "       str     r4, [%0, #-24]          \n"
+        "       str     r3, [%0, #-20]          \n"
+        "       str     r2, [%0, #-16]          \n"
+        "       str     r1, [%0, #-12]          \n"
+        "       str     r0, [%0, #-8]           \n" : : "r"(this));
     mrs12();
-    ASM("       push    {r12}                   \n"
-        "       ldr     r12, [sp, #-4]          \n"
-        "       str     sp, [%0]                \n"
-        "       add     sp, #64                 \n" // increment the pushes for sp to be correct at dispatch, pc (first r12) + r0-r12 (13 registers) + lr + spsr (second r12 push) = 16 --> 16 * 4 = 64
+    ASM("       str     r12, [%0, #-4]          \n"
+        "       ldr     r12, [sp, #-68]         \n"
+        "       add     %0, %0, #-68            \n"
         "       bx      lr                      \n" : : "r"(this)); // naked functions do not provide neither prologue nor epilogue, thus we need to force return
 }
 

@@ -32,6 +32,8 @@ public:
     // Register access
     static Log_Addr pc() { Reg32 r; ASM("mov %0, pc" : "=r"(r) :); return r; } // due to RISC pipelining, PC is read with a +8 (4 for thumb) offset
 
+    static Log_Addr lr() { Reg32 r; ASM("mov %0, lr" : "=r"(r) :); return r; } // due to RISC pipelining, PC is read with a +8 (4 for thumb) offset
+
     static Reg32 sp() { Reg32 r; ASM("mov %0, sp" : "=r"(r) :); return r; }
     static void sp(Reg32 sp) {   ASM("mov sp, %0" : : "r"(sp)); ASM("isb"); }
 
@@ -272,6 +274,40 @@ public:
     static void mrs12() { ASM("mrs r12, cpsr_all" : : : "r12"); }
     static void msr12() { ASM("msr cpsr_all, r12" : : : "cc"); }
 
+    static Reg cpsr() { Reg r; ASM("mrs %0, cpsr" : "=r"(r) : : ); return r; }
+    static void cpsr(Reg r) { ASM("msr cpsr, %0" : : "r"(r) : "cc"); }
+
+    static Reg cpsrc() { Reg r; ASM("mrs %0, cpsr_c" : "=r"(r) : : ); return r; }
+    static void cpsrc(Reg r) { ASM("msr cpsr_c, %0" : : "r"(r): ); }
+
+    static Reg spsr_cxsf() { Reg r; ASM("mrs %0, cpsr_c" : "=r"(r) : : ); return r; }
+    static void spsr_cxsf(Reg r) { ASM("msr cpsr_c, %0" : : "r"(r): ); }
+
+    static Reg elr_hyp() { Reg r; ASM("mrs %0, ELR_hyp" : "=r"(r) : : ); return r; }
+    static void elr_hyp(Reg r) { ASM("msr ELR_hyp, %0" : : "r"(r): ); }
+
+    static Reg r0() { Reg r; ASM("mov %0, r0" : "=r"(r) : : ); return r; }
+    static void r0(Reg r) { ASM("mov r0, %0" : : "r"(r): ); }
+    
+    static Reg r1() { Reg r; ASM("mov %0, r1" : "=r"(r) : : ); return r; }
+    static void r1(Reg r) { ASM("mov r1, %0" : : "r"(r): ); }
+
+    static void ldmia() { ASM("ldmia   r0!,{r2,r3,r4,r5,r6,r7,r8,r9}" : : : ); }
+    static void stmia() { ASM("stmia   r1!,{r2,r3,r4,r5,r6,r7,r8,r9}" : : : ); }
+
+    static void enable_fpu() {
+        ASM("\t\n\
+        @ enable the FPU                                                        \t\n\
+        //-mfloat-abi=hard       on compiling flags                             \t\n\
+        //check context switch when working with more than one thread           \t\n\
+        mrc     p15, 0, r0, c1, c0, 2                                           \t\n\
+        orr     r0, r0, #0x300000            /* single precision */             \t\n\
+        orr     r0, r0, #0xC00000            /* double precision */             \t\n\
+        mcr     p15, 0, r0, c1, c0, 2                                           \t\n\
+        mov     r0, #0x40000000                                                 \t\n\
+        fmxr    fpexc,r0                                                        \t\n\
+        ");
+    }
 //    static unsigned int int_id() { return 0; }
 };
 

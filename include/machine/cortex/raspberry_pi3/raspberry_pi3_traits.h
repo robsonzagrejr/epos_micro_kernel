@@ -18,6 +18,7 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const bool cpus_use_local_timer      = false;
 
     static const unsigned int NOT_USED          = 0xffffffff;
+    static const unsigned int SIMULATED         = Traits<Build>::EXPECTED_SIMULATION_TIME;
     static const unsigned int CPUS              = Traits<Build>::CPUS;
 
     // Physical Memory
@@ -25,7 +26,7 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int MEM_TOP           = 0x3eeeffff;   // 1 GB
     static const unsigned int MIO_BASE          = 0x40000000;
     static const unsigned int MIO_TOP           = 0x400000ff;
-    static const unsigned int VECTOR_TABLE      = Traits<Build>::EXPECTED_SIMULATION_TIME ? 0x00010000 : 0x00008000;;   // Defined by uboot@QEMU
+    static const unsigned int VECTOR_TABLE      = SIMULATED ? 0x00010000 : 0x00008000;;   // Defined by uboot@QEMU
     static const unsigned int PAGE_TABLES       = 0x3eef0000;   // 1006 MB
 
     // Boot Image
@@ -64,7 +65,7 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
 
 template<> struct Traits<IC>: public Traits<Machine_Common>
 {
-    static const bool debugged = true;//hysterically_debugged;
+    static const bool debugged = hysterically_debugged;
 
     static const unsigned int IRQS = 96;
     static const unsigned int INTS = 128;

@@ -106,6 +106,10 @@ IC::Interrupt_Handler IC::_eoi_vector[INTS] = {
     0,
     0,
     0,
+    // For the sake of the simplicity of the code, a single interrupt id is used to issue IPIs.
+    // In this way, we only map a single handler, agnostic of MBOX number and Core ID.
+    // On the other hand, handlers take Core ID into consideration when performing EOIs.
+    // As a single MBOX handler is used to address all IPIs, we clear all MBOX of a Core in this handler.
     mailbox_eoi, // MB0_CPU0
     0,//mailbox_eoi, // MB1_CPU0
     0,//mailbox_eoi, // MB2_CPU0

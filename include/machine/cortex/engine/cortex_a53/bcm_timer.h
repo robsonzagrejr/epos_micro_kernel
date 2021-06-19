@@ -52,17 +52,12 @@ public:
         return static_cast<Count>(timer(STCLO));
     }
 
-    //check for an implementation for this method
-    void enable() {}
-
-    //check for an implementation for this method
+    void enable() {} // TODO: implement at first need
     void disable() {}
 
-    //check for an implementation for this method
-    void eoi() {}
+    void eoi() {} // TODO: implement at first need
 
-    //check for an implementation for this method
-    void set(const Count & count) {}
+    void set(const Count & count) {} // TODO: implement at first need
 
     Hertz clock() { return CLOCK; }
 
@@ -70,7 +65,7 @@ private:
     volatile Reg32 & timer(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(this)[o / sizeof(Reg32)]; }
 };
 
-class BCM_Local_Timer : public Timer_Common
+class BCM_Mailbox_Timer : public Timer_Common
 {
     // This is a hardware object
     // Use with something like "new (Memory_Map::TIMER0_BASE) BCM_Timer"
@@ -135,25 +130,14 @@ public:
         timer(LTIRQC) = INTERRUPT_F | RELOAD_F; // clear flags and do a reload
     }
 
-    Count count() {
-        return static_cast<Count>(0);
-    }
+    Count count() { return static_cast<Count>(0); }
 
-    void enable() {
-        timer(LTCS) |= 1 << INTERRUPT_ENABLE | 1 << TIMER_ENABLE;
-    }
+    void enable() { timer(LTCS) |= 1 << INTERRUPT_ENABLE | 1 << TIMER_ENABLE; }
+    void disable() { timer(LTCS) &= ~(1 << INTERRUPT_ENABLE | 1 << TIMER_ENABLE); }
 
-    void disable() {
-        timer(LTCS) &= ~(1 << INTERRUPT_ENABLE | 1 << TIMER_ENABLE);
-    }
+    void eoi() { timer(LTIRQC) = INTERRUPT_F | RELOAD_F; } // clear flags and reload 
 
-    void eoi() {
-        timer(LTIRQC) = INTERRUPT_F | RELOAD_F; // clear flags and do a reload
-    }
-
-    void set(const Count & count) {
-        timer(LTCS) |= count;
-    }
+    void set(const Count & count) { timer(LTCS) |= count; }
 
     Hertz clock() { return CLOCK; }
 

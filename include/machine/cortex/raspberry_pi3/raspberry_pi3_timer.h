@@ -14,7 +14,7 @@
 
 __BEGIN_SYS
 
-//System Timer peripheral (not available on qemu). source: https://github.com/bztsrc/raspi3-tutorial/tree/master/07_delays
+// System Timer peripheral (not available on qemu). source: https://github.com/bztsrc/raspi3-tutorial/tree/master/07_delays
 class System_Timer_Engine: public Timer_Common
 {
     friend Timer; // for init()
@@ -23,7 +23,7 @@ private:
     static const unsigned int UNIT = 0;
     static const unsigned int FREQUENCY = Traits<Timer>::FREQUENCY;
 
-    typedef IF<Traits<Build>::EXPECTED_SIMULATION_TIME == 0, BCM_Timer, BCM_Local_Timer>::Result Timer_Base;
+    typedef IF<Traits<Machine>::SIMULATED == 0, BCM_Timer, BCM_Mailbox_Timer>::Result Timer_Base;
 
     typedef IC_Common::Interrupt_Id Interrupt_Id;
 
@@ -46,61 +46,62 @@ public:
     static Hertz clock() { return timer()->clock(); }
 
 protected:
-    static void eoi(Interrupt_Id id) { Traits<Build>::EXPECTED_SIMULATION_TIME ? timer()->eoi() : timer()->config(UNIT, _count); }
+    static void eoi(Interrupt_Id id) { Traits<Machine>::SIMULATED ? timer()->eoi() : timer()->config(UNIT, _count); }
 
 private:
     static void init() {
-        reset();       
+        reset();
     }
 
 private:
-    static Timer_Base * timer() { return reinterpret_cast<Timer_Base *>( Traits<Build>::EXPECTED_SIMULATION_TIME ? Memory_Map::LOCAL_TIMER_BASE : Memory_Map::TIMER0_BASE); }
+    static Timer_Base * timer() { return reinterpret_cast<Timer_Base *>( Memory_Map::TIMER0_BASE ); }
     
 private:
     static Count _count;
 };
 
-// class System_Timer_Engine: public Timer_Common
-// {
-//     friend Timer; // for init()
+// This timer clock is related to the Platform clock (i.e., the frequency of the cores)
+class ARM_Timer_Engine: public Timer_Common
+{
+    friend Timer; // for init()
 
-// private:
-//     static const unsigned int UNIT = 0;
-//     static const unsigned int FREQUENCY = Traits<Timer>::FREQUENCY;
+private:
+    static const unsigned int UNIT = 0;
+    static const unsigned int FREQUENCY = Traits<Timer>::FREQUENCY;
 
-//     typedef IC_Common::Interrupt_Id Interrupt_Id;
+    typedef IC_Common::Interrupt_Id Interrupt_Id;
 
-// public:
-//     typedef ARM_Timer::Count Count;
+public:
+    typedef ARM_Timer::Count Count;
 
-// public:
-//     Count read() { return timer()->read(); }
+public:
+    Count read() { return timer()->read(); }
 
-//     static void enable() { timer()->enable(); }
-//     static void disable() { timer()->disable(); }
+    static void enable() { timer()->enable(); }
+    static void disable() { timer()->disable(); }
 
-//     static Hertz clock() { return timer()->clock(); }
+    static Hertz clock() { return timer()->clock(); }
 
-// protected:
-//     static void eoi(Interrupt_Id id) { timer()->eoi(); }
-//     static void reset() {
-//         timer()->disable();
-//         _count = timer()->clock() / FREQUENCY;
-//         timer()->config(UNIT, _count);
-//         timer()->enable();
-//     }
+protected:
+    static void eoi(Interrupt_Id id) { timer()->eoi(); }
+    static void reset() {
+        timer()->disable();
+        _count = timer()->clock() / FREQUENCY;
+        timer()->config(UNIT, _count);
+        timer()->enable();
+    }
 
-// private:
-//     static void init() {
-//         reset();
-//     }
+private:
+    static void init() {
+        reset();
+    }
 
-// private:
-//     static ARM_Timer * timer() { return reinterpret_cast<ARM_Timer *>(Memory_Map::TIMER1_BASE); }
+private:
+    static ARM_Timer * timer() { return reinterpret_cast<ARM_Timer *>(Memory_Map::TIMER1_BASE); }
 
-// private:
-//     static Count _count;
-// };
+private:
+    static Count _count;
+};
 
 class User_Timer_Engine: public Timer_Common
 {

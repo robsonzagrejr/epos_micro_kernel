@@ -112,6 +112,7 @@ public:
     CPU() {}
 
     using Base::pc;
+    using Base::lr;
     using Base::flags;
     using Base::sp;
     using Base::fr;
@@ -140,6 +141,18 @@ public:
     using Base::cas;
 
     using Base::smp_barrier;
+
+    using Base::msr12;
+    using Base::mrs12;
+    using Base::cpsr;
+    using Base::cpsrc;
+    using Base::spsr_cxsf;
+    using Base::elr_hyp;
+    using Base::r0;
+    using Base::r1;
+    using Base::ldmia;
+    using Base::stmia;
+    using Base::enable_fpu;
 
     static void fpu_save() {
         if(Traits<Build>::MODEL == Traits<Build>::Raspberry_Pi3)

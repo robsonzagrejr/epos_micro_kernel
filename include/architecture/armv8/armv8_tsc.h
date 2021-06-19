@@ -14,7 +14,7 @@ class TSC: private TSC_Common
     friend class IC;
 
 private:
-    static const Hertz CLOCK =  Traits<Build>::MODEL == Traits<Build>::Raspberry_Pi3 ? 1000000 : Traits<CPU>::CLOCK / (Traits<Build>::MODEL == Traits<Build>::Zynq ? 2 : 1);
+    static const Hertz CLOCK =  Traits<Build>::MODEL == Traits<Build>::Raspberry_Pi3 ? 1000000 : Traits<Build>::MODEL == Traits<Build>::Zynq ? Traits<CPU>::CLOCK / 2 : Traits<CPU>::CLOCK;
     static const PPB ACCURACY = 40000; // ppb
 
     enum {
