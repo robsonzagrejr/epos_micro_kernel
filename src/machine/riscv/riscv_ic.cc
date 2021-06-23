@@ -3,10 +3,17 @@
 #include <machine/machine.h>
 #include <machine/ic.h>
 #include <machine/timer.h>
+#include <process.h>
 
 extern "C" { void _int_entry() __attribute__ ((nothrow, alias("_ZN4EPOS1S2IC5entryEv"))); }
+extern "C" { void _exec(void *); }
+extern "C" { void __exit(); }
+extern "C" { static void print_context(); }
 
 __BEGIN_SYS
+
+static CPU::Reg a0;
+static CPU::Reg a1;
 
 // Class attributes
 IC::Interrupt_Handler IC::_int_vector[IC::INTS];
@@ -14,110 +21,33 @@ IC::Interrupt_Handler IC::_int_vector[IC::INTS];
 // Class methods
 void IC::entry()
 {
-    ASM("# Save context                                                 \n"
-        "        addi        sp,     sp,   -132                         \n"
-        "        sw          x1,   4(sp)                                \n"
-        "        sw          x2,   8(sp)                                \n"
-        "        sw          x3,  12(sp)                                \n"     // we don't save x4 (tp) because it can change across context switches and it is not ment be used by the compiler at application-level.
-        "        sw          x5,  16(sp)                                \n"
-        "        sw          x6,  20(sp)                                \n"
-        "        sw          x7,  24(sp)                                \n"
-        "        sw          x8,  28(sp)                                \n"
-        "        sw          x9,  32(sp)                                \n"
-        "        sw         x10,  36(sp)                                \n"
-        "        sw         x11,  40(sp)                                \n"
-        "        sw         x12,  44(sp)                                \n"
-        "        sw         x13,  48(sp)                                \n"
-        "        sw         x14,  52(sp)                                \n"
-        "        sw         x15,  56(sp)                                \n"
-        "        sw         x16,  60(sp)                                \n"
-        "        sw         x17,  64(sp)                                \n"
-        "        sw         x18,  68(sp)                                \n"
-        "        sw         x19,  72(sp)                                \n"
-        "        sw         x20,  76(sp)                                \n"
-        "        sw         x21,  80(sp)                                \n"
-        "        sw         x22,  84(sp)                                \n"
-        "        sw         x23,  88(sp)                                \n"
-        "        sw         x24,  92(sp)                                \n"
-        "        sw         x25,  96(sp)                                \n"
-        "        sw         x26, 100(sp)                                \n"
-        "        sw         x27, 104(sp)                                \n"
-        "        sw         x28, 108(sp)                                \n"
-        "        sw         x29, 112(sp)                                \n"
-        "        sw         x30, 116(sp)                                \n"
-        "        sw         x31, 120(sp)                                \n");
-if(sup)
-    ASM("        csrr       x31, sstatus                                \n"
-        "        sw         x31, 124(sp)                                \n"
-        "        csrr       x31, sepc                                   \n"
-        "        sw         x31, 128(sp)                                \n");
-else
-    ASM("        csrr       x31, mstatus                                \n"
-        "        sw         x31, 124(sp)                                \n"
-        "        csrr       x31, mepc                                   \n"
-        "        sw         x31, 128(sp)                                \n");
+    // Save context
+    CPU::Context::push(true);
+    ASM("       la     ra, 1f                   \n"     // set LR to restore context before returning
+        "       j      %0                       \n" : : "i"(&dispatch));
 
-    ASM("        la          ra, .restore                               \n" // set LR to restore context before returning
-        "        j          %0                                          \n"
-        "                                                               \n"
-        "# Restore context                                              \n"
-        ".restore:                                                      \n"
-        "        lw          x1,   4(sp)                                \n"
-        "        lw          x2,   8(sp)                                \n"
-        "        lw          x3,  12(sp)                                \n"
-        "        lw          x5,  16(sp)                                \n"
-        "        lw          x6,  20(sp)                                \n"
-        "        lw          x7,  24(sp)                                \n"
-        "        lw          x8,  28(sp)                                \n"
-        "        lw          x9,  32(sp)                                \n"
-        "        lw         x10,  36(sp)                                \n"
-        "        lw         x11,  40(sp)                                \n"
-        "        lw         x12,  44(sp)                                \n"
-        "        lw         x13,  48(sp)                                \n"
-        "        lw         x14,  52(sp)                                \n"
-        "        lw         x15,  56(sp)                                \n"
-        "        lw         x16,  60(sp)                                \n"
-        "        lw         x17,  64(sp)                                \n"
-        "        lw         x18,  68(sp)                                \n"
-        "        lw         x19,  72(sp)                                \n"
-        "        lw         x20,  76(sp)                                \n"
-        "        lw         x21,  80(sp)                                \n"
-        "        lw         x22,  84(sp)                                \n"
-        "        lw         x23,  88(sp)                                \n"
-        "        lw         x24,  92(sp)                                \n"
-        "        lw         x25,  96(sp)                                \n"
-        "        lw         x26, 100(sp)                                \n"
-        "        lw         x27, 104(sp)                                \n"
-        "        lw         x28, 108(sp)                                \n"
-        "        lw         x29, 112(sp)                                \n"
-        "        lw         x30, 116(sp)                                \n" : : "i"(&dispatch));
-if(sup)
-    ASM("        lw         x31, 124(sp)                                \n"
-        "        csrw   sstatus, x31                                    \n"
-        "        lw         x31, 128(sp)                                \n"
-        "        csrw      sepc, x31                                    \n");
-else
-    ASM("        lw         x31, 124(sp)                                \n"
-        "        csrw   mstatus, x31                                    \n"
-        "        lw         x31, 128(sp)                                \n"
-        "        csrw      mepc, x31                                    \n");
+    // Entry-point for the dummy contexts used by the first dispatching of newly created threads
+    ASM("       .global _int_leave              \n"
+        "_int_leave:                            \n");
+if(Traits<IC>::hysterically_debugged)
+    ASM("       jalr    %0                      \n" : : "r"(print_context));
 
-    ASM("        lw         x31, 120(sp)                                \n"
-        "        addi        sp, sp,    132                             \n");
-if(sup)
-    ASM("        sret                                                   \n");
-else
-    ASM("        mret                                                   \n");
+    // Restore context
+    ASM("1:                                     \n");
+    CPU::Context::pop(true);
+    CPU::iret();
 }
 
 void IC::dispatch()
 {
     Interrupt_Id id = int_id();
+    a0 = CPU::a0(); // exit passes status through a0
+    a1 = CPU::a1(); // syscalls pass messages through a1
 
     if((id != INT_SYS_TIMER) || Traits<IC>::hysterically_debugged)
         db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
 
-    if(sup) {
+    if(multitask) {
         if(id == INT_RESCHEDULER)
             CPU::sipc(CPU::SSI);
 
@@ -128,72 +58,108 @@ void IC::dispatch()
         if(id == INT_RESCHEDULER)
             IC::ipi_eoi(id);
 
-        // MIP.MTI is a direct logic on (MTIME == MTIMECMP) and reseting the Timer clears it
+        // MIP.MTI is a direct logic on (MTIME == MTIMECMP) and reseting the Timer seems to be the only way to clear it
         if(id == INT_SYS_TIMER)
             Timer::reset();
     }
 
+    CPU::a1(a1);
     _int_vector[id](id);
+
+    if(id >= HARD_INT)
+        CPU::a0(0); // tell CPU::Context::pop(true) not to increment PC since it is automatically incremented for hardware interrupts
+}
+
+void IC::syscall(Interrupt_Id id) {
+    // We get here when an APP triggers INT_SYSCALL (i.e. ecall)
+    if(Traits<Build>::MODE == Traits<Build>::KERNEL) {
+        _exec(reinterpret_cast<void *>(CPU::a1())); // the message to EPOS Framework is passed on register a1
+        CPU::fr(sizeof(void *));                    // tell IC::entry to perform PC = PC + 4 on return
+    }
 }
 
 void IC::int_not(Interrupt_Id id)
 {
-    db<IC>(WRN) << "IC::int_not(i=" << id << ")";
+    db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
     if(Traits<Build>::hysterically_debugged)
-        db<IC>(ERR) << endl;
-    else
-        db<IC>(WRN) << endl;
+        Machine::panic();
 }
 
 void IC::exception(Interrupt_Id id)
 {
-    CPU::Reg status = sup ? CPU::sstatus() : CPU::mstatus();
-    CPU::Reg cause = sup? CPU::scause() : CPU::mcause();
-    CPU::Reg hartid = CPU::id();
-    CPU::Reg epc = sup ? CPU::sepc() : CPU::mepc();
-    CPU::Reg tval = sup ? CPU::stval() : CPU::mtval();
+    CPU::Reg core = CPU::id();
+    CPU::Reg epc = multitask ? CPU::sepc() : CPU::mepc();
     CPU::Reg sp = CPU::sp();
+    CPU::Reg status = multitask ? CPU::sstatus() : CPU::mstatus();
+    CPU::Reg cause = multitask? CPU::scause() : CPU::mcause();
+    CPU::Reg tval = multitask ? CPU::stval() : CPU::mtval();
+    Thread * thread = Thread::self();
 
-    db<IC,System>(WRN) << "IC::Exception(" << id << ") => {" << hex << "status=" << status << ",cause=" << cause << ",hartid=" << hartid << ",epc=" << epc << ",tval=" << tval << ",sp=" << sp <<  "}" << dec;
+    if((id == 12) && (epc == CPU::Reg(&__exit))) { // a page fault on __exit is triggered by MAIN after returing to CRT0
+        db<IC, Thread>(TRC) << " => Thread::exit()";
+        CPU::a0(a0);
+        __exit();
+    } else {
+        db<IC,System>(WRN) << "IC::Exception(" << id << ") => {" << hex << "core=" << core << ",thread=" << thread << ",epc=" << epc << ",sp=" << sp << ",status=" << status << ",cause=" << cause << ",tval=" << tval << "}" << dec;
 
-    switch(id) {
-        case 0: // unaligned Instruction
+        switch(id) {
+        case 0: // unaligned instruction
+            db<IC, System>(WRN) << " => unaligned instruction";
+            break;
         case 1: // instruction access failure
-            db<IC, System>(WRN) << " => prefetch abort";
+            db<IC, System>(WRN) << " => instruction protection violation";
             break;
         case 2: // illegal instruction
             db<IC, System>(WRN) << " => illegal instruction";
             break;
-        case 3: // Break Point
+        case 3: // break point
             db<IC, System>(WRN) << " => break point";
             break;
         case 4: // unaligned load address
+            db<IC, System>(WRN) << " => unaligned data read";
+            break;
         case 5: // load access failure
+            db<IC, System>(WRN) << " => data protection violation (read)";
+            break;
         case 6: // unaligned store address
+            db<IC, System>(WRN) << " => unaligned data write";
+            break;
         case 7: // store access failure
-            db<IC, System>(WRN) << " => data error (unaligned)";
+            db<IC, System>(WRN) << " => data protection violation (write)";
             break;
         case 8: // user-mode environment call
         case 9: // supervisor-mode environment call
         case 10: // reserved... not described
         case 11: // machine-mode environment call
-            db<IC, System>(WRN) << " => reserved";
+            db<IC, System>(WRN) << " => bad ecall";
             break;
         case 12: // Instruction Page Table failure
+            db<IC, System>(WRN) << " => page fault";
+            break;
         case 13: // Load Page Table failure
         case 14: // reserved... not described
         case 15: // Store Page Table failure
-            db<IC, System>(WRN) << " => data abort";
+            db<IC, System>(WRN) << " => page table protection violation";
             break;
         default:
             int_not(id);
             break;
+        }
+
+        db<IC, System>(WRN) << endl;
+
+        if(Traits<Build>::hysterically_debugged)
+            Machine::panic();
     }
 
-    if(Traits<Build>::hysterically_debugged)
-        db<IC, System>(ERR) << endl;
-    else
-        db<IC, System>(WRN) << endl;
+    CPU::fr(sizeof(void *)); // tell CPU::Context::pop(true) to perform PC = PC + 4 on return
 }
 
 __END_SYS
+
+static void print_context() {
+    __USING_SYS
+    db<IC, System>(TRC) << "IC::leave:ctx=" << *reinterpret_cast<CPU::Context *>(CPU::sp() + 32) << endl;
+    CPU::fr(0);
+}
+

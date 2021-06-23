@@ -12,7 +12,11 @@ __BEGIN_SYS
 class Synchronizer_Common
 {
 protected:
+    typedef Thread::Queue Queue;
+
+protected:
     Synchronizer_Common() {}
+    ~Synchronizer_Common() { begin_atomic(); wakeup_all(); end_atomic(); }
 
     // Atomic operations
     bool tsl(volatile bool & lock) { return CPU::tsl(lock); }
@@ -23,9 +27,12 @@ protected:
     void begin_atomic() { Thread::lock(); }
     void end_atomic() { Thread::unlock(); }
 
-    void sleep() { Thread::yield(); } // implicit unlock()
-    void wakeup() { end_atomic(); }
-    void wakeup_all() { end_atomic(); }
+    void sleep() { Thread::sleep(&_queue); }
+    void wakeup() { Thread::wakeup(&_queue); }
+    void wakeup_all() { Thread::wakeup_all(&_queue); }
+
+protected:
+    Queue _queue;
 };
 
 
