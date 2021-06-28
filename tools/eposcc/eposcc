@@ -62,7 +62,7 @@ LINKER="$TOOLS_PREFIX""ld"
 
 LINKER_LIBRARY=$LINKER
 LINK_FLGS_LIBRARY="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --section-start $MACH_CODE_NAME=$APP_CODE"
-if [ "$SETUP" != "" -a "$MACH_DATA_NAME" != "" ] ; then
+if [ "$SETUP" != "" -o "$APP_CODE" != "$APP_DATA" -a "$MACH_DATA_NAME" != "" ] ; then
     LINK_FLGS_LIBRARY="$LINK_FLGS_LIBRARY --section-start $MACH_DATA_NAME=$APP_DATA"
 fi
 if [ "$BOOT_STACK" != "" ] ; then
