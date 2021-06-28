@@ -193,26 +193,24 @@ void Thread::exit(int status)
         lock();
     }
 
-    if(_ready.empty()) {
-        if(!_suspended.empty()) {
-            while(_ready.empty())
-                idle(); // implicit unlock()
-            lock();
-        } else { // _ready.empty() && _suspended.empty()
-            db<Thread>(WRN) << "The last thread in the system has exited!" << endl;
-            if(reboot) {
-                db<Thread>(WRN) << "Rebooting the machine ..." << endl;
-                Machine::reboot();
-            } else {
-                db<Thread>(WRN) << "Halting the CPU ..." << endl;
-                CPU::halt();
-            }
-        }
-    } else {
+    while(_ready.empty() && !_suspended.empty())
+        idle(); // implicit unlock();
+    lock();
+
+    if(!_ready.empty()) {
         _running = _ready.remove()->object();
         _running->_state = RUNNING;
 
         dispatch(prev, _running);
+    } else { // _ready.empty() && _suspended.empty()
+        db<Thread>(WRN) << "The last thread in the system has exited!" << endl;
+        if(reboot) {
+            db<Thread>(WRN) << "Rebooting the machine ..." << endl;
+            Machine::reboot();
+        } else {
+            db<Thread>(WRN) << "Halting the CPU ..." << endl;
+            CPU::halt();
+        }
     }
 
     unlock();
