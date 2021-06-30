@@ -21,6 +21,7 @@ class Thread
     friend class System;                // for init()
 
 protected:
+    static const bool preemptive = Traits<Thread>::preemptive;
     static const bool reboot = Traits<System>::reboot;
 
     static const unsigned int QUANTUM = Traits<Thread>::QUANTUM;
@@ -77,8 +78,8 @@ public:
 
     int join();
     void pass();
-    void suspend();
-    void resume();
+    void suspend() { suspend(false); }
+    void resume() { resume(false); }
 
     static Thread * volatile self() { return running(); }
     static void yield();
@@ -93,6 +94,9 @@ protected:
     static void lock() { CPU::int_disable(); }
     static void unlock() { CPU::int_enable(); }
     static bool locked() { return CPU::int_disabled(); }
+
+    void suspend(bool locked);
+    void resume(bool unpreemptive);
 
     static void sleep(Queue * q);
     static void wakeup(Queue * q);
