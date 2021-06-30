@@ -52,8 +52,8 @@ void Thread::constructor_epilogue(const Log_Addr & entry, unsigned int stack_siz
 
     if(preemptive && (_state == READY) && (_link.rank() != IDLE))
         reschedule();
-
-    unlock();
+    else
+        unlock();
 }
 
 
@@ -179,10 +179,11 @@ void Thread::resume(bool unpreemptive)
 
         if(preemptive && !unpreemptive)
             reschedule();
-    } else
+    } else {
         db<Thread>(WRN) << "Resume called for unsuspended object!" << endl;
 
-    unlock();
+        unlock();
+    }
 }
 
 
@@ -222,7 +223,6 @@ void Thread::exit(int status)
         Thread * joining = prev->_joining;
         prev->_joining = 0;
         joining->resume(true);
-        lock();
     }
 
     _running = _ready.remove()->object();
@@ -265,7 +265,10 @@ void Thread::wakeup(Queue * q)
 
         if(preemptive)
             reschedule();
-    }
+        else
+            unlock();
+    } else
+        unlock();
 }
 
 
@@ -285,6 +288,10 @@ void Thread::wakeup_all(Queue * q)
 
         if(preemptive)
             reschedule();
+        else
+            unlock();
+    } else {
+        unlock();
     }
 }
 
