@@ -25,10 +25,10 @@ private:
 
 class System
 {
-    friend class Init_System;
+    friend class Init_System;                                                   // for _heap
     friend void CPU::Context::load() const volatile;
-    friend void * kmalloc(size_t);
-    friend void kfree(void *);
+    friend void * kmalloc(size_t);                                              // for _heap
+    friend void kfree(void *);                                                  // for _heap
 
 public:
     static System_Info * const info() { assert(_si); return _si; }
