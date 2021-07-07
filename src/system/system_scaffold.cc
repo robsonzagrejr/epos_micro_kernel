@@ -3,6 +3,7 @@
 #include <utility/ostream.h>
 #include <utility/heap.h>
 #include <machine.h>
+#include <memory.h>
 #include <process.h>
 #include <system.h>
 
@@ -16,6 +17,7 @@ OStream kerr;
 // System class attributes
 System_Info * System::_si = reinterpret_cast<System_Info *>(Memory_Map::SYS_INFO);
 char System::_preheap[];
+Segment * System::_heap_segment;
 Heap * System::_heap;
 
 __END_SYS

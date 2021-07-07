@@ -26,7 +26,7 @@ void Thread::constructor_prologue(unsigned int stack_size)
 
     _thread_count++;
 
-    _stack = reinterpret_cast<char *>(kmalloc(stack_size));
+    _stack = new (SYSTEM) char[stack_size];
 }
 
 
@@ -43,11 +43,11 @@ void Thread::constructor_epilogue(const Log_Addr & entry, unsigned int stack_siz
     assert((_state != WAITING) && (_state != FINISHING)); // invalid states
 
     switch(_state) {
-        case RUNNING: assert(entry == __epos_app_entry); break;
+        case RUNNING: break;	// pointed by _running; not inserted in any queue
         case READY: _ready.insert(&_link); break;
         case SUSPENDED: _suspended.insert(&_link); break;
-        case WAITING: break;   // invalid state, for switch completion only
-        case FINISHING: break; // invalid state, for switch completion only
+        case WAITING: break;    // invalid state, for switch completion only
+        case FINISHING: break;	// invalid state, for switch completion only
     }
 
     if(preemptive && (_state == READY) && (_link.rank() != IDLE))
@@ -96,7 +96,7 @@ Thread::~Thread()
 
     unlock();
 
-    kfree(_stack);
+    delete _stack;
 }
 
 

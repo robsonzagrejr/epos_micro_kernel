@@ -41,6 +41,14 @@ extern "C"
 inline void * operator new(size_t s, void * a) { return a; }
 inline void * operator new[](size_t s, void * a) { return a; }
 
+void * operator new(size_t, const EPOS::System_Allocator &);
+void * operator new[](size_t, const EPOS::System_Allocator &);
+
+void * operator new(size_t, const EPOS::Scratchpad_Allocator &);
+void * operator new[](size_t, const EPOS::Scratchpad_Allocator &);
+
+void * operator new(size_t, const EPOS::Color &);
+void * operator new[](size_t, const EPOS::Color &);
 
 // Utilities
 __BEGIN_UTIL
