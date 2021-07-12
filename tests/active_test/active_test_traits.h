@@ -10,16 +10,16 @@ template<> struct Traits<Build>: public Traits_Tokens
 {
     // Basic configuration
     static const unsigned int MODE = LIBRARY;
-    static const unsigned int ARCHITECTURE = ARMv7;
-    static const unsigned int MACHINE = Cortex;
-    static const unsigned int MODEL = Raspberry_Pi3;
+    static const unsigned int ARCHITECTURE = IA32;
+    static const unsigned int MACHINE = PC;
+    static const unsigned int MODEL = Legacy_PC;
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 1; // (> 1 => NETWORKING)
     static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
 
     // Default flags
     static const bool enabled = true;
-    static const bool monitored = false;
+    static const bool monitored = true;
     static const bool debugged = true;
     static const bool hysterically_debugged = false;
 
@@ -130,7 +130,7 @@ template<> struct Traits<Thread>: public Traits<Build>
     static const bool simulate_capacity = false;
 
     typedef RR Criterion;
-    static const unsigned int QUANTUM = 10000; // us
+    static const unsigned int QUANTUM = 1000; // us
 };
 
 template<> struct Traits<Scheduler<Thread>>: public Traits<Build>
