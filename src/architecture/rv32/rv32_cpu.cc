@@ -50,6 +50,8 @@ else
         "       ret                             \n");
 }
 
+// Context load does not verify if interrupts were previously enabled by the Context's constructor
+// We are setting mstatus to MPP | MPIE, therefore, interrupts will be enabled only after mret
 void CPU::Context::load() const volatile
 {
     sp(Log_Addr(this));

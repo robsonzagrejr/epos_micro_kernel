@@ -8,6 +8,7 @@
 #include <process.h>
 #include <utility/queue.h>
 #include <utility/handler.h>
+#include <utility/spin.h>
 
 __BEGIN_SYS
 
@@ -34,6 +35,7 @@ class Alarm
     friend class Alarm_Chronometer;             // for elapsed()
     friend class Periodic_Thread;               // for ticks(), times(), and elapsed()
     friend class FCFS;                          // for ticks() and elapsed()
+    friend class EDF;                           // for ticks() and elapsed()
 
 private:
     typedef Timer_Common::Tick Tick;
@@ -60,8 +62,8 @@ private:
     static Microsecond timer_period() { return 1000000 / frequency(); }
     static Tick ticks(const Microsecond & time) { return (time + timer_period() / 2) / timer_period(); }
 
-    static void lock() { Thread::lock(); }
-    static void unlock() { Thread::unlock(); }
+    static void lock() { Thread::lock(&_lock); }
+    static void unlock() { Thread::unlock(&_lock); }
 
     static void handler(IC::Interrupt_Id i);
 
@@ -77,6 +79,7 @@ private:
     static Alarm_Timer * _timer;
     static volatile Tick _elapsed;
     static Queue _request;
+    static Spin _lock;
 };
 
 
