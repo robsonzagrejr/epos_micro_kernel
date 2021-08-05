@@ -183,7 +183,7 @@ int main(int argc, char **argv)
     unsigned int boot_size = image_size;
 
     // Determine if System_Info is needed and how it must be handled
-    bool need_si = (!strcmp(CONFIG.mach, "pc") || !strcmp(CONFIG.mach, "riscv"));
+    bool need_si = (!strcmp(CONFIG.mach, "pc") || !strcmp(CONFIG.mach, "riscv") || !strcmp(CONFIG.mach, "cortex"));
     bool si_in_setup = (need_si && (boot_size == 0)); // If the image contains a boot sector, then SI will be on a separate disk sector. Otherwise, it will be inside SETUP.
 
     // Reserve space for System_Info if necessary

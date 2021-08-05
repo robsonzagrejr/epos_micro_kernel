@@ -68,8 +68,8 @@ public:
     };
 
     // Number of entries in Page_Table and Page_Directory
-    static const unsigned int PT_ENTRIES = sizeof(Page) / sizeof(PT_Entry);
-    static const unsigned int PD_ENTRIES = PT_ENTRIES;
+    static const unsigned int PT_ENTRIES = 1 << PAGE_BITS;
+    static const unsigned int PD_ENTRIES = 1 << DIRECTORY_BITS;
 
 public:
     static unsigned int pages(unsigned int bytes) { return (bytes + sizeof(Page) - 1) / sizeof(Page); }

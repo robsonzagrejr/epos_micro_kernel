@@ -33,6 +33,8 @@ struct Memory_Map: public Cortex_Memory_Map
         SYS_CODE                = Traits<Machine>::SYS_CODE,
         SYS_INFO                = NOT_USED,
         SYS_DATA                = Traits<Machine>::SYS_CODE,
+        SYS_PT                  = NOT_USED,
+        SYS_PD                  = NOT_USED,
         SYS_STACK               = NOT_USED,
         SYS_HEAP                = NOT_USED
     };

@@ -11,7 +11,7 @@ class ARMv7: protected CPU_Common
 {
     friend class Init_System; // for CPU::init()
 
-private:
+protected:
     static const bool multicore = Traits<System>::multicore;
     static const bool multitask = Traits<System>::multitask;
 
@@ -40,8 +40,14 @@ public:
     static Reg32 fr() { Reg32 r; ASM("mov %0, r0" : "=r"(r)); return r; }
     static void fr(Reg32 fr) {   ASM("mov r0, %0" : : "r"(fr) : "r0"); }
 
-    static Reg32 pdp() { return 0; }
-    static void pdp(Reg32 pdp) {}
+    static Reg32 sctlr() { Reg32 r; ASM("mrc p15, 0, %0, c1, c0, 0" : "=r"(r)); return r; }
+    static void sctlr(Reg32 r) {   ASM("mcr p15, 0, %0, c1, c0, 0" : : "r"(r) : "r0"); }
+
+    static Reg32 actlr() { Reg32 r; ASM("mrc p15, 0, %0, c1, c0, 1" : "=r"(r)); return r; }
+    static void actlr(Reg32 r) { ASM("mcr p15, 0, %0, c1, c0, 1" : : "r"(r) : "r0"); }
+
+    static void dsb() { ASM("dsb"); }
+    static void isb() { ASM("isb"); }
 
     // Atomic operations
     template<typename T>
@@ -176,6 +182,9 @@ public:
     static Flags flags() { Reg32 r;  ASM("mrs %0, xpsr"       : "=r"(r) :); return r; }
     static void flags(Flags r) {     ASM("msr xpsr_nzcvq, %0" : : "r"(r) : "cc"); }
 
+    static Reg32 pdp() { return 0;}
+    static void pdp(Reg32 pdp) {}
+
     static unsigned int id() { return 0; }
 
     static unsigned int cores() { return 1; }
@@ -243,6 +252,26 @@ public:
         EXC_FIQ                     = 8
     };
 
+    enum {
+        CLI_DOMAIN = 0x55555555, // 0b01 - Client, all memory domains check for memory access permission
+        MNG_DOMAIN = 0xFFFFFFFF  // 0b11 - Manager, memory access permissions are not checked
+    };
+
+    // SCTLR bits
+    enum {
+        MMU_ENABLE  = 1 << 0,  // MMU enable
+        DCACHE      = 1 << 2,  // Data cache enable
+        BRANCH_PRED = 1 << 11, // Z bit, branch prediction enable
+        ICACHE      = 1 << 12, // Instruction cache enable
+        AFE         = 1 << 29  // Access Flag enable
+    };
+
+    // ACTLR bits
+    enum {
+        DCACHE_PREFE = 1 << 2, // DCache prefetch Enabled
+        SMP          = 1 << 6 // SMP bit
+    };
+
 protected:
     ARMv7_A() {};
 
@@ -295,20 +324,77 @@ public:
     static void ldmia() { ASM("ldmia   r0!,{r2,r3,r4,r5,r6,r7,r8,r9}" : : : ); }
     static void stmia() { ASM("stmia   r1!,{r2,r3,r4,r5,r6,r7,r8,r9}" : : : ); }
 
-    static void enable_fpu() {
-        ASM("\t\n\
-        @ enable the FPU                                                        \t\n\
-        //-mfloat-abi=hard       on compiling flags                             \t\n\
-        //check context switch when working with more than one thread           \t\n\
-        mrc     p15, 0, r0, c1, c0, 2                                           \t\n\
-        orr     r0, r0, #0x300000            /* single precision */             \t\n\
-        orr     r0, r0, #0xC00000            /* double precision */             \t\n\
-        mcr     p15, 0, r0, c1, c0, 2                                           \t\n\
-        mov     r0, #0x40000000                                                 \t\n\
-        fmxr    fpexc,r0                                                        \t\n\
+    static Reg ttbr0() { Reg r; ASM ("mrc p15, 0, %0, c2, c0, 0" : "=r"(r) : :); return r; }
+    static void ttbr0(Reg r) { ASM ("mcr p15, 0, %0, c2, c0, 0" : : "p"(r) :); }
+
+    static Reg ttbcr() { Reg r; ASM ("mrc p15, 0, %0, c2, c0, 2" : "=r"(r) : :); return r; }
+    static void ttbcr(Reg r) { ASM ("mcr p15, 0, %0, c2, c0, 2" : : "p"(r) :); }
+
+    static Reg dacr() { Reg r; ASM ("mrc p15, 0, %0, c3, c0, 0" : "=r"(r) : :); return r; }
+    static void dacr(Reg r) { ASM ("mcr p15, 0, %0, c3, c0, 0" : : "p"(r) :); }
+
+    static Reg32 pdp() { return ttbr0(); }
+    static void pdp(Reg32 pdp) { ttbr0(pdp); }
+
+    // CP15 operations
+    static void invalidate_all_branch_predictors() { 
+        ASM("mov r0, #0x0              \t\n"
+            "mcr p15, 0, r0, c7, c5, 6 \t\n"
+        );
+    }
+
+    // TLB maintenance operations
+    static void invalidate_tlb() {
+        ASM("mov r0, #0x0               \t\n"
+            "mcr p15, 0, r0, c8, c7, 0  \t\n"
+        ); // TLBIALL - Invalidate entire Unifed TLB
+    }
+
+    static void invalidate_caches() {
+        ASM("                  \t\n\
+        // Disable L1 Caches.                                                               \t\n\
+        mrc     p15, 0, r1, c1, c0, 0 // Read SCTLR.                                        \t\n\
+        bic     r1, r1, #(0x1 << 2) // Disable D Cache.                                     \t\n\
+        mcr     p15, 0, r1, c1, c0, 0 // Write SCTLR.                                       \t\n\
+                                                                                            \t\n\
+        // Invalidate Data cache to create general-purpose code. Calculate there            \t\n\
+        // cache size first and loop through each set + way.                                \t\n\
+        mov     r0, #0x0 // r0 = 0x0 for L1 dcache 0x2 for L2 dcache.                       \t\n\
+        mcr     p15, 2, r0, c0, c0, 0 // CSSELR Cache Size Selection Register.              \t\n\
+        mrc     p15, 1, r4, c0, c0, 0 // CCSIDR read Cache Size.                            \t\n\
+        and     r1, r4, #0x7                                                                \t\n\
+        add     r1, r1, #0x4 // r1 = Cache Line Size.                                       \t\n\
+        ldr     r3, =0x7fff                                                                 \t\n\
+        and     r2, r3, r4, lsr #13 // r2 = Cache Set Number – 1.                           \t\n\
+        ldr     r3, =0x3ff                                                                  \t\n\
+        and     r3, r3, r4, lsr #3 // r3 = Cache Associativity Number – 1.                  \t\n\
+        clz     r4, r3 // r4 = way position in CISW instruction.                            \t\n\
+        mov     r5, #0 // r5 = way loop counter.                                            \t\n\
+    way_loop:                                                                               \t\n\
+        mov     r6, #0 // r6 = set loop counter.                                            \t\n\
+    set_loop:                                                                               \t\n\
+        orr     r7, r0, r5, lsl r4 // Set way.                                              \t\n\
+        orr     r7, r7, r6, lsl r1 // Set set.                                              \t\n\
+        mcr     p15, 0, r7, c7, c6, 2 // DCCISW r7.                                         \t\n\
+        add     r6, r6, #1 // Increment set counter.                                        \t\n\
+        cmp     r6, r2 // Last set reached yet?                                             \t\n\
+        ble     set_loop // If not, iterate set_loop,                                       \t\n\
+        add     r5, r5, #1 // else, next way.                                               \t\n\
+        cmp     r5, r3 // Last way reached yet?                                             \t\n\
+        ble     way_loop // if not, iterate way_loop.                                       \t\n\
         ");
     }
-//    static unsigned int int_id() { return 0; }
+
+    static void enable_fpu() {
+        // This code assumes a compilation with mfloat-abi=hard and does not care for context switches
+        ASM("mrc     p15, 0, r0, c1, c0, 2                                           \t\n\
+             orr     r0, r0, #0x300000            /* single precision */             \t\n\
+             orr     r0, r0, #0xc00000            /* double precision */             \t\n\
+             mcr     p15, 0, r0, c1, c0, 2                                           \t\n\
+             mov     r0, #0x40000000                                                 \t\n\
+             fmxr    fpexc,r0                                                             ");
+    }
+
 };
 
 #ifndef __armv8_h
