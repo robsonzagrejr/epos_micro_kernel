@@ -35,9 +35,4 @@ extern "C" {
     // Utility-related methods that differ from kernel and user space.
     // OStream
     void _print(const char * s) { Display::puts(s); }
-
-    // Heap
-    static Spin _heap_lock;
-    void _lock_heap() { Thread::lock(&_heap_lock); }
-    void _unlock_heap() { Thread::unlock(&_heap_lock); }
 }

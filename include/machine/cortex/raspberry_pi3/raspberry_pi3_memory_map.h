@@ -29,14 +29,28 @@ struct Memory_Map: public Cortex_Memory_Map
         SD1_BASE                = 0x3f300000, // Arasan sdhci controller
         DMA1_BASE               = 0x3fe05000,
 
-        // Logical Address Space
-        SYS_CODE                = Traits<Machine>::SYS_CODE,
-        SYS_INFO                = NOT_USED,
-        SYS_DATA                = Traits<Machine>::SYS_CODE,
-        SYS_PT                  = NOT_USED,
-        SYS_PD                  = NOT_USED,
-        SYS_STACK               = NOT_USED,
-        SYS_HEAP                = NOT_USED
+        // Logical Address Space -- Need to be verified
+        BOOT            = Traits<System>::multitask ? Traits<Machine>::BOOT : NOT_USED,
+        IMAGE           = Traits<Machine>::IMAGE,
+        SETUP           = Traits<System>::multitask ? Traits<Machine>::SETUP : NOT_USED,
+        INIT            = Traits<System>::multitask ? Traits<Machine>::INIT : NOT_USED,
+
+        APP_LOW         = Traits<System>::multitask ? Traits<Machine>::APP_LOW : Traits<Machine>::VECTOR_TABLE,
+        APP_CODE        = APP_LOW,
+        APP_DATA        = Traits<System>::multitask ? APP_LOW + 4 * 1024 * 1024 : APP_LOW,
+        APP_HIGH        = Traits<Machine>::APP_HIGH,
+
+        PHY_MEM         = Traits<Machine>::PHY_MEM,
+        IO              = Traits<Machine>::IO,
+
+        SYS             = Traits<Machine>::SYS,
+        SYS_CODE        = Traits<System>::multitask ? SYS + 0x00000000 : NOT_USED,
+        SYS_DATA        = Traits<System>::multitask ? SYS + 0x00000000 : NOT_USED,
+        SYS_INFO        = Traits<System>::multitask ? SYS + 0x00100000 : NOT_USED,
+        SYS_PT          = Traits<System>::multitask ? SYS + 0x00101000 : NOT_USED, // 12KB = 256 + 256 + 256 pt entries to map from SYS to SYS_HEAP 
+        SYS_PD          = Traits<System>::multitask ? SYS + 0x00104000 : NOT_USED, // 16KB mem == 4k PD entries
+        SYS_STACK       = Traits<System>::multitask ? SYS + 0x00108000 : NOT_USED, // 16KB mem == STACK_SIZE
+        SYS_HEAP        = NOT_USED
     };
 };
 

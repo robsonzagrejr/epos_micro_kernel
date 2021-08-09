@@ -7,7 +7,7 @@ extern "C" { void _panic(); }
 __BEGIN_UTIL
 
 // Methods
-void Simple_Heap::out_of_memory()
+void Heap::out_of_memory()
 {
     db<Heaps>(ERR) << "Heap::alloc(this=" << this << "): out of memory!" << endl;
 

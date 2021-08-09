@@ -2,10 +2,6 @@
 
 #include <system.h>
 #include <machine.h>
-#include <utility/string.h>
-
-extern "C" char __bss_start;    // defined by GCC
-extern "C" char _end;           // defined by GCC
 
 __BEGIN_SYS
 

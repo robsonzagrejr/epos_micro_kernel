@@ -7,14 +7,9 @@
 #include <machine.h>
 #include <utility/queue.h>
 #include <utility/handler.h>
-#include <memory.h>
 #include <scheduler.h>
 
-extern "C" {
-    void __exit();
-    void _lock_heap();
-    void _unlock_heap();
-}
+extern "C" { void __exit(); }
 
 __BEGIN_SYS
 
@@ -27,11 +22,8 @@ class Thread
     friend class Alarm;                 // for lock()
     friend class System;                // for init()
     friend class IC;                    // for link() for priority ceiling
-    friend void ::_lock_heap();         // for lock()
-    friend void ::_unlock_heap();       // for unlock()
 
 protected:
-    static const bool smp = Traits<Thread>::smp;
     static const bool preemptive = Traits<Thread>::Criterion::preemptive;
     static const bool reboot = Traits<System>::reboot;
 
@@ -83,9 +75,10 @@ public:
     ~Thread();
 
     const volatile State & state() const { return _state; }
+    const volatile Criterion::Statistics & statistics() { return criterion().statistics(); }
 
-    const volatile Priority & priority() const { return _link.rank(); }
-    void priority(const Priority & p);
+    const volatile Criterion & priority() const { return _link.rank(); }
+    void priority(const Criterion & p);
 
     int join();
     void pass();
@@ -98,25 +91,16 @@ public:
 
 protected:
     void constructor_prologue(unsigned int stack_size);
-    void constructor_epilogue(const Log_Addr & entry, unsigned int stack_size);
+    void constructor_epilogue(Log_Addr entry, unsigned int stack_size);
 
     Criterion & criterion() { return const_cast<Criterion &>(_link.rank()); }
     Queue::Element * link() { return &_link; }
 
     static Thread * volatile running() { return _scheduler.chosen(); }
 
-    static void lock(Spin * lock = &_lock) {
-        CPU::int_disable();
-        if(smp)
-            lock->acquire();
-    }
-
-    static void unlock(Spin * lock = &_lock) {
-        if(smp)
-            lock->release();
-        CPU::int_enable();
-    }
-    static volatile bool locked() { return (smp) ? _lock.taken() : CPU::int_disabled(); }
+    static void lock() { CPU::int_disable(); }
+    static void unlock() { CPU::int_enable(); }
+    static bool locked() { return CPU::int_disabled(); }
 
     static void sleep(Queue * q);
     static void wakeup(Queue * q);
@@ -143,7 +127,6 @@ protected:
     static volatile unsigned int _thread_count;
     static Scheduler_Timer * _timer;
     static Scheduler<Thread> _scheduler;
-    static Spin _lock;
 };
 
 

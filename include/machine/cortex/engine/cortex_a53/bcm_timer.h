@@ -83,13 +83,13 @@ public:
     enum {                                      // Description
         CTCR    = 0x0,      // Core Timer Control Register
         CTPE    = 0x8,      // Core Timer Pre-Scaler
-        LTIR    = 0x24,     // Local Timer Interrupt Routing
-        LTCS    = 0x34,     // Control/Status
-        LTIRQC  = 0x38,     // IRQ clear & reload (write-only)
-        LTC0IC  = 0x40,     // Core 0 Interrupt Control
-        LTC1IC  = 0x44,     // Core 1 Interrupt Control
-        LTC2IC  = 0x48,     // Core 2 Interrupt Control
-        LTC3IC  = 0x4C,     // Core 3 Interrupt Control
+        TIR    = 0x24,     // Timer Interrupt Routing
+        TCS    = 0x34,     // Control/Status
+        TIRQC  = 0x38,     // IRQ clear & reload (write-only)
+        TC0IC  = 0x40,     // Core 0 Interrupt Control
+        TC1IC  = 0x44,     // Core 1 Interrupt Control
+        TC2IC  = 0x48,     // Core 2 Interrupt Control
+        TC3IC  = 0x4C,     // Core 3 Interrupt Control
     };
 
     // LTIRQC flags
@@ -123,21 +123,21 @@ public:
 
 public:
     void config(unsigned int unit, const Count & count) {
-        timer(LTIR) = 0; // Locat Timer Interrupt goes to core 0 as IRQ
-        timer(LTCS) = 1 << INTERRUPT_ENABLE | 1 << TIMER_ENABLE |
+        timer(TIR) = 0; // Timer Interrupt goes to core 0 as IRQ
+        timer(TCS) = 1 << INTERRUPT_ENABLE | 1 << TIMER_ENABLE |
                         count; // Enable timer and interrupts, load count to reload value
-        timer(LTC0IC) = 1 << NSIRQ;//0xF; // Enable timer in every mode
-        timer(LTIRQC) = INTERRUPT_F | RELOAD_F; // clear flags and do a reload
+        timer(TC0IC) = 1 << NSIRQ;//0xF; // Enable timer in every mode
+        timer(TIRQC) = INTERRUPT_F | RELOAD_F; // clear flags and do a reload
     }
 
     Count count() { return static_cast<Count>(0); }
 
-    void enable() { timer(LTCS) |= 1 << INTERRUPT_ENABLE | 1 << TIMER_ENABLE; }
-    void disable() { timer(LTCS) &= ~(1 << INTERRUPT_ENABLE | 1 << TIMER_ENABLE); }
+    void enable() { timer(TCS) |= 1 << INTERRUPT_ENABLE | 1 << TIMER_ENABLE; }
+    void disable() { timer(TCS) &= ~(1 << INTERRUPT_ENABLE | 1 << TIMER_ENABLE); }
 
-    void eoi() { timer(LTIRQC) = INTERRUPT_F | RELOAD_F; } // clear flags and reload 
+    void eoi() { timer(TIRQC) = INTERRUPT_F | RELOAD_F; } // clear flags and reload 
 
-    void set(const Count & count) { timer(LTCS) |= count; }
+    void set(const Count & count) { timer(TCS) |= count; }
 
     Hertz clock() { return CLOCK; }
 

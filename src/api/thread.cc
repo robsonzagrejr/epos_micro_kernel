@@ -14,7 +14,6 @@ __BEGIN_SYS
 volatile unsigned int Thread::_thread_count;
 Scheduler_Timer * Thread::_timer;
 Scheduler<Thread> Thread::_scheduler;
-Spin Thread::_lock;
 
 void Thread::constructor_prologue(unsigned int stack_size)
 {
@@ -27,7 +26,7 @@ void Thread::constructor_prologue(unsigned int stack_size)
 }
 
 
-void Thread::constructor_epilogue(const Log_Addr & entry, unsigned int stack_size)
+void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 {
     db<Thread>(TRC) << "Thread(entry=" << entry
                     << ",state=" << _state
@@ -95,18 +94,18 @@ Thread::~Thread()
 }
 
 
-void Thread::priority(const Priority & c)
+void Thread::priority(const Criterion & c)
 {
     lock();
 
     db<Thread>(TRC) << "Thread::priority(this=" << this << ",prio=" << c << ")" << endl;
 
-    _link.rank(Criterion(c));
-
     if(_state != RUNNING) { // reorder the scheduling queue
         _scheduler.remove(this);
+        _link.rank(c);
         _scheduler.insert(this);
-    }
+    } else
+        _link.rank(c);
 
     if(preemptive)
         reschedule();

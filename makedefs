@@ -140,7 +140,7 @@ ifeq ($(MMOD),raspberry_pi3)
 cortex_CC_FLAGS		:= -mcpu=cortex-a53 -mfloat-abi=hard -mfpu=vfp
 cortex_AS_FLAGS		:= -mcpu=cortex-a53
 cortex_LD_FLAGS		:=
-cortex_EMULATOR		= qemu-system-aarch64 -M raspi2 -cpu cortex-a53 -smp 4 -m 1G -serial null -serial mon:stdio -nographic -no-reboot -kernel 
+cortex_EMULATOR		= qemu-system-aarch64 -M raspi2 -cpu cortex-a53 -smp 4 -m 1G -serial null -serial mon:stdio -nographic -no-reboot -device loader,file=loader.img,addr=$(IMAGE_ADDR),force-raw=on -kernel 
 cortex_DEBUGGER		:= gdb
 cortex_FLASHER		= $(TLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f
 cortex_MAGIC		:= --omagic
@@ -369,6 +369,7 @@ lib%.o: lib%.cc
 		$(CLEAN) $<.tmp
 
 %.bin: %.img
+		cp $< loader.img
 		$(OBJCOPY) -O binary $< $@
 
 %.out: %.img
