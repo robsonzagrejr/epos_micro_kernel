@@ -27,7 +27,7 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int MIO_BASE          = 0x3ef00000;
     static const unsigned int MIO_TOP           = 0x400000ff;
     static const unsigned int VECTOR_TABLE      = SIMULATED ? 0x00010000 : 0x00008000;   // Defined by uboot@QEMU
-    static const unsigned int PAGE_TABLES       = 0x3eef0000;   // 1006 MB
+    static const unsigned int PAGE_TABLES       = 0x3eef0000;
 
     // Boot Image
     static const unsigned int BOOT_LENGTH_MIN   = NOT_USED;
@@ -35,15 +35,13 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int BOOT              = NOT_USED;
     static const unsigned int SETUP             = VECTOR_TABLE; // MEM_BASE (will be part of the free memory at INIT, using a logical address identical to physical eliminate SETUP relocation)
     static const unsigned int BOOT_STACK        = 0x0007fffc;   // MEM_BASE + 512KB - 4 (will be used as the stack pointer, not the base)
-    static const unsigned int INIT              = 0x00080000;   // MEM_BASE + 512 KB (will be part of the free memory at INIT)
-    static const unsigned int IMAGE             = 0x00100000;   // MEM_BASE + 1 MB (will be part of the free memory at INIT, defines the maximum image size; if larger than 3 MB then adjust at SETUP)
 
     // Logical Memory Map
     static const unsigned int SYS               = 0xff700000;   // 4 GB - 9 MB
     static const unsigned int APP_LOW           = 0x80000000;
-    static const unsigned int APP_CODE          = VECTOR_TABLE; // Defined at Raspberry3 Memory_Map for multitask
-    static const unsigned int APP_DATA          = VECTOR_TABLE; // Defined at Raspberry3 Memory_Map for multitask
     static const unsigned int APP_HIGH          = SYS - 1;
+    static const unsigned int INIT              = 0x00080000;
+    static const unsigned int IMAGE             = 0x00100000;
 
     static const unsigned int PHY_MEM           = MEM_BASE;
     static const unsigned int IO                = 0x3ef00000;   // this machine only supports the library architecture of EPOS

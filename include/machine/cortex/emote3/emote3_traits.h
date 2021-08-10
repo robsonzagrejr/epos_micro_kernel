@@ -38,8 +38,6 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int INIT              = NOT_USED;
 
     static const unsigned int APP_LOW           = 0x20000004;
-    static const unsigned int APP_CODE          = 0x00204000;
-    static const unsigned int APP_DATA          = 0x20000004;
     static const unsigned int APP_HIGH          = 0x20007ff7;
     static const unsigned int VECTOR_TABLE      = 0x00204000;
 

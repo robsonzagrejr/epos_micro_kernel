@@ -35,6 +35,9 @@ struct Memory_Map: public Cortex_Memory_Map
         GIC_DIST_BASE           = 0xf8f01000,
 
         // Logical Address Space
+        APP_CODE        = Traits<Machine>::MEM_BASE,
+        APP_DATA        = 0x03100000,                // 192 MB
+        
         SYS_CODE                = Traits<Machine>::SYS_CODE,
         SYS_INFO                = NOT_USED,
         SYS_DATA                = Traits<Machine>::SYS_CODE,

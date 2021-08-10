@@ -36,6 +36,9 @@ struct Memory_Map: public Cortex_Memory_Map
         SCB_BASE        = 0xe000e000, // System Control Block
 
         // Logical Address Space
+        APP_CODE          = Traits<Machine>::VECTOR_TABLE,
+        APP_DATA          = Traits<Machine>::APP_LOW,
+
         SYS_CODE        = NOT_USED,
         SYS_INFO        = NOT_USED,
         SYS_DATA        = NOT_USED,

@@ -26,8 +26,6 @@ struct Cortex_Memory_Map
         INIT            = Traits<Machine>::INIT,
 
         APP_LOW         = Traits<Machine>::APP_LOW,
-        APP_CODE        = Traits<Machine>::APP_CODE,
-        APP_DATA        = Traits<Machine>::APP_DATA,
         APP_HIGH        = Traits<Machine>::APP_HIGH,
 
         PHY_MEM         = Traits<Machine>::PHY_MEM,

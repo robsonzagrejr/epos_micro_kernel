@@ -38,8 +38,6 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int INIT              = NOT_USED;
 
     static const unsigned int APP_LOW           = MEM_BASE;
-    static const unsigned int APP_CODE          = 0x00000000;   // Flash
-    static const unsigned int APP_DATA          = APP_LOW;
     static const unsigned int APP_HIGH          = MEM_TOP;
     static const unsigned int VECTOR_TABLE      = 0x00200000;
 
