@@ -38,8 +38,8 @@ class Setup
 {
 private:
     // Physical memory map
-    static const unsigned int MEM_BASE          = Memory_Map::MEM_BASE;
-    static const unsigned int MEM_TOP           = Memory_Map::MEM_TOP;
+    static const unsigned int RAM_BASE          = Memory_Map::RAM_BASE;
+    static const unsigned int RAM_TOP           = Memory_Map::RAM_TOP;
     static const unsigned int APIC_PHY          = APIC::LOCAL_APIC_PHY_ADDR;
     static const unsigned int APIC_SIZE         = APIC::LOCAL_APIC_SIZE;
     static const unsigned int IO_APIC_PHY       = APIC::IO_APIC_PHY_ADDR;
@@ -732,7 +732,7 @@ void Setup::setup_sys_pd()
     // Attach the OS (i.e. sys_pt)
     sys_pd[MMU::directory(SYS)] = si->pmm.sys_pt | Flags::SYS;
 
-    // Attach memory starting at MEM_BASE
+    // Attach memory starting at RAM_BASE
     for(unsigned int i = MMU::directory(MMU::align_directory(si->bm.mem_base)); i < MMU::directory(MMU::align_directory(si->bm.mem_top)); i++)
         sys_pd[i] = (si->pmm.phy_mem_pts + i * sizeof(Page)) | Flags::APP;
 
@@ -873,17 +873,17 @@ void Setup::detect_memory(unsigned int * base, unsigned int * top)
     db<Setup>(TRC) << "Setup::detect_memory()" << endl;
 
     unsigned int i;
-    unsigned int * mem = reinterpret_cast<unsigned int *>(MEM_BASE / sizeof(int));
-    for(i = Traits<Machine>::INIT; i < MEM_TOP; i += 16 * sizeof(MMU::Page))
+    unsigned int * mem = reinterpret_cast<unsigned int *>(RAM_BASE / sizeof(int));
+    for(i = Traits<Machine>::INIT; i < RAM_TOP; i += 16 * sizeof(MMU::Page))
         mem[i /  sizeof(int)] = i;
 
-    for(i = Traits<Machine>::INIT; i < MEM_TOP; i += 16 * sizeof(MMU::Page))
+    for(i = Traits<Machine>::INIT; i < RAM_TOP; i += 16 * sizeof(MMU::Page))
         if(mem[i / sizeof(int)] != i) {
-            db<Setup>(ERR) << "Less memory was detected (" << i / 1024 << " kb) than specified in the configuration (" << MEM_TOP / 1024 << " kb)!" << endl;
+            db<Setup>(ERR) << "Less memory was detected (" << i / 1024 << " kb) than specified in the configuration (" << RAM_TOP / 1024 << " kb)!" << endl;
             break;
         }
 
-    *base = MEM_BASE;
+    *base = RAM_BASE;
     *top = i;
 
     db<Setup>(INF) << "Memory={base=" << reinterpret_cast<void *>(*base) << ",top=" << reinterpret_cast<void *>(*top) << "}" << endl;
@@ -1023,7 +1023,7 @@ void _entry()
 
     // Check if we are booting from a ramdisk and adjust the boot image pointer accordingly
     if(si->bm.img_size > 2880 * 512) { // larger than a floppy
-        bi = reinterpret_cast<char *>(Traits<Machine>::RAMDISK + Traits<Machine>::BOOT_LENGTH_MAX);
+        bi = reinterpret_cast<char *>(Traits<Machine>::RAMDISK + 512);
         si = reinterpret_cast<System_Info *>(bi);
     }
 

@@ -21,6 +21,7 @@ struct Memory_Map: public Cortex_Memory_Map
         TIMER1_BASE     = 0x40031000, // GPTM
         TIMER2_BASE     = 0x40032000, // GPTM
         TIMER3_BASE     = 0x40033000, // GPTM
+        TSC_BASE        = TIMER3_BASE,
         RF_BASE         = 0x40088000,
         USB0_BASE       = 0x40089000,
         SCR_BASE        = 0x400d2000,
@@ -34,10 +35,13 @@ struct Memory_Map: public Cortex_Memory_Map
         GPIOD_BASE      = 0x400dc000, // PL061 GPIO Port D
         CCTEST_BASE     = 0x44010000,
         SCB_BASE        = 0xe000e000, // System Control Block
+        VECTOR_TABLE    = Traits<Machine>::APP_CODE,
 
         // Logical Address Space
-        APP_CODE          = Traits<Machine>::VECTOR_TABLE,
-        APP_DATA          = Traits<Machine>::APP_LOW,
+        APP_LOW         = Traits<Machine>::APP_LOW,
+        APP_HIGH        = Traits<Machine>::APP_HIGH,
+        APP_CODE        = Traits<Machine>::APP_CODE,
+        APP_DATA        = Traits<Machine>::APP_DATA,
 
         SYS_CODE        = NOT_USED,
         SYS_INFO        = NOT_USED,

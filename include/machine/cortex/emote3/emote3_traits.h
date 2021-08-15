@@ -21,29 +21,32 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int CPUS              = Traits<Build>::CPUS;
 
     // Physical Memory
-    static const unsigned int MEM_BASE          = 0x20000004;
-    static const unsigned int MEM_TOP           = 0x20007ff7;   // 32 KB (MAX for 32-bit is 0x70000000 / 1792 MB)
+    static const unsigned int ROM_BASE          = 0x00200000;
+    static const unsigned int ROM_TOP           = 0x0027ffff;   // 512 KB
+    static const unsigned int RAM_BASE          = 0x20000000;
+    static const unsigned int RAM_TOP           = 0x20007fff;   // 32 KB
     static const unsigned int MIO_BASE          = 0x40000000;
     static const unsigned int MIO_TOP           = 0x440067ff;
+    static const unsigned int BOOT_LOADER       = ROM_BASE;
+    static const unsigned int BOOT_LOADER_SIZE  = 16 * 1024;
 
-    // Boot Image
-    static const unsigned int BOOT_LENGTH_MIN   = NOT_USED;
-    static const unsigned int BOOT_LENGTH_MAX   = NOT_USED;
-    static const unsigned int BOOT_STACK        = 0x20007ff4;   // MEM_TOP - sizeof(int)
-
-    // Logical Memory Map
+    // Physical Memory at Boot
     static const unsigned int BOOT              = NOT_USED;
-    static const unsigned int IMAGE             = 0x00200000;   // image on FLASH (max 512 KB)
+    static const unsigned int BOOT_STACK        = RAM_TOP - 4;  // RAM_TOP - sizeof(int)
+    static const unsigned int IMAGE             = ROM_BASE;     // image on FLASH (max 512 KB)
     static const unsigned int SETUP             = NOT_USED;
+
+    // Logical Memory Map (this machine only supports mode LIBRARY, so these are indeed also physical addresses)
+    static const unsigned int APP_LOW           = RAM_BASE;
+    static const unsigned int APP_HIGH          = RAM_TOP;
+
+    static const unsigned int APP_CODE          = BOOT_LOADER + BOOT_LOADER_SIZE;
+    static const unsigned int APP_DATA          = APP_LOW;
+
     static const unsigned int INIT              = NOT_USED;
-
-    static const unsigned int APP_LOW           = 0x20000004;
-    static const unsigned int APP_HIGH          = 0x20007ff7;
-    static const unsigned int VECTOR_TABLE      = 0x00204000;
-
-    static const unsigned int PHY_MEM           = NOT_USED;     // this machine only supports the library architecture of EPOS
-    static const unsigned int IO                = NOT_USED;     // this machine only supports the library architecture of EPOS
-    static const unsigned int SYS               = NOT_USED;     // this machine only supports the library architecture of EPOS
+    static const unsigned int PHY_MEM           = NOT_USED;
+    static const unsigned int IO                = NOT_USED;
+    static const unsigned int SYS               = NOT_USED;
 
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE        = 3 * 1024;

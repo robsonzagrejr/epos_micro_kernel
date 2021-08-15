@@ -14,8 +14,8 @@ struct Memory_Map
         NOT_USED        = Traits<Machine>::NOT_USED,
 
         // Physical Memory
-        MEM_BASE        = Traits<Machine>::MEM_BASE,
-        MEM_TOP         = Traits<Machine>::MEM_TOP,
+        RAM_BASE        = Traits<Machine>::RAM_BASE,
+        RAM_TOP         = Traits<Machine>::RAM_TOP,
         MIO_BASE        = Traits<Machine>::MIO_BASE,
         MIO_TOP         = Traits<Machine>::MIO_TOP,
         BOOT_STACK      = Traits<Machine>::BOOT_STACK,
@@ -28,18 +28,21 @@ struct Memory_Map
         TIMER_BASE      = 0x02004000, // CLINT Timer
         PLIIC_CPU_BASE  = 0x0c000000, // SiFive PLIC
 
-        // Logical Address Space
-        BOOT            = Traits<System>::multitask ? Traits<Machine>::BOOT : NOT_USED,
+        // Physical Memory at Boot
+        BOOT            = Traits<Machine>::BOOT,
         IMAGE           = Traits<Machine>::IMAGE,
-        SETUP           = Traits<System>::multitask ? Traits<Machine>::SETUP : NOT_USED,
-        INIT            = Traits<System>::multitask ? Traits<Machine>::INIT : NOT_USED,
+        SETUP           = Traits<Machine>::SETUP,
 
-        APP_LOW         = Traits<System>::multitask ? Traits<Machine>::APP_LOW : Traits<Machine>::SETUP,
-        APP_CODE        = APP_LOW,
-        APP_DATA        = Traits<System>::multitask ? APP_LOW + 4 * 1024 * 1024 : APP_LOW,
+        // Logical Address Space
+        APP_LOW         = Traits<Machine>::APP_LOW,
         APP_HIGH        = Traits<Machine>::APP_HIGH,
+        APP_CODE        = Traits<Machine>::APP_CODE,
+        APP_DATA        = Traits<Machine>::APP_DATA,
+
+        INIT            = Traits<Machine>::INIT,
 
         PHY_MEM         = Traits<Machine>::PHY_MEM,
+
         IO              = Traits<Machine>::IO,
 
         SYS             = Traits<Machine>::SYS,

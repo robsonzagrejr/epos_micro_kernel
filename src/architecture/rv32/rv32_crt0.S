@@ -31,7 +31,7 @@ _start:
         .globl  __epos_app_entry
         .type   __epos_app_entry, function
 __epos_app_entry:
-        call      main
+        call    main
 stop:   addi    sp, sp, -4
         sw      a0, 0(sp)   // save main's return value to be used by exit()
         call    _fini

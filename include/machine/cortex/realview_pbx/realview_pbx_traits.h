@@ -40,6 +40,8 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int INIT              = NOT_USED;
 
     static const unsigned int APP_LOW           = 0x00000000;
+    static const unsigned int APP_CODE          = 0x00010000;
+    static const unsigned int APP_DATA          = 0x00010000;
     static const unsigned int APP_HIGH          = 0x07ffffff;
 
     static const unsigned int PHY_MEM           = 0x80000000; // 2 GB

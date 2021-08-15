@@ -18,31 +18,29 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int CPUS              = Traits<Build>::CPUS;
 
     // Physical Memory
-    static const unsigned int MEM_BASE          = 0x00000000;
-    static const unsigned int MEM_TOP           = 0x10000000; 	// 256 MB (MAX for 32-bit is 0x70000000 / 1792 MB)
-    static const unsigned int MIO_BASE          = NOT_USED;	// defined by SETUP	
+    static const unsigned int RAM_BASE          = 0x00000000;
+    static const unsigned int RAM_TOP           = 0x10000000; 	// 256 MB (max 1792 MB)
+    static const unsigned int MIO_BASE          = NOT_USED;	// defined by SETUP during PCI initialization (max 244 MB)
     static const unsigned int MIO_TOP           = NOT_USED;	// defined by SETUP
 
-    // Boot Image
-    static const unsigned int BOOT_LENGTH_MIN   = 512;
-    static const unsigned int BOOT_LENGTH_MAX   = 512;
+    // Physical Memory at Boot
+    static const unsigned int BOOT              = 0x00007c00;
     static const unsigned int BOOT_STACK        = NOT_USED;     // defined by BOOT and by SETUP
+    static const unsigned int IMAGE             = 0x00008000;
+    static const unsigned int SETUP             = 0x00100000;   // 1 MB
     static const unsigned int RAMDISK           = 0x0fa28000;   // MEMDISK-dependent
     static const unsigned int RAMDISK_SIZE      = 0x003c0000;
 
     // Logical Memory Map
-    static const unsigned int BOOT              = 0x00007c00;
-    static const unsigned int IMAGE             = 0x00008000;
-    static const unsigned int SETUP             = 0x00100000; 	// 1 MB
-    static const unsigned int INIT              = 0x00200000; 	// 2 MB
-
     static const unsigned int APP_LOW           = 0x00000000;
-    static const unsigned int APP_CODE          = APP_LOW;
-    static const unsigned int APP_DATA          = APP_LOW + 4 * 1024 * 1024;
-    static const unsigned int APP_HIGH          = 0x0fffffff; 	// 256 MB
+    static const unsigned int APP_HIGH          = 0xefffffff;   // IO - 1
 
-    static const unsigned int PHY_MEM           = 0x80000000; 	// 2 GB
-    static const unsigned int IO                = 0xf0000000; 	// 4 GB - 256 MB
+    static const unsigned int APP_CODE          = APP_LOW;
+    static const unsigned int APP_DATA          = APP_CODE + 4 * 1024 * 1024;
+
+    static const unsigned int INIT              = 0x00200000;   // 2 MB (only used during boot)
+    static const unsigned int PHY_MEM           = 0x80000000; 	// 2 GB (max 1792 MB)
+    static const unsigned int IO                = 0xf0000000; 	// 4 GB - 256 MB  (max 244 MB)
     static const unsigned int SYS               = 0xff400000;   // 4 GB - 12 MB
 
     // Default Sizes and Quantities
@@ -132,55 +130,9 @@ template<> struct Traits<Keyboard>: public Traits<Machine_Common>
 
 template<> struct Traits<Scratchpad>: public Traits<Machine_Common>
 {
-    static const bool enabled = false;
+    static const bool enabled = true;
     static const unsigned int ADDRESS = 0xa0000; // VGA Graphic mode frame buffer
     static const unsigned int SIZE = 96 * 1024;
-};
-
-template<> struct Traits<Ethernet>: public Traits<Machine_Common>
-{
-    typedef LIST<PCNet32, PCNet32> DEVICES;
-    static const unsigned int UNITS = DEVICES::Length;
-
-    static const bool enabled = (Traits<Build>::NODES > 1) && (UNITS > 0);
-
-    static const bool promiscuous = false;
-};
-
-template<> struct Traits<PCNet32>: public Traits<Ethernet>
-{
-    static const unsigned int UNITS = DEVICES::Count<PCNet32>::Result;
-    static const bool enabled = Traits<Ethernet>::enabled && (UNITS > 0);
-
-    static const unsigned int SEND_BUFFERS = 64; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 256; // per unit
-};
-
-template<> struct Traits<E100>: public Traits<Ethernet>
-{
-    static const unsigned int UNITS = DEVICES::Count<E100>::Result;
-    static const bool enabled = Traits<Ethernet>::enabled && (UNITS > 0);
-
-    static const unsigned int SEND_BUFFERS = 64; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 64; // per unit
-};
-
-template<> struct Traits<C905>: public Traits<Ethernet>
-{
-    static const unsigned int UNITS = DEVICES::Count<C905>::Result;
-    static const bool enabled = Traits<Ethernet>::enabled && (UNITS > 0);
-
-    static const unsigned int SEND_BUFFERS = 64; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 64; // per unit
-};
-
-template<> struct Traits<RTL8139>: public Traits<Ethernet>
-{
-    static const unsigned int UNITS = DEVICES::Count<RTL8139>::Result;
-    static const bool enabled = Traits<Ethernet>::enabled && (UNITS > 0);
-
-    static const unsigned int SEND_BUFFERS = 4; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 8192; // no descriptor, just a memory block of 8192 bits
 };
 
 template<> struct Traits<FPGA>: public Traits<Machine_Common>

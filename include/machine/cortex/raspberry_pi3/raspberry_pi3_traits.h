@@ -15,6 +15,10 @@ template<> struct Traits<Machine_Common>: public Traits<Build>
 
 template<> struct Traits<Machine>: public Traits<Machine_Common>
 {
+private:
+    static const bool library_mode              = (Traits<Build>::MODE == Traits<Build>::LIBRARY);
+
+public:
     static const bool cpus_use_local_timer      = false;
 
     static const unsigned int NOT_USED          = 0xffffffff;
@@ -22,29 +26,30 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int CPUS              = Traits<Build>::CPUS;
 
     // Physical Memory
-    static const unsigned int MEM_BASE          = 0x00000000;
-    static const unsigned int MEM_TOP           = 0x3eeeffff;   // 1 GB
+    static const unsigned int RAM_BASE          = 0x00000000;
+    static const unsigned int RAM_TOP           = 0x3eeeffff;   // 1 GB - 16 MB
     static const unsigned int MIO_BASE          = 0x3ef00000;
-    static const unsigned int MIO_TOP           = 0x400000ff;
-    static const unsigned int VECTOR_TABLE      = SIMULATED ? 0x00010000 : 0x00008000;   // Defined by uboot@QEMU
+    static const unsigned int MIO_TOP           = 0x400000ff;   // 16 MB
+    static const unsigned int VECTOR_TABLE      = SIMULATED ? 0x00010000 : 0x00008000;   // defined by uboot@QEMU
     static const unsigned int PAGE_TABLES       = 0x3eef0000;
 
-    // Boot Image
-    static const unsigned int BOOT_LENGTH_MIN   = NOT_USED;
-    static const unsigned int BOOT_LENGTH_MAX   = NOT_USED;
+    // Physical Memory at Boot
     static const unsigned int BOOT              = NOT_USED;
-    static const unsigned int SETUP             = VECTOR_TABLE; // MEM_BASE (will be part of the free memory at INIT, using a logical address identical to physical eliminate SETUP relocation)
-    static const unsigned int BOOT_STACK        = 0x0007fffc;   // MEM_BASE + 512KB - 4 (will be used as the stack pointer, not the base)
+    static const unsigned int BOOT_STACK        = 0x0007fffc;   // RAM_BASE + 512KB - 4 (will be used as the stack pointer, not the base)
+    static const unsigned int IMAGE             = 0x00100000;
+    static const unsigned int SETUP             = library_mode ? NOT_USED : VECTOR_TABLE;
 
     // Logical Memory Map
-    static const unsigned int SYS               = 0xff700000;   // 4 GB - 9 MB
-    static const unsigned int APP_LOW           = 0x80000000;
-    static const unsigned int APP_HIGH          = SYS - 1;
-    static const unsigned int INIT              = 0x00080000;
-    static const unsigned int IMAGE             = 0x00100000;
+    static const unsigned int APP_LOW           = library_mode ? VECTOR_TABLE : 0x80000000;
+    static const unsigned int APP_HIGH          = APP_LOW + (RAM_TOP - RAM_BASE) - 1;
 
-    static const unsigned int PHY_MEM           = MEM_BASE;
-    static const unsigned int IO                = 0x3ef00000;   // this machine only supports the library architecture of EPOS
+    static const unsigned int APP_CODE          = library_mode ? VECTOR_TABLE : APP_LOW;
+    static const unsigned int APP_DATA          = APP_CODE + 4 * 1024 * 1024;
+
+    static const unsigned int INIT              = (Traits<Build>::MODE == Traits<Build>::LIBRARY) ? NOT_USED : 0x00080000;
+    static const unsigned int PHY_MEM           = 0x00000000;   // 0 (max 1792 MB)
+    static const unsigned int IO                = 0x70000000;   // 2 GB - 256 MB (max 247 MB)
+    static const unsigned int SYS               = 0xff700000;   // 4 GB - 9 MB
 
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE        = 16 * 1024;

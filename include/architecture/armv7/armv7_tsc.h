@@ -5,6 +5,7 @@
 
 #include <architecture/cpu.h>
 #include <architecture/tsc.h>
+#include <system/memory_map.h>
 
 #define __ic_common_only__
 #include <machine/ic.h>
@@ -22,15 +23,6 @@ private:
                              : Traits<Build>::MODEL == Traits<Build>::Zynq ? Traits<CPU>::CLOCK / 2
                              : Traits<CPU>::CLOCK;
     static const PPB ACCURACY = 40000; // ppb
-
-    enum {
-        TSC_BASE = Traits<Build>::MODEL == Traits<Build>::eMote3  ?      0x40033000 // TIMER3_BASE
-                 : Traits<Build>::MODEL == Traits<Build>::LM3S811 ?      0x40031000 // TIMER1_BASE
-                 : Traits<Build>::MODEL == Traits<Build>::Zynq ?         0xf8f00200 // GLOBAL_TIMER_BASE
-                 : Traits<Build>::MODEL == Traits<Build>::Realview_PBX ? 0x1f000200 // GLOBAL_TIMER_BASE
-                 : Traits<Build>::MODEL == Traits<Build>::Raspberry_Pi3 ? 0x3f003000
-                 : 0
-    };
 
     // Cortex-M3 GPTM registers offsets
     enum {              // Description
@@ -102,7 +94,7 @@ public:
 private:
     static void init();
 
-    static volatile CPU::Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile CPU::Reg32 *>(TSC_BASE)[o / sizeof(CPU::Reg32)]; }
+    static volatile CPU::Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile CPU::Reg32 *>(Memory_Map::TSC_BASE)[o / sizeof(CPU::Reg32)]; }
 
 #if defined(__mmod_emote3__) || defined(__mmod_lm3s811__)
 

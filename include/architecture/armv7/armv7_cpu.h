@@ -286,10 +286,14 @@ public:
     }
 
     static unsigned int cores() {
-        Reg32 n;
-        ASM("mrc p15, 4, %0, c15, c0, 0 \t\n\
-             ldr %0, [%0, #0x004]" : "=r"(n) : : );
-        return (n & 0x3) + 1;
+        if(Traits<Build>::MODEL == Traits<Build>::Raspberry_Pi3) {
+            return Traits<Build>::CPUS;
+        } else {
+            Reg32 n;
+            ASM("mrc p15, 4, %0, c15, c0, 0 \t\n\
+                ldr %0, [%0, #0x004]" : "=r"(n) : : );
+            return (n & 0x3) + 1;
+        }
     }
 
     static void smp_barrier(unsigned long cores = cores()) { CPU_Common::smp_barrier<&finc>(cores, id()); }

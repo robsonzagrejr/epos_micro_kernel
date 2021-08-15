@@ -183,7 +183,7 @@ void IC::dispatch(unsigned int i)
     Interrupt_Id id = int_id();
 
     if((id != INT_SYS_TIMER) || Traits<IC>::hysterically_debugged)
-        db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
+        db<IC>(TRC) << "IC::dispatch(i=" << id << ",handler=" << hex << reinterpret_cast<void *>(_int_vector[id]) << ")" << endl;
 
     assert(id < INTS);
     if(_eoi_vector[id])

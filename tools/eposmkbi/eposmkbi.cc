@@ -40,13 +40,16 @@ struct Configuration
     unsigned int   mem_top;
     unsigned int   mio_base;
     unsigned int   mio_top;
-    unsigned int   boot_length_min;
-    unsigned int   boot_length_max;
     short          node_id;   // nodes in SAN (-1 => dynamic)
     int            space_x;   // Spatial coordinates of a node (-1 => mobile)
     int            space_y;
     int            space_z;
     unsigned char  uuid[8];   // EPOS image Universally Unique Identifier
+    bool           need_boot;
+    bool           need_si;
+    bool           si_in_setup;
+    unsigned int   boot_length_min;
+    unsigned int   boot_length_max;
 };
 
 // System_Info
@@ -154,48 +157,11 @@ int main(int argc, char **argv)
     fprintf(out, "  Model: %s\n", CONFIG.mmod);
     fprintf(out, "  Processor: %s (%d bits, %s-endian)\n", CONFIG.arch, CONFIG.word_size, CONFIG.endianess ? "little" : "big");
     fprintf(out, "  Memory: %d KBytes\n", (CONFIG.mem_top - CONFIG.mem_base) / 1024);
-    if((CONFIG.boot_length_min + CONFIG.boot_length_max) > 0)
-        fprintf(out, "  Boot Length: %d - %d (min - max) KBytes\n", CONFIG.boot_length_min, CONFIG.boot_length_max);
     if(CONFIG.space_x != -1)
         fprintf(out, "  Node location: (%d, %d, %d)\n", CONFIG.space_x, CONFIG.space_y, CONFIG.space_z);
     fprintf(out, "  UUID: ");
     for(unsigned int i = 0; i < 8; i++)
         fprintf(out, "%.2x", CONFIG.uuid[i]);
-
-    // Create the boot image
-    unsigned int image_size = 0;
-    fprintf(out, "\n  Creating EPOS bootable image in \"%s\":\n", argv[optind + 1]);
-
-    // Add BOOT
-    if(CONFIG.boot_length_max > 0) {
-        sprintf(file, "%s/img/boot_%s", argv[optind], CONFIG.mmod);
-        fprintf(out, "    Adding bootstrap \"%s\":", file);
-        image_size += put_file(fd_img, file);
-        if(image_size > CONFIG.boot_length_max) {
-            fprintf(out, " failed!\n");
-            fprintf(err, "Boot strap \"%s\" is too large! (%d bytes)\n", file, image_size);
-            return 1;
-        } else {
-            if(image_size < CONFIG.boot_length_min)
-                image_size += pad(fd_img, CONFIG.boot_length_min - image_size);
-        }
-    }
-    unsigned int boot_size = image_size;
-
-    // Determine if System_Info is needed and how it must be handled
-    bool need_si = (!strcmp(CONFIG.mach, "pc") || !strcmp(CONFIG.mach, "riscv") || !strcmp(CONFIG.mach, "cortex"));
-    bool si_in_setup = (need_si && (boot_size == 0)); // If the image contains a boot sector, then SI will be on a separate disk sector. Otherwise, it will be inside SETUP.
-
-    // Reserve space for System_Info if necessary
-    if(need_si && !si_in_setup) {
-        if(sizeof(System_Info) <= MAX_SI_LEN) {
-            image_size += pad(fd_img, MAX_SI_LEN);
-        } else {
-            fprintf(out, " failed!\n");
-            fprintf(err, "System_Info structure is too large (%d)!\n", sizeof(System_Info));
-            return 1;
-        }
-    }
 
     // Initialize the Boot_Map in System_Info
     System_Info si;
@@ -210,6 +176,38 @@ int main(int argc, char **argv)
     si.bm.space_z  = CONFIG.space_z;
     for(unsigned int i = 0; i < 8; i++)
         si.bm.uuid[i]  = CONFIG.uuid[i];
+
+
+    // Create the boot image
+    unsigned int image_size = 0;
+    fprintf(out, "\n  Creating EPOS bootable image in \"%s\":\n", argv[optind + 1]);
+
+    // Add BOOT
+    if(CONFIG.need_boot) {
+        sprintf(file, "%s/img/boot_%s", argv[optind], CONFIG.mmod);
+        fprintf(out, "    Adding bootstrap \"%s\":", file);
+        image_size += put_file(fd_img, file);
+        if(image_size > CONFIG.boot_length_max) {
+            fprintf(out, " failed!\n");
+            fprintf(err, "Boot strap \"%s\" is too large! (%d bytes)\n", file, image_size);
+            return 1;
+        } else {
+            if(image_size < CONFIG.boot_length_min)
+                image_size += pad(fd_img, CONFIG.boot_length_min - image_size);
+        }
+    }
+    unsigned int boot_size = image_size;
+
+    // Reserve space for System_Info if necessary
+    if(CONFIG.need_si && !CONFIG.si_in_setup) {
+        if(sizeof(System_Info) <= MAX_SI_LEN) {
+            image_size += pad(fd_img, MAX_SI_LEN);
+        } else {
+            fprintf(out, " failed!\n");
+            fprintf(err, "System_Info structure is too large (%d)!\n", sizeof(System_Info));
+            return 1;
+        }
+    }
 
     // Add SETUP
     sprintf(file, "%s/img/setup_%s", argv[optind], CONFIG.mmod);
@@ -261,10 +259,10 @@ int main(int argc, char **argv)
     si.bm.img_size = image_size - boot_size;
 
     // Add System_Info
-    if(need_si) {
+    if(CONFIG.need_si) {
         unsigned int si_offset = boot_size;
         fprintf(out, "    Adding system info");
-        if(si_in_setup) {
+        if(CONFIG.si_in_setup) {
             fprintf(out, " to SETUP:");
             struct stat stat;
             if(fstat(fd_img, &stat) < 0)  {
@@ -432,24 +430,24 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
 
     // Memory Base
     if(fgets(line, 256, cfg_file) != line) {
-        fprintf(err, "Error: failed to read MEM_BASE from configuration file!\n");
+        fprintf(err, "Error: failed to read RAM_BASE from configuration file!\n");
         return false;
     }
     token = strtok(line, "=");
-    if(strcmp(token, "MEM_BASE") || !(token = strtok(NULL, "\n"))) {
-        fprintf(err, "Error: no valid MEM_BASE in configuration!\n");
+    if(strcmp(token, "RAM_BASE") || !(token = strtok(NULL, "\n"))) {
+        fprintf(err, "Error: no valid RAM_BASE in configuration!\n");
         return false;
     }
     cfg->mem_base = strtoll(token, 0, 16);
 
     // Memory Top
     if(fgets(line, 256, cfg_file) != line) {
-        fprintf(err, "Error: failed to read MEM_TOP from configuration file!\n");
+        fprintf(err, "Error: failed to read RAM_TOP from configuration file!\n");
         return false;
     }
     token = strtok(line, "=");
-    if(strcmp(token, "MEM_TOP") || !(token = strtok(NULL, "\n"))) {
-        fprintf(err, "Error: no valid MEM_TOP in configuration!\n");
+    if(strcmp(token, "RAM_TOP") || !(token = strtok(NULL, "\n"))) {
+        fprintf(err, "Error: no valid RAM_TOP in configuration!\n");
         return false;
     }
     cfg->mem_top = strtoll(token, 0, 16);
@@ -478,28 +476,6 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     }
     cfg->mio_top = strtoll(token, 0, 16);
 
-    // Boot Length Min
-    if(fgets(line, 256, cfg_file) != line)
-        cfg->boot_length_min = 0;
-    else {
-        token = strtok(line, "=");
-        if(!strcmp(token, "BOOT_LENGTH_MIN") && (token = strtok(NULL, "\n")))
-            cfg->boot_length_min = atoi(token);
-        else
-            cfg->boot_length_min = 0;
-    }
-
-    // Boot Length Max
-    if(fgets(line, 256, cfg_file) != line)
-        cfg->boot_length_max = 0;
-    else {
-        token = strtok(line, "=");
-        if(!strcmp(token, "BOOT_LENGTH_MAX") && (token = strtok(NULL, "\n")))
-            cfg->boot_length_max = atoi(token);
-        else
-            cfg->boot_length_max = 0;
-    }
-
     // Node Id
     if(fgets(line, 256, cfg_file) != line)
         cfg->node_id = -1; // get from net
@@ -522,6 +498,21 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
                 cfg->uuid[i] = buf[j] ^ buf[j+1];
         }
     }
+
+    // Determine if BOOT is needed and how it must be handled
+    if(!strcmp(cfg->mach, "pc")) {
+        cfg->need_boot = true;
+        cfg->boot_length_min = 512;
+        cfg->boot_length_max = 512;
+    } else {
+        cfg->need_boot = false;
+        cfg->boot_length_min = 0;
+        cfg->boot_length_max = 0;
+    }
+
+    // Determine if System_Info is needed and how it must be handled
+    cfg->need_si = (!strcmp(cfg->mach, "pc") || !strcmp(cfg->mach, "riscv") || !strcmp(cfg->mach, "cortex"));
+    cfg->si_in_setup = cfg->need_si && !cfg->need_boot; // If the image contains a boot sector, then SI will be on a separate disk sector. Otherwise, it will be inside SETUP.
 
     return true;
 }
@@ -578,7 +569,7 @@ bool add_machine_secrets(int fd, unsigned int i_size, char * mach, char * mmod)
 {
     if(!strcmp(mach, "pc")) { // PC
         const unsigned int floppy_size   = 1474560;
-        const unsigned int secrets_offset   = CONFIG.boot_length_min - 6;
+        const unsigned int secrets_offset   = 512 - 6;
         const unsigned short boot_id        = 0xaa55;
         const unsigned short num_sect       = ((i_size + 511) / 512);
         const unsigned short last_track_sec = num_sect <= 2880 ? 19 : 49; // either 144 tracks with 20 sectors or 144 tracks with 50 sectors

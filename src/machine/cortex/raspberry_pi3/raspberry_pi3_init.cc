@@ -29,9 +29,9 @@ void Raspberry_Pi3::pre_init()
 {
     // SMP initialization
     if(CPU::id() == 0) {
-        //primary core
+        // Primary core
 
-        // this replaces the code commented below (that runned on previous versions),
+        // This replaces the code commented below (that runned on previous versions),
         // it is not moved to smp init as on Realview_PBX because there is no IPI to wakeup the secondary cores
         // instead, the Raspberry Pi secondary cores are waken by a Send Event (runned after the dsb instruction)
         if (Traits<Build>::CPUS >= 2) {

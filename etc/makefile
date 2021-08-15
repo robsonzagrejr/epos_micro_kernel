@@ -45,12 +45,10 @@ eposmkbi.conf:	FORCE
 		@echo "CLOCK=$(shell $(BIN)/eposcfg CLOCK)" >> $@
 		@echo "WORD_SIZE=$(shell $(BIN)/eposcfg WORD_SIZE)" >> $@
 		@echo "ENDIANESS=$(shell $(BIN)/eposcfg ENDIANESS)" >> $@
-		@echo "MEM_BASE=$(shell $(BIN)/eposcfg MEM_BASE)" >> $@
-		@echo "MEM_TOP=$(shell $(BIN)/eposcfg MEM_TOP)" >> $@
+		@echo "RAM_BASE=$(shell $(BIN)/eposcfg RAM_BASE)" >> $@
+		@echo "RAM_TOP=$(shell $(BIN)/eposcfg RAM_TOP)" >> $@
 		@echo "MIO_BASE=$(shell $(BIN)/eposcfg MIO_BASE)" >> $@
 		@echo "MIO_TOP=$(shell $(BIN)/eposcfg MIO_TOP)" >> $@
-		@echo "BOOT_LENGTH_MIN=$(shell $(BIN)/eposcfg BOOT_LENGTH_MIN)" >> $@
-		@echo "BOOT_LENGTH_MAX=$(shell $(BIN)/eposcfg BOOT_LENGTH_MAX)" >> $@
 		@echo "NODE_ID=$(NODE_ID)" >> $@
 		@echo "UUID=$(UUID)" >> $@
 

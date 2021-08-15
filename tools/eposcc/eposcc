@@ -83,7 +83,7 @@ LINK_OBJN_BUILTIN="$LIB/application_$MMOD.o $LIB/init_application_$MMOD.o"
 LINK_OBJL_BUILTIN="$LIB/crtend_$MMOD.o -R$SRC/system/system_$MMOD"
 LINK_LIBS_BUILTIN="util_$MMOD gcc"
 if [ "$BOOT_STACK" != "" ] ; then
-    LINK_FLGS_BUILTIN="$LINK_FLGS_LIBRARY --defsym=__boot_stack__=$BOOT_STACK"
+    LINK_FLGS_BUILTIN="$LINK_FLGS_BUILTIN --defsym=__boot_stack__=$BOOT_STACK"
 fi
 
 LINKER_KERNEL=$LINKER

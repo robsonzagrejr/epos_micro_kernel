@@ -26,6 +26,7 @@ struct Memory_Map: public Cortex_Memory_Map
         PWM0_BASE                   = 0x40028000, // PWM
         TIMER0_BASE                 = 0x40030000, // GPTM
         TIMER1_BASE                 = 0x40031000, // GPTM
+        TSC_BASE                    = TIMER1_BASE,
         TIMER2_BASE                 = 0x40032000, // GPTM
         ADC0_BASE                   = 0x40038000, // ADC
         FLASH0_BASE                 = 0x400fd000, // Flash Controller
@@ -33,8 +34,10 @@ struct Memory_Map: public Cortex_Memory_Map
         SCB_BASE                    = 0xe000e000, // System Control Block
 
         // Logical Address Space
-        APP_CODE          = 0x00000000,   // Flash
-        APP_DATA          = Traits<Machine>::APP_LOW,
+        APP_LOW         = Traits<Machine>::APP_LOW,
+        APP_HIGH        = Traits<Machine>::APP_HIGH,
+        APP_CODE        = Traits<Machine>::APP_CODE,
+        APP_DATA        = Traits<Machine>::APP_DATA,
 
         SYS_CODE        = NOT_USED,
         SYS_INFO        = NOT_USED,

@@ -12,38 +12,43 @@ template<> struct Traits<Machine_Common>: public Traits<Build> {};
 
 template<> struct Traits<Machine>: public Traits<Machine_Common>
 {
+private:
+    static const bool library_mode              = (Traits<Build>::MODE == Traits<Build>::LIBRARY);
+
+public:
     static const bool cpus_use_local_timer      = false;
 
     static const unsigned int NOT_USED          = 0xffffffff;
     static const unsigned int CPUS              = Traits<Build>::CPUS;
 
     // Physical Memory
-    static const unsigned int MEM_BASE          = 0x80000000;   // 2 GB
-    static const unsigned int MEM_TOP           = 0x87ffffff;   // 2 GB + 128 MB (128 MB of RAM)
+    static const unsigned int RAM_BASE          = 0x80000000;                           // 2 GB
+    static const unsigned int RAM_TOP           = 0x87ffffff;                           // 2 GB + 128 MB (max 1536 MB of RAM => RAM + MIO < 2 G)
     static const unsigned int MIO_BASE          = 0x00000000;
-    static const unsigned int MIO_TOP           = 0x1fffffff;   // 512 MB (max 512 MB of MIO)
+    static const unsigned int MIO_TOP           = 0x1fffffff;                           // 512 MB (max 512 MB of MIO => RAM + MIO < 2 G)
 
-    // Boot Image
-    static const unsigned int BOOT_LENGTH_MIN   = NOT_USED;
-    static const unsigned int BOOT_LENGTH_MAX   = NOT_USED;
-    static const unsigned int BOOT              = NOT_USED;     // Not needed for this machine
-    static const unsigned int SETUP             = 0x80000000;   // MEM_BASE (will be part of the free memory at INIT, using a logical address identical to physical eliminate SETUP relocation)
-    static const unsigned int BOOT_STACK        = 0x8007fffc;   // MEM_BASE + 512 KB - 4 (will be used as the stack pointer, not the base)
-    static const unsigned int INIT              = 0x80080000;   // MEM_BASE + 512 KB (will be part of the free memory at INIT)
-    static const unsigned int IMAGE             = 0x80100000;   // MEM_BASE + 1 MB (will be part of the free memory at INIT, defines the maximum image size; if larger than 3 MB then adjust at SETUP)
+    // Physical Memory at Boot
+    static const unsigned int BOOT              = NOT_USED;
+    static const unsigned int BOOT_STACK        = 0x8007fffc;                           // RAM_BASE + 512 KB - 4 (will be used as the stack pointer, not the base)
+    static const unsigned int SETUP             = library_mode ? NOT_USED : RAM_BASE;   // RAM_BASE (will be part of the free memory at INIT, using a logical address identical to physical eliminate SETUP relocation)
+    static const unsigned int IMAGE             = 0x80100000;                           // RAM_BASE + 1 MB (will be part of the free memory at INIT, defines the maximum image size; if larger than 3 MB then adjust at SETUP)
 
     // Logical Memory
-    static const unsigned int APP_LOW           = 0x80400000;   // 2 GB + 4 MB
-    static const unsigned int APP_HIGH          = 0xdfffffff;   // 2 GB + 1536 MB (max 1535 MB of APP)
+    static const unsigned int APP_LOW           = library_mode ? RAM_BASE : 0x80400000; // 2 GB + 4 MB
+    static const unsigned int APP_HIGH          = 0xff7fffff;                           // SYS - 1
 
-    static const unsigned int PHY_MEM           = 0x20000000;   // 512 MB (max 1536 MB of RAM)
-    static const unsigned int IO                = 0x00000000;   // 0 (max 512 MB of IO = MIO_TOP - MIO_BASE)
-    static const unsigned int SYS               = 0xff800000;   // 4 GB - 8 MB
+    static const unsigned int APP_CODE          = APP_LOW;
+    static const unsigned int APP_DATA          = APP_CODE + 4 * 1024 * 1024;
+
+    static const unsigned int INIT              = library_mode ? NOT_USED :0x80080000;  // RAM_BASE + 512 KB (will be part of the free memory at INIT)
+    static const unsigned int PHY_MEM           = 0x20000000;                           // 512 MB (max 1536 MB of RAM)
+    static const unsigned int IO                = 0x00000000;                           // 0 (max 512 MB of IO = MIO_TOP - MIO_BASE)
+    static const unsigned int SYS               = 0xff800000;                           // 4 GB - 8 MB
 
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE        = 16 * 1024;
     static const unsigned int MAX_THREADS       = 16;
-    static const unsigned int HEAP_SIZE         = (MAX_THREADS + CPUS) * STACK_SIZE; // threads (including idles for each CPU) are the largest objects allocated from the heap
+    static const unsigned int HEAP_SIZE         = (MAX_THREADS + CPUS) * STACK_SIZE;    // threads (including idles for each CPU) are the largest objects allocated from the heap
 };
 
 template <> struct Traits<IC>: public Traits<Machine_Common>

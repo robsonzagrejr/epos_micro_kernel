@@ -22,8 +22,8 @@ class Setup
 {
 private:
     // Physical memory map
-    static const unsigned int MEM_BASE  = Memory_Map::MEM_BASE;
-    static const unsigned int MEM_TOP   = Memory_Map::MEM_TOP;
+    static const unsigned int RAM_BASE  = Memory_Map::RAM_BASE;
+    static const unsigned int RAM_TOP   = Memory_Map::RAM_TOP;
     static const unsigned int IMAGE     = Memory_Map::IMAGE;
 
     // Logical memory map
@@ -515,9 +515,9 @@ void Setup::setup_sys_pd()
     for(unsigned int i = MMU::directory(MMU::align_directory(PHY_MEM)), j = 0; i < MMU::directory(MMU::align_directory(PHY_MEM)) + n_pts; i++, j++)
         sys_pd[i] = MMU::phy2pde((si->pmm.phy_mem_pts + j * sizeof(Page)));
 
-    // Attach all physical memory starting at MEM_BASE
-    assert((MMU::directory(MMU::align_directory(MEM_BASE)) + n_pts) < (MMU::PD_ENTRIES - 4)); // check if it would overwrite the OS
-    for(unsigned int i = MMU::directory(MMU::align_directory(MEM_BASE)), j = 0; i < MMU::directory(MMU::align_directory(MEM_BASE)) + n_pts; i++, j++)
+    // Attach all physical memory starting at RAM_BASE
+    assert((MMU::directory(MMU::align_directory(RAM_BASE)) + n_pts) < (MMU::PD_ENTRIES - 4)); // check if it would overwrite the OS
+    for(unsigned int i = MMU::directory(MMU::align_directory(RAM_BASE)), j = 0; i < MMU::directory(MMU::align_directory(RAM_BASE)) + n_pts; i++, j++)
         sys_pd[i] = MMU::phy2pde((si->pmm.phy_mem_pts + j * sizeof(Page)));
 
     // Calculate the number of page tables needed to map the IO address space
@@ -544,7 +544,7 @@ void Setup::setup_m2s()
 {
     db<Setup>(TRC) << "Setup::setup_m2s()" << endl;
 
-    memcpy(reinterpret_cast<void *>(Memory_Map::MEM_TOP + 1 - sizeof(Page)), reinterpret_cast<void *>(&_int_m2s), sizeof(Page));
+    memcpy(reinterpret_cast<void *>(Memory_Map::RAM_TOP + 1 - sizeof(Page)), reinterpret_cast<void *>(&_int_m2s), sizeof(Page));
 }
 
 void Setup::enable_paging()
@@ -706,7 +706,7 @@ void _entry() // machine mode
     CPU::tp(CPU::mhartid());                            // tp will be CPU::id()
     CPU::sp(Memory_Map::BOOT_STACK - Traits<Machine>::STACK_SIZE * (CPU::id() + 1)); // set this hart stack (the first stack is reserved for _int_m2s)
     if(Traits<System>::multitask) {
-        CLINT::mtvec(CLINT::DIRECT, Memory_Map::MEM_TOP + 1 - sizeof(MMU::Page));  // setup a machine mode interrupt handler to forward timer interrupts (which cannot be delegated via mideleg)
+        CLINT::mtvec(CLINT::DIRECT, Memory_Map::RAM_TOP + 1 - sizeof(MMU::Page));  // setup a machine mode interrupt handler to forward timer interrupts (which cannot be delegated via mideleg)
         CPU::mideleg(0xffff);                           // delegate all interrupts to supervisor mode
         CPU::medeleg(0xffff);                           // delegate all exceptions to supervisor mode - except ecall that shoul be handled on mmode
         CPU::mstatuss(CPU::MPP_S | CPU::MPIE);          // prepare jump into supervisor mode and reenable of interrupts at mret

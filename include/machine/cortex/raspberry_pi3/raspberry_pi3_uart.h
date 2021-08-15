@@ -4,6 +4,7 @@
 #define __raspberry_pi3_uart_h
 
 #include <machine/uart.h>
+#include <architecture/cpu.h>
 #include <machine/cortex/engine/cortex_a53/bcm_uart.h>
 #include <system/memory_map.h>
 
@@ -23,7 +24,7 @@ public:
     // In this sense, the BCM_UART pointer is set to the GPIO_BASE, and the mini-UART base (AUX_BASE) is handled by adding 0x15000
     // to the offsets of each register at the engine implementation.
     UART_Engine(unsigned int unit, unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits)
-    : _unit(unit), _uart(new(reinterpret_cast<void *>(Memory_Map::GPIO_BASE)) BCM_UART) {
+    : _unit(unit), _uart(new(reinterpret_cast<void *>(CPU::sctlr() & CPU::MMU_ENABLE ? Memory_Map::GPIO_BASE : 0x3f200000)) BCM_UART) {
         assert(unit < UNITS);
         power(FULL);  // physically enable the UART in SysCtrl before configuring it
         config(baud_rate, data_bits, parity, stop_bits);

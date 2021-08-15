@@ -37,8 +37,8 @@ char tokens[TOKENS][STRING_SIZE] = {
     "CLOCK",
     "WORD_SIZE",
     "ENDIANESS",
-    "MEM_BASE",
-    "MEM_TOP",
+    "RAM_BASE",
+    "RAM_TOP",
     "MEM_SIZE",
     "MEM_SIZE_KB",
     "MIO_BASE",
@@ -56,8 +56,6 @@ char tokens[TOKENS][STRING_SIZE] = {
     "SYS_DATA",
     "SYS_STACK",
     "SYS_HEAP",
-    "BOOT_LENGTH_MIN",
-    "BOOT_LENGTH_MAX",
     "EXPECTED_SIMULATION_TIME"
 };
 
@@ -200,16 +198,16 @@ void populate_strings()
     snprintf(string, STRING_SIZE, "%i", Traits<CPU>::WORD_SIZE);
     set_token_value("WORD_SIZE", string);
 
-    snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::MEM_BASE);
-    set_token_value("MEM_BASE", string);
+    snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::RAM_BASE);
+    set_token_value("RAM_BASE", string);
 
-    snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::MEM_TOP);
-    set_token_value("MEM_TOP", string);
+    snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::RAM_TOP);
+    set_token_value("RAM_TOP", string);
 
-    snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::MEM_TOP + 1 - Memory_Map::MEM_BASE);
+    snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::RAM_TOP + 1 - Memory_Map::RAM_BASE);
     set_token_value("MEM_SIZE", string);
 
-    snprintf(string, STRING_SIZE, "0x%08x", (Memory_Map::MEM_TOP + 1 - Memory_Map::MEM_BASE) / 1024);
+    snprintf(string, STRING_SIZE, "0x%08x", (Memory_Map::RAM_TOP + 1 - Memory_Map::RAM_BASE) / 1024);
     set_token_value("MEM_SIZE_KB", string);
 
     snprintf(string, STRING_SIZE, "0x%08x", Memory_Map::MIO_BASE);
@@ -289,18 +287,6 @@ void populate_strings()
     else
         string[0] = '\0';
     set_token_value("SYS_HEAP", string);
-
-    if(Traits<Machine>::BOOT_LENGTH_MIN != Traits<Machine>::NOT_USED)
-        snprintf(string, STRING_SIZE, "%i", Traits<Machine>::BOOT_LENGTH_MIN);
-    else
-        string[0] = '\0';
-    set_token_value("BOOT_LENGTH_MIN", string);
-
-    if(Traits<Machine>::BOOT_LENGTH_MAX != Traits<Machine>::NOT_USED)
-        snprintf(string, STRING_SIZE, "%i", Traits<Machine>::BOOT_LENGTH_MAX);
-    else
-        string[0] = '\0';
-    set_token_value("BOOT_LENGTH_MAX", string);
 
     snprintf(string, STRING_SIZE, "%i", Traits<Build>::EXPECTED_SIMULATION_TIME);
     set_token_value("EXPECTED_SIMULATION_TIME", string);

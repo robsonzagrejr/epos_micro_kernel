@@ -13,9 +13,10 @@ extern "C" {
     void _int_entry();
 
     // SETUP entry point is _vector_table() and resides in the .init section (not in .text), so it will be linked first and will be the first function after the ELF header in the image.
-    void _vector_table() __attribute__ ((used, naked, section(".init")));
+    void _entry() __attribute__ ((used, naked, section(".init")));
+    void _vector_table() __attribute__ ((used, naked, nothrow, section(".init"), alias("_entry")));
     void _reset() __attribute__ ((naked)); // so it can be safely reached from the vector table
-    void _setup(); // just to creat a Setup object
+    void _setup(); // just to create a Setup object
 
     // LD eliminates this variable while performing garbage collection, so --undefined=__boot_time_system_info must be present while linking
     char __boot_time_system_info[sizeof(EPOS::S::System_Info)] = "System_Info placeholder. Actual System_Info will be added by mkbi!";
@@ -29,8 +30,8 @@ class Setup
 {
 private:
     // Physical memory map
-    static const unsigned int MEM_BASE  = Memory_Map::MEM_BASE;
-    static const unsigned int MEM_TOP   = Memory_Map::MEM_TOP;
+    static const unsigned int RAM_BASE  = Memory_Map::RAM_BASE;
+    static const unsigned int RAM_TOP   = Memory_Map::RAM_TOP;
     static const unsigned int IMAGE     = Memory_Map::IMAGE;
     static const unsigned int SETUP     = Memory_Map::SETUP;
 
@@ -606,7 +607,7 @@ void Setup::setup_sys_pd()
 
     db<Setup>(TRC) << "pts done" << endl;
     // Attach all physical memory starting at PHY_MEM
-    if (PHY_MEM != MEM_BASE) {
+    if (PHY_MEM != RAM_BASE) {
         assert((MMU::directory(MMU::align_directory(PHY_MEM)) + n_pts) < (MMU::PD_ENTRIES - 3)); // check if it would overwrite the OS
         for(unsigned int i = MMU::directory(MMU::align_directory(PHY_MEM)), j = 0; i < MMU::directory(MMU::align_directory(PHY_MEM)) + n_pts; i++, j++)
             sys_pd[i] = MMU::phy2pde(si->pmm.phy_mem_pts + j * sizeof(Page));
@@ -618,11 +619,11 @@ void Setup::setup_sys_pd()
     db<Setup>(TRC) << "sys pd on SETUP directory = " << MMU::directory(SETUP) << endl;
 
 
-    // Attach all physical memory starting at MEM_BASE
-    assert((MMU::directory(MMU::align_directory(MEM_BASE)) + n_pts) < (MMU::PD_ENTRIES - 2)); // check if it would overwrite the OS
-    for(unsigned int i = MMU::directory(MMU::align_directory(MEM_BASE)), j = 0; i < MMU::directory(MMU::align_directory(MEM_BASE)) + n_pts; i++, j++)
+    // Attach all physical memory starting at RAM_BASE
+    assert((MMU::directory(MMU::align_directory(RAM_BASE)) + n_pts) < (MMU::PD_ENTRIES - 2)); // check if it would overwrite the OS
+    for(unsigned int i = MMU::directory(MMU::align_directory(RAM_BASE)), j = 0; i < MMU::directory(MMU::align_directory(RAM_BASE)) + n_pts; i++, j++)
         sys_pd[i] = MMU::phy2pde(si->pmm.phy_mem_pts + j * sizeof(Page)); // we are creating 256 entries every 1MB, thus, every pt represents 3kb
-    db<Setup>(TRC) << "sys pd MEM_BASE done, dir= " << MMU::directory(MEM_BASE) << endl;
+    db<Setup>(TRC) << "sys pd RAM_BASE done, dir= " << MMU::directory(RAM_BASE) << endl;
 
     // Calculate the number of page tables needed to map the IO address space
     unsigned int io_size = MMU::pages(si->bm.mio_top - si->bm.mio_base);
@@ -698,6 +699,8 @@ void Setup::enable_paging()
 
     // Flush TLB to ensure we've got the right memory organization
     MMU::flush_tlb();
+
+    Display::init(); // with MMU now enabled, we need to restart Display to use the logical address
 
     if(Traits<Setup>::hysterically_debugged) {
         db<Setup>(INF) << "pc=" << CPU::pc() << endl;
@@ -835,9 +838,9 @@ __END_SYS
 
 using namespace EPOS::S;
 
-// Interrupt Vector Table
-void _vector_table()
+void _entry()
 {
+    // Interrupt Vector Table
     // We use and indirection table for the ldr instructions because the offset can be to far from the PC to be encoded
     ASM("               ldr pc, reset                                           \t\n\
                         ldr pc, ui                                              \t\n\

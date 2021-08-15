@@ -28,8 +28,8 @@ class Setup
 {
 private:
     // Physical memory map
-    static const unsigned int MEM_BASE  = Memory_Map::MEM_BASE;
-    static const unsigned int MEM_TOP   = Memory_Map::MEM_TOP;
+    static const unsigned int RAM_BASE  = Memory_Map::RAM_BASE;
+    static const unsigned int RAM_TOP   = Memory_Map::RAM_TOP;
     static const unsigned int IMAGE     = Memory_Map::IMAGE;
     static const unsigned int SETUP     = Memory_Map::SETUP;
 
@@ -576,12 +576,12 @@ void Setup::setup_sys_pd()
     // Attach the portion of the physical memory used by Setup at SETUP
     sys_pd[MMU::directory(SETUP)] =  MMU::phy2pde(si->pmm.phy_mem_pts);
 
-    // Attach the portion of the physical memory used by int_m2s at MEM_TOP
-    sys_pd[MMU::directory(MEM_TOP)] =  MMU::phy2pde(si->pmm.phy_mem_pts + (n_pts - 1) * sizeof(Page));
+    // Attach the portion of the physical memory used by int_m2s at RAM_TOP
+    sys_pd[MMU::directory(RAM_TOP)] =  MMU::phy2pde(si->pmm.phy_mem_pts + (n_pts - 1) * sizeof(Page));
 
-    // Attach all physical memory starting at MEM_BASE
-    assert((MMU::directory(MMU::align_directory(MEM_BASE)) + n_pts) < (MMU::PD_ENTRIES - 4)); // check if it would overwrite the OS
-    for(unsigned int i = MMU::directory(MMU::align_directory(MEM_BASE)), j = 0; i < MMU::directory(MMU::align_directory(MEM_BASE)) + n_pts; i++, j++)
+    // Attach all physical memory starting at RAM_BASE
+    assert((MMU::directory(MMU::align_directory(RAM_BASE)) + n_pts) < (MMU::PD_ENTRIES - 4)); // check if it would overwrite the OS
+    for(unsigned int i = MMU::directory(MMU::align_directory(RAM_BASE)), j = 0; i < MMU::directory(MMU::align_directory(RAM_BASE)) + n_pts; i++, j++)
         sys_pd[i] = MMU::phy2pde((si->pmm.phy_mem_pts + j * sizeof(Page)));
 
     // Calculate the number of page tables needed to map the IO address space
@@ -618,7 +618,7 @@ void Setup::setup_m2s()
 {
     db<Setup>(TRC) << "Setup::setup_m2s()" << endl;
 
-    memcpy(reinterpret_cast<void *>(Memory_Map::MEM_TOP + 1 - sizeof(Page)), reinterpret_cast<void *>(&_int_m2s), sizeof(Page));
+    memcpy(reinterpret_cast<void *>(Memory_Map::RAM_TOP + 1 - sizeof(Page)), reinterpret_cast<void *>(&_int_m2s), sizeof(Page));
 }
 
 void Setup::enable_paging()
@@ -804,7 +804,7 @@ void _entry() // machine mode
     CPU::tp(CPU::mhartid());                            // tp will be CPU::id()
     CPU::sp(Memory_Map::BOOT_STACK - Traits<Machine>::STACK_SIZE * (CPU::id() + 1)); // set this hart stack (the first stack is reserved for _int_m2s)
     if(Traits<System>::multitask) {
-        CLINT::mtvec(CLINT::DIRECT, Memory_Map::MEM_TOP + 1 - sizeof(MMU::Page));  // setup a machine mode interrupt handler to forward timer interrupts (which cannot be delegated via mideleg)
+        CLINT::mtvec(CLINT::DIRECT, Memory_Map::RAM_TOP + 1 - sizeof(MMU::Page));  // setup a machine mode interrupt handler to forward timer interrupts (which cannot be delegated via mideleg)
         CPU::mideleg(0xffff);                           // delegate all interrupts to supervisor mode
         CPU::medeleg(0xffff);                           // delegate all exceptions to supervisor mode
         CPU::mstatuss(CPU::MPP_S | CPU::MPIE);          // prepare jump into supervisor mode and reenable of interrupts at mret
@@ -834,7 +834,7 @@ void _setup() // supervisor mode
 }
 
 // RISC-V 32, or perhaps the SiFive-E, doesn't allow timer interrupts to be handled in supervisor mode. The matching of MTIMECMP always triggers interrupt MTI and there seems to be no mechanism in CLINT to trigger STI.
-// Therefore, an interrupt forwarder must be installed. We use MEM_TOP for this, with the code at the beginning of the last page and a stack at the end of the same page.
+// Therefore, an interrupt forwarder must be installed. We use RAM_TOP for this, with the code at the beginning of the last page and a stack at the end of the same page.
 void _int_m2s()
 {
     // Save context

@@ -14,8 +14,8 @@ struct Memory_Map
         NOT_USED        = Traits<Machine>::NOT_USED,
 
         // Physical Memory
-        MEM_BASE        = Traits<Machine>::MEM_BASE,
-        MEM_TOP         = Traits<Machine>::MEM_TOP,
+        RAM_BASE        = Traits<Machine>::RAM_BASE,
+        RAM_TOP         = Traits<Machine>::RAM_TOP,
         MIO_BASE        = Traits<Machine>::MIO_BASE,
         MIO_TOP         = Traits<Machine>::MIO_TOP,
         BOOT_STACK      = Traits<Machine>::BOOT_STACK,

@@ -33,13 +33,11 @@ struct Memory_Map: public Cortex_Memory_Map
         SCU_BASE                = 0x1f000000, // MP Snoop Control Unit
         GIC_CPU_BASE            = 0x1f000100,
         GLOBAL_TIMER_BASE       = 0x1f000200,
+        TSC_BASE                = GLOBAL_TIMER_BASE,
         PRIVATE_TIMER_BASE      = 0x1f000600,
         GIC_DIST_BASE           = 0x1f001000,
 
         // Logical Address Space
-        APP_CODE        = Traits<Machine>::VECTOR_TABLE,
-        APP_DATA        = Traits<Machine>::VECTOR_TABLE,
-
         SYS_CODE                = Traits<Machine>::SYS_CODE,
         SYS_INFO                = NOT_USED,
         SYS_DATA                = Traits<Machine>::SYS_CODE,

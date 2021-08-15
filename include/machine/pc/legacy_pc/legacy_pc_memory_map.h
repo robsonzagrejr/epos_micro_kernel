@@ -13,24 +13,27 @@ struct Memory_Map
         NOT_USED        = Traits<Machine>::NOT_USED,
 
         // Physical Memory
-        MEM_BASE        = Traits<Machine>::MEM_BASE,
-        MEM_TOP         = Traits<Machine>::MEM_TOP,
+        RAM_BASE        = Traits<Machine>::RAM_BASE,
+        RAM_TOP         = Traits<Machine>::RAM_TOP,
         MIO_BASE        = Traits<Machine>::MIO_BASE,
         MIO_TOP         = Traits<Machine>::MIO_TOP,
         BOOT_STACK      = Traits<Machine>::BOOT_STACK,
 
-        // Logical Address Space
+        // Physical Memory at Boot
         BOOT            = Traits<Machine>::BOOT,
         IMAGE           = Traits<Machine>::IMAGE,
         SETUP           = Traits<Machine>::SETUP,
+
+        // Logical Address Space
+        APP_LOW         = Traits<Machine>::APP_LOW,
+        APP_HIGH        = Traits<Machine>::APP_HIGH,
+        APP_CODE        = Traits<Machine>::APP_CODE,
+        APP_DATA        = Traits<Machine>::APP_DATA,
+
         INIT            = Traits<Machine>::INIT,
 
-        APP_LOW         = Traits<Machine>::APP_LOW,
-        APP_CODE        = APP_LOW,
-        APP_DATA        = APP_LOW + 4 * 1024 * 1024,
-        APP_HIGH        = Traits<Machine>::APP_HIGH,
-
         PHY_MEM         = Traits<Machine>::PHY_MEM,
+
         IO              = Traits<Machine>::IO,
         APIC            = IO,
         IO_APIC         = APIC    +  4 * 1024,

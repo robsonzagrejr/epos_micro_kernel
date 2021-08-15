@@ -18,19 +18,17 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int CPUS              = Traits<Build>::CPUS;
 
     // Physical Memory
-    static const unsigned int MEM_BASE          = 0x80000000;   // 2 GB
-    static const unsigned int MEM_TOP           = 0x87ffffff;   // 2 GB + 128 MB (128 MB of RAM)
+    static const unsigned int RAM_BASE          = 0x80000000;   // 2 GB
+    static const unsigned int RAM_TOP           = 0x87ffffff;   // 2 GB + 128 MB (128 MB of RAM)
     static const unsigned int MIO_BASE          = 0x00000000;
     static const unsigned int MIO_TOP           = 0x1fffffff;   // 512 MB (max 512 MB of MIO)
 
-    // Boot Image
-    static const unsigned int BOOT_LENGTH_MIN   = NOT_USED;
-    static const unsigned int BOOT_LENGTH_MAX   = NOT_USED;
+    // Physical Memory at Boot
     static const unsigned int BOOT              = NOT_USED;     // Not needed for this machine
-    static const unsigned int SETUP             = 0x80000000;   // MEM_BASE (will be part of the free memory at INIT, using a logical address identical to physical eliminate SETUP relocation)
-    static const unsigned int BOOT_STACK        = 0x8007fffc;   // MEM_BASE + 512 KB - 4 (will be used as the stack pointer, not the base)
-    static const unsigned int INIT              = 0x80080000;   // MEM_BASE + 512 KB (will be part of the free memory at INIT)
-    static const unsigned int IMAGE             = 0x80100000;   // MEM_BASE + 1 MB (will be part of the free memory at INIT, defines the maximum image size; if larger than 3 MB then adjust at SETUP)
+    static const unsigned int SETUP             = 0x80000000;   // RAM_BASE (will be part of the free memory at INIT, using a logical address identical to physical eliminate SETUP relocation)
+    static const unsigned int BOOT_STACK        = 0x8007fffc;   // RAM_BASE + 512 KB - 4 (will be used as the stack pointer, not the base)
+    static const unsigned int INIT              = 0x80080000;   // RAM_BASE + 512 KB (will be part of the free memory at INIT)
+    static const unsigned int IMAGE             = 0x80100000;   // RAM_BASE + 1 MB (will be part of the free memory at INIT, defines the maximum image size; if larger than 3 MB then adjust at SETUP)
 
     // Logical Memory
     static const unsigned int APP_LOW           = 0x80400000;   // 2 GB + 4 MB

@@ -21,7 +21,7 @@ private:
 
     static const bool colorful = Traits<MMU>::colorful;
     static const unsigned int COLORS = Traits<MMU>::COLORS;
-    static const unsigned int MEM_BASE = Memory_Map::MEM_BASE;
+    static const unsigned int RAM_BASE = Memory_Map::RAM_BASE;
     static const unsigned int APP_LOW = Memory_Map::APP_LOW;
     static const unsigned int PHY_MEM = Memory_Map::PHY_MEM;
 
