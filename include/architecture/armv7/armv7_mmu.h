@@ -226,7 +226,7 @@ public:
     class Directory
     {
     public:
-        Directory() : _pd(calloc(1, WHITE)), _free(true) {
+        Directory() : _pd(reinterpret_cast<Page_Directory *>((calloc(4, WHITE) & ~(0x3fff)))), _free(true) { // each pd has up to 4096 entries and must be aligned with 16KB
             for(unsigned int i = directory(PHY_MEM); i < PD_ENTRIES; i++)
                 (*_pd)[i] = (*_master)[i];
         }
