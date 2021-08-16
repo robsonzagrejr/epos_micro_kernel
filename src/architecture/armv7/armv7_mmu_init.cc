@@ -27,6 +27,9 @@ void ARMv7_MMU::init()
     free(&_end, pages(Memory_Map::RAM_TOP + 1 - Traits<Machine>::STACK_SIZE * Traits<Machine>::CPUS - reinterpret_cast<unsigned int>(&_end)));
 
 #endif
+
+    _master = reinterpret_cast<Page_Directory *>(CPU::pdp());
+    db<Init, MMU>(INF) << "MMU::master page directory=" << _master << endl;
 }
 
 __END_SYS
