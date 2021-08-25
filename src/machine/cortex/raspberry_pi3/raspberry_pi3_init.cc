@@ -15,16 +15,6 @@ enum {
     CORE_OFFSET_VARIATION           = 0x10
 };
 
-static void clear_bss() {
-    CPU::Reg32 bss_start, bss_end;
-    ASM("ldr %0, =__bss_start__" : "=r"(bss_start) :);
-    ASM("ldr %0, =__bss_end__" : "=r"(bss_end) :);
-    CPU::Reg32 limit = (bss_end - bss_start)/4;
-    for(CPU::Reg32 i = 0; i < limit; i++) {
-        reinterpret_cast<volatile CPU::Reg32 *>(bss_start)[i] = 0x0;
-    }
-}
-
 void Raspberry_Pi3::pre_init()
 {
     // SMP initialization
@@ -53,13 +43,7 @@ void Raspberry_Pi3::pre_init()
         // secondary cores reset
         if (Traits<Build>::CPUS > 1)
             ASM ("SEV");
-
-        clear_bss();
     }
 }
 
-//void Raspberry_Pi3::init()
-//{
-//}
-//
 __END_SYS

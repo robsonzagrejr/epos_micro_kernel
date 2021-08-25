@@ -1,9 +1,7 @@
 // EPOS Raspberry Pi3 (Cortex-A53) SETUP
 
-#include <system/config.h>
 #include <architecture.h>
 #include <machine.h>
-#include <machine/cortex/engine/cortex_a53/bcm_mailbox.h> // for mailbox eoi in multicore
 #include <utility/elf.h>
 #include <utility/string.h>
 
@@ -481,8 +479,7 @@ void Setup::configure_page_table_descriptors(PT_Entry * pts, Phy_Addr base, unsi
     // Each PTE maps one Page (4k), 
     // Each Page can have 4 pages with 256 ptes each
     // Thus, for each PD, map 256 pte until all requested ptes are mapped
-    for (unsigned int i = 0; i < size; i++)
-    {
+    for (unsigned int i = 0; i < size; i++) {
         pts[i] = MMU::phy2pte((base + i * sizeof(Page)), flag);
         if (Traits<Setup>::hysterically_debugged && print)
             db<Setup>(INF) << "pts[" << i << "]=" << pts[i] << ",addr="<< &pts[i] << endl;
@@ -595,63 +592,62 @@ void Setup::setup_sys_pd()
     // Calculate the number of page tables needed to map the physical memory
     unsigned int mem_size = MMU::pages(si->bm.mem_top - si->bm.mem_base);
     unsigned int n_pts = MMU::page_tables(mem_size);
-    db<Setup>(TRC) << "mem_size="<< mem_size <<",n_pts=" << n_pts << (void *) si->pmm.phy_mem_pts << ",syspd=" << (void *) si->pmm.sys_pd << "Size pte=" << sizeof(PT_Entry) << endl;
+    db<Setup>(INF) << "mem_size="<< mem_size <<",n_pts=" << n_pts << (void *) si->pmm.phy_mem_pts << ",syspd=" << (void *) si->pmm.sys_pd << "Size pte=" << sizeof(PT_Entry) << endl;
     // Map the whole physical memory into the page tables pointed by phy_mem_pts
     PT_Entry * pts = reinterpret_cast<PT_Entry *>(si->pmm.phy_mem_pts);
 
-    db<Setup>(TRC) << &pts[0] <<  " to "<< &pts[(n_pts-1) * sizeof(Page)/sizeof(PT_Entry) + MMU::PT_ENTRIES] << endl;
+    db<Setup>(INF) << &pts[0] <<  " to "<< &pts[(n_pts-1) * sizeof(Page_Table) + MMU::PT_ENTRIES] << endl;
 
     configure_page_table_descriptors(pts, si->bm.mem_base, mem_size, n_pts, Flags::SYS);
 
-    db<Setup>(TRC) << "PHY_MEM_PT("<< (void *) pts <<")=" << *reinterpret_cast<Page_Table *>(pts) << endl; // if this print is removed, the config goes wrong
-    db<Setup>(TRC) << "mem_size="<< mem_size <<",n_pts=" << n_pts << endl;
+    db<Setup>(INF) << "PHY_MEM_PT("<< (void *) pts <<")=" << *reinterpret_cast<Page_Table *>(pts) << endl; // if this print is removed, the config goes wrong
+    db<Setup>(INF) << "mem_size="<< mem_size <<",n_pts=" << n_pts << endl;
 
-    db<Setup>(TRC) << "pts done" << endl;
+    db<Setup>(INF) << "pts done" << endl;
     // Attach all physical memory starting at PHY_MEM
     if (PHY_MEM != RAM_BASE) {
         assert((MMU::directory(MMU::align_directory(PHY_MEM)) + n_pts) < (MMU::PD_ENTRIES - 3)); // check if it would overwrite the OS
         for(unsigned int i = MMU::directory(MMU::align_directory(PHY_MEM)), j = 0; i < MMU::directory(MMU::align_directory(PHY_MEM)) + n_pts; i++, j++)
             sys_pd[i] = MMU::phy2pde(si->pmm.phy_mem_pts + j * sizeof(Page_Table));
-        db<Setup>(TRC) << "sys pd PHY_MEM  done" << endl;
+        db<Setup>(INF) << "sys pd PHY_MEM  done" << endl;
     }
 
     // Attach the portion of the physical memory used by Setup at SETUP
     sys_pd[MMU::directory(SETUP)] =  MMU::phy2pde(si->pmm.phy_mem_pts);
-    db<Setup>(TRC) << "sys pd on SETUP directory = " << MMU::directory(SETUP) << endl;
-
+    db<Setup>(INF) << "sys pd on SETUP directory = " << MMU::directory(SETUP) << endl;
 
     // Attach all physical memory starting at RAM_BASE
     assert((MMU::directory(MMU::align_directory(RAM_BASE)) + n_pts) < (MMU::PD_ENTRIES - 2)); // check if it would overwrite the OS
     for(unsigned int i = MMU::directory(MMU::align_directory(RAM_BASE)), j = 0; i < MMU::directory(MMU::align_directory(RAM_BASE)) + n_pts; i++, j++)
-        sys_pd[i] = MMU::phy2pde(si->pmm.phy_mem_pts + j * sizeof(Page_Table)); // we are creating 256 entries every 1MB, thus, every pt represents 3kb
-    db<Setup>(TRC) << "sys pd RAM_BASE done, dir= " << MMU::directory(RAM_BASE) << endl;
+        sys_pd[i] = MMU::phy2pde(si->pmm.phy_mem_pts + j * sizeof(Page_Table));
+    db<Setup>(INF) << "sys pd RAM_BASE done, dir= " << MMU::directory(RAM_BASE) << endl;
 
     // Calculate the number of page tables needed to map the IO address space
     unsigned int io_size = MMU::pages(si->bm.mio_top - si->bm.mio_base);
     n_pts = MMU::page_tables(io_size);
 
-    db<Setup>(TRC) << "starting io pts, npts=" << n_pts << endl;
+    db<Setup>(INF) << "starting io pts, npts=" << n_pts << endl;
     // Map IO address space into the page tables pointed by io_pts
     pts = reinterpret_cast<PT_Entry *>(si->pmm.io_pts);
     configure_page_table_descriptors(pts, si->bm.mio_base, io_size, n_pts, Flags::IO);
 
-    db<Setup>(TRC) << "IO_PTS("<< (void *) pts <<")=" << *reinterpret_cast<Page_Table *>(pts) << endl; // if this print is removed, the config g
-    db<Setup>(TRC) << "io pts done" << endl;
+    db<Setup>(INF) << "IO_PTS("<< (void *) pts <<")=" << *reinterpret_cast<Page_Table *>(pts) << endl; // if this print is removed, the config g
+    db<Setup>(INF) << "io pts done" << endl;
 
     // Attach devices' memory at Memory_Map::IO
     assert((MMU::directory(MMU::align_directory(IO)) + n_pts) < (MMU::PD_ENTRIES - 1)); // check if it would overwrite the OS
     for(unsigned int i = MMU::directory(MMU::align_directory(IO)), j = 0; i < MMU::directory(MMU::align_directory(IO)) + n_pts; i++, j++)
         sys_pd[i] = MMU::phy2pde((si->pmm.io_pts + j * sizeof(Page_Table)));
-    db<Setup>(TRC) << "sys pd for io pts done" << endl;
+    db<Setup>(INF) << "sys pd for io pts done" << endl;
 
-    db<Setup>(TRC) << "attach SYS pt on sys pd[sys]:" << MMU::directory(SYS) 
+    db<Setup>(INF) << "attach SYS pt on sys pd[sys]:" << MMU::directory(SYS) 
                     << ", with sys_pt[0] = " <<  hex << *((int *) si->pmm.sys_pt) << endl;
-    db<Setup>(TRC) << "sys_pd[sys+1];" << MMU::directory(SYS)+1 
+    db<Setup>(INF) << "sys_pd[sys+1];" << MMU::directory(SYS)+1 
                     << ", with sys_pt[1] = " << hex << *((int *) (si->pmm.sys_pt+sizeof(Page_Table))) << endl;
     // Attach the OS (i.e. sys_pt)
     sys_pd[MMU::directory(SYS)] = MMU::phy2pde(si->pmm.sys_pt);
     sys_pd[MMU::directory(SYS) + 1] = MMU::phy2pde(si->pmm.sys_pt + sizeof(Page_Table));
-    db<Setup>(TRC) << "attach SYS on sys pd done" << endl;
+    db<Setup>(INF) << "attach SYS on sys pd done" << endl;
 
     // Attach the first APPLICATION CODE (i.e. app_code_pt)
     n_pts = MMU::page_tables(MMU::pages(si->lm.app_code_size));
@@ -663,8 +659,7 @@ void Setup::setup_sys_pd()
     for(unsigned int i = MMU::directory(MMU::align_directory(si->lm.app_data)), j = 0; i < MMU::directory(MMU::align_directory(si->lm.app_data)) + n_pts; i++, j++)
         sys_pd[i] = MMU::phy2pde(si->pmm.app_data_pts + j * sizeof(Page_Table));
 
-    db<Setup>(TRC) << "SYS_PD=" << *reinterpret_cast<Page_Table *>(sys_pd) << endl;
-    ASM("end_sys_pd_setup: nop");
+    db<Setup>(INF) << "SYS_PD=" << *reinterpret_cast<Page_Table *>(sys_pd) << endl;
 }
 
 void Setup::enable_paging()
@@ -674,7 +669,7 @@ void Setup::enable_paging()
         db<Setup>(INF) << "pc=" << CPU::pc() << endl;
         db<Setup>(INF) << "sp=" << reinterpret_cast<void *>(CPU::sp()) << endl;
     }
-
+    // MNG_DOMAIN for no page permission verification
     CPU::dacr((Traits<System>::multitask) ? CPU::CLI_DOMAIN : CPU::MNG_DOMAIN);
 
     CPU::dsb();
@@ -683,7 +678,7 @@ void Setup::enable_paging()
     // Clear TTBCR for the system to use ttbr0 instead of 1
     CPU::ttbcr(0);
     // Set ttbr0 with base address
-    CPU::pdp((Traits<System>::multitask) ? si->pmm.sys_pd : Traits<Machine>::PAGE_TABLES);
+    CPU::ttbr0((Traits<System>::multitask) ? si->pmm.sys_pd : Traits<Machine>::PAGE_TABLES);
 
     // Enable MMU through SCTLR and ACTLR
     CPU::actlr(CPU::actlr() | CPU::SMP); // Set SMP bit
@@ -699,7 +694,8 @@ void Setup::enable_paging()
     // Flush TLB to ensure we've got the right memory organization
     MMU::flush_tlb();
 
-    Display::init(); // with MMU now enabled, we need to restart Display to use the logical address
+    // Adjust pointers that will still be used to their logical addresses
+    Display::init(); // adjust the pointers in Display by calling init 
 
     if(Traits<Setup>::hysterically_debugged) {
         db<Setup>(INF) << "pc=" << CPU::pc() << endl;
@@ -911,9 +907,9 @@ void _setup()
     CPU::int_disable(); // interrupts will be reenabled at init_end
 
     CPU::enable_fpu();
-    CPU::invalidate_caches();
-    CPU::invalidate_all_branch_predictors();
-    CPU::invalidate_tlb();
+    CPU::flush_caches();
+    CPU::flush_branch_predictors();
+    CPU::flush_tlb();
     CPU::actlr(CPU::actlr() | CPU::DCACHE_PREFE); // enable Dside prefetch
     
     Setup setup;

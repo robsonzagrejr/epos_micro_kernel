@@ -92,6 +92,9 @@ LINK_OBJI_KERNEL="$LIB/crt0_$MMOD.o $LIB/crtbegin_$MMOD.o"
 LINK_OBJN_KERNEL="$LIB/application_$MMOD.o $LIB/init_application_$MMOD.o"
 LINK_OBJL_KERNEL="$LIB/crtend_$MMOD.o"
 LINK_LIBS_KERNEL="util_$MMOD arch_$MMOD gcc"
+if [ "$BOOT_STACK" != "" ] ; then
+    LINK_FLGS_KERNEL="$LINK_FLGS_BUILTIN --defsym=__boot_stack__=$BOOT_STACK"
+fi
 
 #=========================================================================
 # VARIABLES

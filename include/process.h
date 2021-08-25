@@ -7,6 +7,7 @@
 #include <machine.h>
 #include <utility/queue.h>
 #include <utility/handler.h>
+#include <memory.h>
 #include <scheduler.h>
 
 extern "C" { void __exit(); }

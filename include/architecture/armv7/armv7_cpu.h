@@ -182,9 +182,6 @@ public:
     static Flags flags() { Reg32 r;  ASM("mrs %0, xpsr"       : "=r"(r) :); return r; }
     static void flags(Flags r) {     ASM("msr xpsr_nzcvq, %0" : : "r"(r) : "cc"); }
 
-    static Reg32 pdp() { return 0;}
-    static void pdp(Reg32 pdp) {}
-
     static unsigned int id() { return 0; }
 
     static unsigned int cores() { return 1; }
@@ -291,7 +288,7 @@ public:
         } else {
             Reg32 n;
             ASM("mrc p15, 4, %0, c15, c0, 0 \t\n\
-                ldr %0, [%0, #0x004]" : "=r"(n) : : );
+                 ldr %0, [%0, #0x004]" : "=r"(n) : : );
             return (n & 0x3) + 1;
         }
     }
@@ -328,33 +325,22 @@ public:
     static void ldmia() { ASM("ldmia   r0!,{r2,r3,r4,r5,r6,r7,r8,r9}" : : : ); }
     static void stmia() { ASM("stmia   r1!,{r2,r3,r4,r5,r6,r7,r8,r9}" : : : ); }
 
+    // CP15 operations
     static Reg ttbr0() { Reg r; ASM ("mrc p15, 0, %0, c2, c0, 0" : "=r"(r) : :); return r; }
-    static void ttbr0(Reg r) { ASM ("mcr p15, 0, %0, c2, c0, 0" : : "p"(r) :); }
+    static void ttbr0(Reg r) {  ASM ("mcr p15, 0, %0, c2, c0, 0" : : "p"(r) :); }
 
     static Reg ttbcr() { Reg r; ASM ("mrc p15, 0, %0, c2, c0, 2" : "=r"(r) : :); return r; }
-    static void ttbcr(Reg r) { ASM ("mcr p15, 0, %0, c2, c0, 2" : : "p"(r) :); }
+    static void ttbcr(Reg r) {  ASM ("mcr p15, 0, %0, c2, c0, 2" : : "p"(r) :); }
 
     static Reg dacr() { Reg r; ASM ("mrc p15, 0, %0, c3, c0, 0" : "=r"(r) : :); return r; }
-    static void dacr(Reg r) { ASM ("mcr p15, 0, %0, c3, c0, 0" : : "p"(r) :); }
+    static void dacr(Reg r) {  ASM ("mcr p15, 0, %0, c3, c0, 0" : : "p"(r) :); }
 
-    static Reg32 pdp() { return ttbr0(); }
-    static void pdp(Reg32 pdp) { ttbr0(pdp); }
+    static void flush_tlb() {      ASM("mcr p15, 0, %0, c8, c7, 0" : : "r" (0)); } // TLBIALL - invalidate entire unifed TLB
+    static void flush_tlb(Reg r) { ASM("mcr p15, 0, %0, c8, c7, 0" : : "r" (r)); }
 
-    // CP15 operations
-    static void invalidate_all_branch_predictors() { 
-        ASM("mov r0, #0x0              \t\n"
-            "mcr p15, 0, r0, c7, c5, 6 \t\n"
-        );
-    }
+    static void flush_branch_predictors() { ASM("mcr p15, 0, %0, c7, c5, 6" : : "r" (0)); }
 
-    // TLB maintenance operations
-    static void invalidate_tlb() {
-        ASM("mov r0, #0x0               \t\n"
-            "mcr p15, 0, r0, c8, c7, 0  \t\n"
-        ); // TLBIALL - Invalidate entire Unifed TLB
-    }
-
-    static void invalidate_caches() {
+    static void flush_caches() {
         ASM("                  \t\n\
         // Disable L1 Caches.                                                               \t\n\
         mrc     p15, 0, r1, c1, c0, 0 // Read SCTLR.                                        \t\n\
@@ -489,7 +475,6 @@ public:
     using Base::flags;
     using Base::sp;
     using Base::fr;
-    using Base::pdp;
 
     using Base::id;
     using Base::cores;
@@ -534,15 +519,8 @@ public:
         init_stack_helper(&ctx->_r0, an ...);
         return ctx;
     }
-    template<typename ... Tn>
-    static Log_Addr init_user_stack(Log_Addr usp, void (* exit)(), Tn ... an) {
-        usp -= sizeof(Context);
-        Context * ctx = new(usp) Context(0, exit, 0);
-        init_stack_helper(&ctx->_r0, an ...);
-        return usp;
-    }
 
-    static int syscall(void * message);
+    static void syscall(void * message);
     static void syscalled();
 
     using Base::htole64;

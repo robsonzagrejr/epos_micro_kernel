@@ -223,9 +223,6 @@ public:
     static Reg32 fr() { Reg32 r; ASM("mv %0, a0" :  "=r"(r)); return r; }
     static void fr(Reg32 r) {    ASM("mv a0, %0" : : "r"(r) :); }
 
-    static Reg32 pdp()   { return multitask ? (satp() << 12) : 0; }
-    static void pdp(Reg32 pdp) { if(multitask) satp((1 << 31) | (pdp >> 12)); }
-
     static unsigned int id() { return multitask ? tp() : mhartid(); }
 
     static unsigned int cores() { return Traits<Build>::CPUS; }
@@ -241,8 +238,8 @@ public:
 
     static void halt() { ASM("wfi"); }
 
-    static void fpu_save() {} // TODO: implement at first need
-    static void fpu_restore() {}
+    static void fpu_save();
+    static void fpu_restore();
     static void switch_context(Context ** o, Context * n) __attribute__ ((naked));
 
     static void syscall(void * message);
@@ -289,6 +286,9 @@ public:
     }
 
     static void smp_barrier(unsigned long cores = cores()) { CPU_Common::smp_barrier<&finc>(cores, id()); }
+
+    static void flush_tlb() { ASM("sfence.vma" : : : "memory"); }
+    static void flush_tlb(Reg32 addr) { ASM("sfence.vma %0" : : "r"(addr) : "memory"); }
 
     using CPU_Common::htole64;
     using CPU_Common::htole32;

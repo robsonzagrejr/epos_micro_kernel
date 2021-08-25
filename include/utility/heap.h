@@ -18,6 +18,7 @@ protected:
 public:
     using Grouping_List<char>::empty;
     using Grouping_List<char>::size;
+    using Grouping_List<char>::grouped_size;
 
     Heap() {
         db<Init, Heaps>(TRC) << "Heap() => " << this << endl;

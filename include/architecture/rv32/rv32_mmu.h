@@ -15,6 +15,7 @@ __BEGIN_SYS
 class RV32S_MMU: public MMU_Common<10, 10, 12>
 {
     friend class CPU;
+    friend class Setup;
 
 private:
     typedef Grouping_List<Frame> List;
@@ -24,6 +25,8 @@ private:
     static const unsigned int RAM_BASE = Memory_Map::RAM_BASE;
     static const unsigned int APP_LOW = Memory_Map::APP_LOW;
     static const unsigned int PHY_MEM = Memory_Map::PHY_MEM;
+    static const unsigned int SYS = Memory_Map::SYS;
+    static const unsigned int IO = Memory_Map::IO;
 
 public:
     // Page Flags
@@ -211,7 +214,10 @@ public:
     {
     public:
         Directory() : _pd(calloc(1, WHITE)), _free(true) {
-            for(unsigned int i = directory(PHY_MEM); i < PD_ENTRIES; i++)
+            for(unsigned int i = directory(IO); i < directory(APP_LOW); i++)
+                (*_pd)[i] = (*_master)[i];
+            
+            for(unsigned int i = directory(SYS); i < PD_ENTRIES; i++)
                 (*_pd)[i] = (*_master)[i];
         }
 
@@ -221,7 +227,7 @@ public:
 
         Phy_Addr pd() const { return _pd; }
 
-        void activate() const { CPU::pdp(pd()); }
+        void activate() const { RV32S_MMU::pd(_pd); }
 
         Log_Addr attach(const Chunk & chunk, unsigned int from = directory(APP_LOW)) {
             for(unsigned int i = from; i < PD_ENTRIES; i++)
@@ -274,8 +280,10 @@ public:
         }
 
         void detach(unsigned int from, const Page_Table * pt, unsigned int n) {
-            for(unsigned int i = from; i < from + n; i++)
-                _pd->log()[i] = 0;
+            for(unsigned int i = from; i < from + n; i++) {
+                (*_pd)[i] = 0;
+                flush_tlb(i << DIRECTORY_SHIFT);
+            }
         }
 
     private:
@@ -392,7 +400,7 @@ public:
 
     static unsigned int allocable(Color color = WHITE) { return _free[color].head() ? _free[color].head()->size() : 0; }
 
-    static Page_Directory * volatile current() { return reinterpret_cast<Page_Directory * volatile>(CPU::pdp()); }
+    static Page_Directory * volatile current() { return static_cast<Page_Directory * volatile>(pd()); }
 
     static Phy_Addr physical(Log_Addr addr) {
         Page_Directory * pd = current();
@@ -404,13 +412,6 @@ public:
     static Phy_Addr pte2phy(PT_Entry entry) { return (entry & ~Page_Flags::MASK) << 2; }
     static PD_Entry phy2pde(Phy_Addr frame) { return (frame >> 2) | Page_Flags::V; }
     static Phy_Addr pde2phy(PD_Entry entry) { return (entry & ~Page_Flags::MASK) << 2; }
-
-    static void flush_tlb() {
-        //TODO
-    }
-    static void flush_tlb(Log_Addr addr) {
-        //TODO
-    }
 
     static Log_Addr phy2log(Phy_Addr phy) { return Log_Addr((RAM_BASE == PHY_MEM) ? phy : (RAM_BASE > PHY_MEM) ? phy - (RAM_BASE - PHY_MEM) : phy + (PHY_MEM - RAM_BASE)); }
     static Phy_Addr log2phy(Log_Addr log) { return Phy_Addr((RAM_BASE == PHY_MEM) ? log : (RAM_BASE > PHY_MEM) ? log + (RAM_BASE - PHY_MEM) : log - (PHY_MEM - RAM_BASE)); }
@@ -428,6 +429,12 @@ public:
     }
 
 private:
+    static Phy_Addr pd() { return CPU::satp() << 12; }
+    static void pd(Phy_Addr pd) { CPU::satp((1 << 31) | (pd >> 12)); }
+
+    static void flush_tlb() { CPU::flush_tlb(); }
+    static void flush_tlb(Log_Addr addr) { CPU::flush_tlb(addr); }
+
     static void init();
 
 private:

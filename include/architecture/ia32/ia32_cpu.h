@@ -295,7 +295,7 @@ public:
                << ",cfs=" << fs()
                << ",cgs=" << gs()
                << ",css=" << ss()
-               << ",cr3=" << reinterpret_cast<void *>(pdp())
+               << ",cr3=" << reinterpret_cast<void *>(cr3())
                << "}"     << dec;
             return db;
         }
@@ -329,18 +329,15 @@ public:
     CPU() {}
 
     static Flags flags() { return eflags(); }
-    static void flags(const Flags flags) { eflags(flags); }
+    static void flags(Flags flags) { eflags(flags); }
 
     static Reg32 sp() { return esp(); }
-    static void sp(const Reg32 sp) { esp(sp); }
+    static void sp(Reg32 sp) { esp(sp); }
 
     static Reg32 fr() { return eax(); }
-    static void fr(const Reg32 sp) { eax(sp); }
+    static void fr(Reg32 sp) { eax(sp); }
 
     static Log_Addr ip() { return eip(); }
-
-    static Reg32 pdp() { return cr3() ; }
-    static void pdp(const Reg32 pdp) { cr3(pdp); }
 
     static unsigned int id();
     static unsigned int cores() { return smp ? _cores : 1; }
@@ -410,6 +407,9 @@ public:
     }
 
     static void smp_barrier(unsigned long cores = cores()) { CPU_Common::smp_barrier<&finc>(cores, id()); }
+
+    static void flush_tlb() { ASM("movl %cr3, %eax"); ASM("movl %eax, %cr3"); }
+    static void flush_tlb(Reg32 r) { ASM("invlpg %0" : : "m"(r)); }
 
     static Reg64 htole64(Reg64 v) { return v; }
     static Reg32 htole32(Reg32 v) { return v; }

@@ -95,8 +95,7 @@ void MMU::init()
     }
 
     // Remember the master page directory (created during SETUP)
-    _master = reinterpret_cast<Page_Directory *>(CPU::pdp());
-
+    _master = current();
     db<Init, MMU>(INF) << "MMU::master page directory=" << _master << endl;
 }
 

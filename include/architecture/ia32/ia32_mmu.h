@@ -15,6 +15,7 @@ __BEGIN_SYS
 class MMU: public MMU_Common<10, 10, 12>
 {
     friend class CPU;
+    friend class Setup;
 
 private:
     typedef Grouping_List<Frame> List;
@@ -222,7 +223,7 @@ public:
 
         Phy_Addr pd() const { return _pd; }
 
-        void activate() const { CPU::pdp(pd()); }
+        void activate() const { MMU::pd(_pd); }
 
         Log_Addr attach(const Chunk & chunk, unsigned int from = directory(APP_LOW)) {
             for(unsigned int i = from; i < PD_ENTRIES; i++)
@@ -275,8 +276,10 @@ public:
         }
 
         void detach(unsigned int from, const Page_Table * pt, unsigned int n) {
-            for(unsigned int i = from; i < from + n; i++)
+            for(unsigned int i = from; i < from + n; i++) {
                 (*_pd)[i] = 0;
+                flush_tlb(i << DIRECTORY_SHIFT);
+            }
         }
 
     private:
@@ -393,7 +396,7 @@ public:
 
     static unsigned int allocable(Color color = WHITE) { return _free[color].head() ? _free[color].head()->size() : 0; }
 
-    static Page_Directory * volatile current() { return reinterpret_cast<Page_Directory * volatile>(CPU::pdp()); }
+    static Page_Directory * volatile current() { return static_cast<Page_Directory * volatile>(pd()); }
 
     static Phy_Addr physical(Log_Addr addr) {
         Page_Directory * pd = current();
@@ -401,15 +404,13 @@ public:
         return (*pt)[page(addr)] | offset(addr);
     }
 
-    static void flush_tlb() {
-        ASM("movl %cr3,%eax");
-        ASM("movl %eax,%cr3");
-    }
-    static void flush_tlb(const Log_Addr & addr) {
-        ASM("invlpg %0" : : "m"(addr));
-    }
-
 private:
+    static Phy_Addr pd() { return CPU::cr3() ; }
+    static void pd(Phy_Addr pd) { CPU::cr3(pd); }
+
+    static void flush_tlb() { CPU::flush_tlb(); }
+    static void flush_tlb(Log_Addr addr) { CPU::flush_tlb(addr); }
+
     static void init();
 
     static Log_Addr phy2log(Phy_Addr phy) { return phy | PHY_MEM; }

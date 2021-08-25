@@ -2,6 +2,10 @@
 
 #include <system.h>
 #include <machine.h>
+#include <utility/string.h>
+
+extern "C" char __bss_start;    // defined by GCC
+extern "C" char _end;           // defined by GCC
 
 __BEGIN_SYS
 
@@ -10,7 +14,13 @@ __BEGIN_SYS
 class Init_Begin
 {
 public:
-    Init_Begin() { Machine::pre_init(System::info()); }
+    Init_Begin() {
+        // Init is not linked with CRT0, so we must handle BSS here for kernels
+	if(CPU::id() == 0)
+            memset(reinterpret_cast<void *>(__bss_start), 0, _end - __bss_start);
+
+        Machine::pre_init(System::info());
+    }
 };
 
 Init_Begin init_begin;

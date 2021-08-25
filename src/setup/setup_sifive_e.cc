@@ -630,7 +630,7 @@ void Setup::enable_paging()
     }
 
     // Set SATP and enable paging
-    CPU::pdp(si->pmm.sys_pd);
+    MMU::pd(si->pmm.sys_pd);
 
     // Flush TLB to ensure we've got the right memory organization
     MMU::flush_tlb();
