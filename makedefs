@@ -145,7 +145,7 @@ cortex_DEBUGGER		:= gdb
 cortex_FLASHER		= $(TLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f
 cortex_MAGIC		:= --nmagic
 cortex_CODE_NAME	:= .init
-cortex_DATA_NAME	:=
+cortex_DATA_NAME	:= .data
 cortex_IMG_SUFFIX	:= .bin
 endif
 
