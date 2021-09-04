@@ -21,9 +21,9 @@ public:
     using CPU_Common::Reg16;
     using CPU_Common::Reg32;
     using CPU_Common::Reg64;
-    using Reg = CPU_Common::Reg32;
-    using Log_Addr = CPU_Common::Log_Addr<Reg>;
-    using Phy_Addr = CPU_Common::Phy_Addr<Reg>;
+    using CPU_Common::Reg;
+    using CPU_Common::Log_Addr;
+    using CPU_Common::Phy_Addr;
 
     // Flags
     typedef Reg32 Flags;
@@ -328,16 +328,13 @@ public:
 public:
     CPU() {}
 
-    static Flags flags() { return eflags(); }
-    static void flags(Flags flags) { eflags(flags); }
+    static Log_Addr pc() { return eip(); }
 
-    static Reg32 sp() { return esp(); }
-    static void sp(Reg32 sp) { esp(sp); }
+    static Log_Addr sp() { return esp(); }
+    static void sp(Log_Addr sp) { esp(sp); }
 
-    static Reg32 fr() { return eax(); }
-    static void fr(Reg32 sp) { eax(sp); }
-
-    static Log_Addr ip() { return eip(); }
+    static Reg fr() { return eax(); }
+    static void fr(Reg r) { eax(r); }
 
     static unsigned int id();
     static unsigned int cores() { return smp ? _cores : 1; }
@@ -374,6 +371,7 @@ public:
 
     static void fpu_save() {} // TODO
     static void fpu_restore() {} // TODO
+
     static void switch_context(Context * volatile * o, Context * volatile n);
 
     static void syscall(void * message);
@@ -459,9 +457,9 @@ public:
     }
 
 public:
-    // IA32 specific methods
-    static Flags eflags() { Reg32 r; ASM("pushfl");              ASM("popl %0" : "=r"(r) :); return r; }
-    static void eflags(Flags r) {    ASM("pushl %0" : : "r"(r)); ASM("popfl"); }
+    // IA32 specifics
+    static Flags flags() { Reg32 r; ASM("pushfl");              ASM("popl %0" : "=r"(r) :); return r; }
+    static void flags(Flags r) {    ASM("pushl %0" : : "r"(r)); ASM("popfl"); }
 
     static Reg32 esp() { Reg32 r; ASM("movl %%esp,%0"  : "=r"(r) :); return r; }
     static void esp(Reg32 r) {    ASM("movl %0, %%esp" : : "r"(r)); }

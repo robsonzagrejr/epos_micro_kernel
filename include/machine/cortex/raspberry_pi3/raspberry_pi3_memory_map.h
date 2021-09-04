@@ -33,6 +33,7 @@ struct Memory_Map: public Cortex_Memory_Map
         AUX_BASE        = adjust_mio(0x3f215000), // mini UART + 2 x SPI master
         SD1_BASE        = adjust_mio(0x3f300000), // Arasan sdhci controller
         DMA1_BASE       = adjust_mio(0x3fe05000),
+        VECTOR_TABLE    = Traits<Machine>::VECTOR_TABLE,
 
         // Logical Address Space -- Need to be verified
         APP_LOW         = Traits<Machine>::APP_LOW,

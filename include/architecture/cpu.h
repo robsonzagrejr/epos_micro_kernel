@@ -20,16 +20,17 @@ public:
     typedef unsigned short Reg16;
     typedef unsigned long  Reg32;
     typedef unsigned long long Reg64;
+    typedef IF<Traits<CPU>::WORD_SIZE == 16, Reg16, IF<Traits<CPU>::WORD_SIZE == 32, Reg32, Reg64>::Result>::Result Reg;
 
     template <typename Reg>
-    class Log_Addr
+    class Address
     {
     public:
-        Log_Addr() {}
-        Log_Addr(const Log_Addr & a) : _addr(a._addr) {}
-        Log_Addr(const Reg & a) : _addr(a) {}
+        Address() {}
+        Address(const Address & a) : _addr(a._addr) {}
+        Address(const Reg & a) : _addr(a) {}
         template<typename T>
-        Log_Addr(T * a) : _addr(Reg(a)) {}
+        Address(T * a) : _addr(Reg(a)) {}
 
         operator const Reg &() const { return _addr; }
 
@@ -48,46 +49,68 @@ public:
         bool operator<=(T a) const { return (_addr <= Reg(a)); }
 
         template<typename T>
-        Log_Addr operator-(T a) const { return _addr - Reg(a); }
+        Address operator-(T a) const { return _addr - Reg(a); }
         template<typename T>
-        Log_Addr operator+(T a) const { return _addr + Reg(a); }
+        Address operator+(T a) const { return _addr + Reg(a); }
         template<typename T>
-        Log_Addr & operator+=(T a) { _addr += Reg(a); return *this; }
+        Address & operator+=(T a) { _addr += Reg(a); return *this; }
         template<typename T>
-        Log_Addr & operator-=(T a) { _addr -= Reg(a); return *this; }
+        Address & operator-=(T a) { _addr -= Reg(a); return *this; }
         template<typename T>
-        Log_Addr & operator&=(T a) { _addr &= Reg(a); return *this; }
+        Address & operator&=(T a) { _addr &= Reg(a); return *this; }
         template<typename T>
-        Log_Addr & operator|=(T a) { _addr |= Reg(a); return *this; }
+        Address & operator|=(T a) { _addr |= Reg(a); return *this; }
 
-        Log_Addr & operator[](int i) { return *(this + i); }
+        Address & operator[](int i) { return *(this + i); }
 
-        friend OStream & operator<<(OStream & os, const Log_Addr & a) { os << reinterpret_cast<void *>(a._addr); return os; }
+        friend OStream & operator<<(OStream & os, const Address & a) { os << reinterpret_cast<void *>(a._addr); return os; }
 
     private:
         Reg _addr;
     };
 
-    template<typename Reg>
-    using Phy_Addr = Log_Addr<Reg>;
-
-    typedef unsigned long Hertz;
+    typedef Address<Reg> Log_Addr;
+    typedef Address<Reg> Phy_Addr;
 
     class Context;
 
 public:
+    static Log_Addr pc();       // program counter / instruction pointer
+
+    static Log_Addr sp();       // ABI stack pointer
+    static void sp(Log_Addr sp);
+
+    static Log_Addr fp();       // ABI frame pointer
+    static void fp(Log_Addr sp);
+
+    static Log_Addr ra();       // ABI return address (either link register or from the stack)
+
+    static Reg fr();            // ABI function return (either a register or from the stack)
+    static void fr(Reg fr);
+
     static unsigned int id();
     static unsigned int cores();
-
-    static void halt() { for(;;); }
 
     static Hertz clock()  { return Traits<CPU>::CLOCK; }
     static void clock(const Hertz & frequency) {}
     static Hertz max_clock() { return Traits<CPU>::CLOCK; }
     static Hertz min_clock() { return Traits<CPU>::CLOCK; }
 
+    static Hertz bus_clock() { return Traits<CPU>::CLOCK; }
+
+    static void int_enable();
+    static void int_disable();
+    static bool int_enabled();
+    static bool int_disabled();
+
+    static void halt() { for(;;); }
+
     static void fpu_save();
     static void fpu_restore();
+
+    static void switch_context(Context * volatile * o, Context * volatile n);
+
+    static void syscall(void * message);
 
     static bool tsl(volatile bool & lock) {
         bool old = lock;
@@ -131,6 +154,9 @@ public:
             while(ready[j]);                    // wait for CPU[0] signal
         }
     }
+
+    static void flush_tlb();
+    static void flush_tlb(Log_Addr addr);
 
     static Reg64 htole64(Reg64 v) { return (BIG_ENDIAN) ? swap64(v) : v; }
     static Reg32 htole32(Reg32 v) { return (BIG_ENDIAN) ? swap32(v) : v; }

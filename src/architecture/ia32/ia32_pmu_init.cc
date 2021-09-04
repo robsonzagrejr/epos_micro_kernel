@@ -9,8 +9,8 @@ void PMU::init()
     db<Init, PMU>(TRC) << "PMU::init()" << endl;
 
     // Check if the CPU supports CPUID
-    CPU::eflags(CPU::eflags() | CPU::FLAG_ID);
-    if(!(CPU::eflags() & CPU::FLAG_ID)) {
+    CPU::flags(CPU::flags() | CPU::FLAG_ID);
+    if(!(CPU::flags() & CPU::FLAG_ID)) {
         db<Init, PMU>(WRN) << "PMU::init: CPU does not support CPUID! PMU won't be available!" << endl;
         return;
     }

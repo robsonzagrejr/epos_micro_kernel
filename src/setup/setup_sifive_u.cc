@@ -95,7 +95,7 @@ Setup::Setup()
         si = reinterpret_cast<System_Info *>(&boot_time_system_info);
 
         Display::init();
-        db<Setup>(TRC) << "Setup(bi=" << reinterpret_cast<void *>(bi) << ",sp=" << reinterpret_cast<void *>(CPU::sp()) << ")" << endl;
+        db<Setup>(TRC) << "Setup(bi=" << reinterpret_cast<void *>(bi) << ",sp=" << CPU::sp() << ")" << endl;
         db<Setup>(INF) << "Setup:si=" << *si << endl;
 
         if(si->bm.n_cpus > Traits<Machine>::CPUS)
@@ -552,7 +552,7 @@ void Setup::enable_paging()
     db<Setup>(TRC) << "Setup::enable_paging()" << endl;
     if(Traits<Setup>::hysterically_debugged) {
         db<Setup>(INF) << "pc=" << CPU::ip() << endl;
-        db<Setup>(INF) << "sp=" << reinterpret_cast<void *>(CPU::sp()) << endl;
+        db<Setup>(INF) << "sp=" << CPU::sp() << endl;
     }
 
     // Set SATP and enable paging
@@ -563,7 +563,7 @@ void Setup::enable_paging()
 
     if(Traits<Setup>::hysterically_debugged) {
         db<Setup>(INF) << "pc=" << CPU::ip() << endl;
-        db<Setup>(INF) << "sp=" << reinterpret_cast<void *>(CPU::sp()) << endl;
+        db<Setup>(INF) << "sp=" << CPU::sp() << endl;
     }
 }
 

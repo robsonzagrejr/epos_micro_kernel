@@ -29,7 +29,6 @@ _start:
 
         bl      _init
 
-        // Call main
         .align  2
         .globl  __epos_app_entry
         .type   __epos_app_entry, function

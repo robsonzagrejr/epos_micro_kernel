@@ -56,16 +56,13 @@ TESTS_COMPILED 	:= $(TESTS_COMPILED) $(subst .bin,,$(shell find $(IMG) -name \*.
 TESTS_FINISHED 	:= $(subst .out,,$(shell find $(IMG) -name \*.out -printf "%f\n"))
 UNFINISHED_TESTS:= $(filter-out $(TESTS_FINISHED),$(TESTS_TO_RUN))
 UNCOMPILED_TESTS:= $(filter-out $(TESTS_COMPILED),$(TESTS_TO_RUN))
-test: FORCE
-		$(foreach tst,$(TESTS),$(LINK) $(TST)/$(tst) $(APP);)
+test: linktest
 		$(foreach tst,$(UNFINISHED_TESTS),$(MAKETEST) APPLICATION=$(tst) prebuild_$(tst) clean1 all1 posbuild_$(tst) prerun_$(tst) run1 posbuild_$(tst);)
 		
-buildtest: FORCE
-		$(foreach tst,$(TESTS),$(LINK) $(TST)/$(tst) $(APP);)
+buildtest: linktest
 		$(foreach tst,$(UNCOMPILED_TESTS),$(MAKETEST) APPLICATION=$(tst) prebuild_$(tst) clean1 all1 posbuild_$(tst) || exit;)
 
-runtest: FORCE
-		$(foreach tst,$(TESTS),$(LINK) $(TST)/$(tst) $(APP);)
+runtest: linktest
 		$(foreach tst,$(UNFINISHED_TESTS),$(MAKETEST) APPLICATION=$(tst) prerun_$(tst) run1 posbuild_$(tst) || exit;)
 
 gittest: buildtest runtest

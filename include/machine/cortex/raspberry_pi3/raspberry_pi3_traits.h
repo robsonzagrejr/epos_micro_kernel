@@ -27,26 +27,26 @@ public:
 
     // Physical Memory
     static const unsigned int RAM_BASE          = 0x00000000;
-    static const unsigned int RAM_TOP           = 0x3eeeffff;   // 1 GB - 16 MB
+    static const unsigned int RAM_TOP           = 0x3eefffff;   // 1 GB - 17 M
     static const unsigned int MIO_BASE          = 0x3ef00000;
-    static const unsigned int MIO_TOP           = 0x400000ff;   // 16 MB
-    static const unsigned int VECTOR_TABLE      = SIMULATED ? 0x00010000 : 0x00008000;   // defined by uboot@QEMU
-    static const unsigned int PAGE_TABLES       = 0x3eef0000;
+    static const unsigned int MIO_TOP           = 0x400000ff;   // ~17 MB
 
     // Physical Memory at Boot
     static const unsigned int BOOT              = NOT_USED;
     static const unsigned int BOOT_STACK        = 0x0007fffc;   // RAM_BASE + 512KB - 4 (will be used as the stack pointer, not the base)
     static const unsigned int IMAGE             = 0x00100000;
-    static const unsigned int SETUP             = library_mode ? NOT_USED : VECTOR_TABLE;
+    static const unsigned int RESET             = SIMULATED ? 0x00010000 : 0x00008000;
+    static const unsigned int SETUP             = library_mode ? NOT_USED : RESET;
 
     // Logical Memory Map
-    static const unsigned int APP_LOW           = library_mode ? VECTOR_TABLE : 0x80000000;
+    static const unsigned int VECTOR_TABLE      = 0;
+    static const unsigned int APP_LOW           = library_mode ? RESET : 0x80000000;
     static const unsigned int APP_HIGH          = APP_LOW + (RAM_TOP - RAM_BASE) - 1;
 
-    static const unsigned int APP_CODE          = library_mode ? VECTOR_TABLE : APP_LOW;
+    static const unsigned int APP_CODE          = library_mode ? RESET : APP_LOW;
     static const unsigned int APP_DATA          = APP_CODE + 4 * 1024 * 1024;
 
-    static const unsigned int INIT              = (Traits<Build>::MODE == Traits<Build>::LIBRARY) ? NOT_USED : 0x00080000;
+    static const unsigned int INIT              = library_mode ? NOT_USED : 0x00080000;
     static const unsigned int PHY_MEM           = 0x00000000;   // 0 (max 1792 MB)
     static const unsigned int IO                = 0x70000000;   // 2 GB - 256 MB (max 247 MB)
     static const unsigned int SYS               = 0xff700000;   // 4 GB - 9 MB

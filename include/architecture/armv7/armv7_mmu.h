@@ -464,8 +464,8 @@ public:
     }
 
 private:
-    static Phy_Addr pd() { return CPU::ttbr0(); }
-    static void pd(Phy_Addr pd) { CPU::ttbr0(pd); CPU::flush_tlb(); CPU::isb(); CPU::dsb(); }
+    static Phy_Addr pd() { return CPU::pd(); }
+    static void pd(Phy_Addr pd) { CPU::pd(pd); CPU::flush_tlb(); CPU::isb(); CPU::dsb(); }
 
     static void flush_tlb() { CPU::flush_tlb(); }
     static void flush_tlb(Log_Addr addr) { CPU::flush_tlb(directory_bits(addr)); } // only bits from 31 to 12, all ASIDs

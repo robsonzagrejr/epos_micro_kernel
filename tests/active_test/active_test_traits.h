@@ -9,7 +9,7 @@ __BEGIN_SYS
 template<> struct Traits<Build>: public Traits_Tokens
 {
     // Basic configuration
-    static const unsigned int MODE = LIBRARY;
+    static const unsigned int MODE = BUILTIN;
     static const unsigned int ARCHITECTURE = IA32;
     static const unsigned int MACHINE = PC;
     static const unsigned int MODEL = Legacy_PC;

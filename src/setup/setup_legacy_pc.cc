@@ -127,7 +127,7 @@ Setup::Setup(char * boot_image)
     // Multicore conditional start up
     int cpu_id = CPU::id();
 
-    db<Setup>(TRC) << "Setup(bi=" << reinterpret_cast<void *>(bi) << ",sp=" << reinterpret_cast<void *>(CPU::sp()) << ")" << endl;
+    db<Setup>(TRC) << "Setup(bi=" << reinterpret_cast<void *>(bi) << ",sp=" << CPU::sp() << ")" << endl;
 
     CPU::smp_barrier(si->bm.n_cpus);
     if(cpu_id == 0) { // Boot strap CPU (BSP)
@@ -161,8 +161,8 @@ Setup::Setup(char * boot_image)
 
         // Enable paging
         // We won't be able to print anything before the remap() bellow
-        db<Setup>(INF) << "IP=" << CPU::ip() << endl;
-        db<Setup>(INF) << "SP=" << reinterpret_cast<void *>(CPU::sp()) << endl;
+        db<Setup>(INF) << "IP=" << CPU::pc() << endl;
+        db<Setup>(INF) << "SP=" << CPU::sp() << endl;
         db<Setup>(INF) << "CR0=" << reinterpret_cast<void *>(CPU::cr0()) << endl;
         db<Setup>(INF) << "CR3=" << reinterpret_cast<void *>(CPU::cr3()) << endl;
 
@@ -195,8 +195,8 @@ Setup::Setup(char * boot_image)
 
     CPU::smp_barrier(si->bm.n_cpus);
 
-    db<Setup>(INF) << "IP=" << CPU::ip() << endl;
-    db<Setup>(INF) << "SP=" << reinterpret_cast<void *>(CPU::sp()) << endl;
+    db<Setup>(INF) << "IP=" << CPU::pc() << endl;
+    db<Setup>(INF) << "SP=" << CPU::sp() << endl;
     db<Setup>(INF) << "CR0=" << reinterpret_cast<void *>(CPU::cr0()) << endl;
     db<Setup>(INF) << "CR3=" << reinterpret_cast<void *>(CPU::cr3()) << endl;
 
@@ -484,6 +484,7 @@ void Setup::say_hi()
         db<Setup>(INF) << "No SYSTEM in boot image, assuming EPOS is a library!" << endl;
 
     kout << "Setting up this machine as follows: " << endl;
+    kout << "  Mode:         " << ((Traits<Build>::MODE == Traits<Build>::LIBRARY) ? "library" : (Traits<Build>::MODE == Traits<Build>::BUILTIN) ? "built-in" : "kernel") << endl;
     kout << "  Processor:    " << Traits<Machine>::CPUS << " x IA32 at " << Traits<CPU>::CLOCK / 1000000 << " MHz (BUS clock = " << Traits<CPU>::CLOCK / 1000000 << " MHz)" << endl;
     kout << "  Memory:       " << (si->bm.mem_top - si->bm.mem_base) / 1024 << " KB [" << (void *)si->bm.mem_base << ":" << (void *)si->bm.mem_top << "]" << endl;
     kout << "  User memory:  " << (si->pmm.usr_mem_top - si->pmm.usr_mem_base) / 1024 << " KB [" << (void *)si->pmm.usr_mem_base << ":" << (void *)si->pmm.usr_mem_top << "]" << endl;

@@ -84,13 +84,6 @@ public:
         Engine::ipi(cpu, i);
     }
 
-    void undefined_instruction();
-    void software_interrupt();
-    void prefetch_abort();
-    void data_abort();
-    void reserved();
-    void fiq();
-
 private:
     static void dispatch(unsigned int i);
     static void eoi(unsigned int i);
@@ -100,7 +93,13 @@ private:
     static void hard_fault(Interrupt_Id i);
 
     // Physical handler
-    static void entry();
+    static void entry() __attribute__ ((naked));
+    static void prefetch_abort() __attribute__ ((naked));
+    static void undefined_instruction() __attribute__ ((naked));
+    static void software_interrupt() __attribute__ ((naked));
+    static void data_abort() __attribute__ ((naked));
+    static void reserved() __attribute__ ((naked));
+    static void fiq() __attribute__ ((naked));
 
     static void init();
 

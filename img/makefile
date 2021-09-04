@@ -7,6 +7,7 @@ IMAGES 		:= $(subst .img,,$(shell find . -name \*.img -printf "%f\n")) \
 		$(IMAGES) $(subst .bin,,$(shell find . -name \*.bin -printf "%f\n")) \
 		$(IMAGES) $(subst .hex,,$(shell find . -name \*.bin -printf "%f\n"))
 IMAGE		:= $(addsuffix $(MACH_IMGSUFF),$(APPLICATION))
+.PRECIOUS: $(APPLICATION).img
 OUTPUT		:= $(addsuffix .out,$(APPLICATION))
 PEER		:= p-$(APPLICATION)
 PEER_IMAGE	:= p-$(IMAGE)

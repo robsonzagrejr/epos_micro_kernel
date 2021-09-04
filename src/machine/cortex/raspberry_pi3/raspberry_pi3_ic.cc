@@ -3,10 +3,9 @@
 #include <machine/machine.h>
 #include <machine/ic.h>
 #include <machine/timer.h>
-#include <machine/usb.h>
-#include <machine/gpio.h>
+#include <process.h>
 
-extern "C" { void _int_entry() __attribute__ ((alias("_ZN4EPOS1S2IC5entryEv"))); }
+extern "C" { void _int_entry() __attribute__ ((naked, nothrow, alias("_ZN4EPOS1S2IC5entryEv"))); }
 extern "C" { void _dispatch(unsigned int) __attribute__ ((alias("_ZN4EPOS1S2IC8dispatchEj"))); }
 extern "C" { void _eoi(unsigned int) __attribute__ ((alias("_ZN4EPOS1S2IC3eoiEj"))); }
 extern "C" { void _undefined_instruction() __attribute__ ((alias("_ZN4EPOS1S2IC21undefined_instructionEv"))); }
@@ -145,37 +144,24 @@ IC::Interrupt_Handler IC::_eoi_vector[INTS] = {
 // Class methods
 void IC::entry()
 {
-    ASM(".equ MODE_IRQ, 0x12                        \n"
-        ".equ MODE_SVC, 0x13                        \n"
-        ".equ IRQ_BIT,  0x80                        \n"
-        ".equ FIQ_BIT,  0x40                        \n"
-        // Go to SVC
-        "msr cpsr_c, #MODE_SVC | IRQ_BIT | FIQ_BIT  \n"
-        // Save current context (lr, sp and spsr are banked registers)
-        "stmfd sp!, {r0-r3, r12, lr, pc}            \n"
-        // Go to IRQ
-        "msr cpsr_c, #MODE_IRQ | IRQ_BIT | FIQ_BIT  \n"
-        // Return from IRQ address
-        "sub r0, lr, #4                             \n"
-        // Pass irq_spsr to SVC r1
-        "mrs r1, spsr                               \n"
-        // Go back to SVC
-        "msr cpsr_c, #MODE_SVC | IRQ_BIT | FIQ_BIT  \n"
-        // sp+24 is the position of the saved pc
-        "add r2, sp, #24                            \n"
-        // Save address to return from interrupt into the pc position to retore
-        // context later on
-        "str r0, [r2]                               \n"
-        // Save IRQ-spsr
-        "stmfd sp!, {r1}                            \n"
-        //"bl %0                                      \n"
-        "bl _dispatch                               \n"
-        "ldmfd sp!, {r0}                            \n"
-        // Restore IRQ's spsr value to SVC's spsr
-        "msr spsr_cfxs, r0                          \n"
-        // Restore context, the ^ in the end of the above instruction makes the
-        // irq_spsr to be restored into svc_cpsr
-        "ldmfd sp!, {r0-r3, r12, lr, pc}^           \n" : : "i"(dispatch));
+    // We assume A[T]PCS ARM ABI, so any function using registers r4 until r11 will save those upon beginning and restore them when exiting. 
+    // An interrupt can happen in the middle of one such function, but if the ISR drives the PC through other functions that use the same registers, they will save and restore them. We therefore don't need to save r4-r11 here.
+    ASM("       .equ    MODE_IRQ, 0x12                                  \n"
+        "       .equ    MODE_SVC, 0x13                                  \n"
+        "       .equ    IRQ_BIT,  0x80                                  \n"
+        "       .equ    FIQ_BIT,  0x40                                  \n"
+        "       msr     cpsr_c, #MODE_SVC | IRQ_BIT | FIQ_BIT           \n"     // go to SVC mode
+        "       stmfd   sp!, {r0-r3, r12, lr, pc}                       \n"     // save current context (lr, sp and spsr are banked registers)
+        "       msr     cpsr_c, #MODE_IRQ | IRQ_BIT | FIQ_BIT           \n"     // go to IRQ mode to recover LR
+        "       sub     r0, lr, #4                                      \n"     // r0 = return address as entering IRQ more
+        "       mrs     r1, spsr                                        \n"     // r1 = IRQ_spsr (to be visible at SVC)
+        "       msr     cpsr_c, #MODE_SVC | IRQ_BIT | FIQ_BIT           \n"     // go back to SVC mode
+        "       str     r0, [sp, #24]                                   \n"     // overwrite saved PC with r0 (saved return address)
+        "       push    {r1}                                            \n"     // push IRQ_spsr
+        "       bl      _dispatch                                       \n"
+        "       pop     {r1}                                            \n"     // pop IRQ_spsr into SVC_spsr
+        "       msr     spsr_cfxs, r1                                   \n"
+        "       ldmfd   sp!, {r0-r3, r12, lr, pc}^                      \n");   // restore the context (including PC in ldmfd cause a mode change to the mode before the interrupt)
 }
 
 void IC::dispatch(unsigned int i)
@@ -183,7 +169,7 @@ void IC::dispatch(unsigned int i)
     Interrupt_Id id = int_id();
 
     if((id != INT_SYS_TIMER) || Traits<IC>::hysterically_debugged)
-        db<IC>(TRC) << "IC::dispatch(i=" << id << ",handler=" << hex << reinterpret_cast<void *>(_int_vector[id]) << ")" << endl;
+        db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
 
     assert(id < INTS);
     if(_eoi_vector[id])

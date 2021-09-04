@@ -44,9 +44,9 @@ public:
             D    = 1 << 7, // Dirty
             CT   = 1 << 8, // Contiguous (reserved for use by supervisor RSW)
             MIO  = 1 << 9, // I/O (reserved for use by supervisor RSW)
-            APP  = (V | R | W | X | U),
-            APPC = (V | R | X | U),
-            APPD = (V | R | W | U),
+            APP  = (V | R | W | X),
+            APPC = (V | R | X),
+            APPD = (V | R | W),
             SYS  = (V | R | W | X),
             IO   = (SYS | MIO),
             DMA  = (SYS | CT),
@@ -60,7 +60,7 @@ public:
                                      ((f & Flags::RD)  ? R  : 0) |
                                      ((f & Flags::RW)  ? W  : 0) |
                                      ((f & Flags::EX)  ? X  : 0) |
-                                     ((f & Flags::USR) ? U  : 0) |
+//                                     ((f & Flags::USR) ? U  : 0) |
                                      ((f & Flags::CWT) ? 0  : 0) |
                                      ((f & Flags::CD)  ? 0  : 0) |
                                      ((f & Flags::CT)  ? CT : 0) |

@@ -6,7 +6,6 @@
 #include <process.h>
 
 extern "C" { void _int_entry() __attribute__ ((nothrow, alias("_ZN4EPOS1S2IC5entryEv"))); }
-extern "C" { void _exec(void *); }
 extern "C" { void __exit(); }
 extern "C" { static void print_context(); }
 
@@ -68,14 +67,6 @@ void IC::dispatch()
 
     if(id >= HARD_INT)
         CPU::a0(0); // tell CPU::Context::pop(true) not to increment PC since it is automatically incremented for hardware interrupts
-}
-
-void IC::syscall(Interrupt_Id id) {
-    // We get here when an APP triggers INT_SYSCALL (i.e. ecall)
-    if(Traits<Build>::MODE == Traits<Build>::KERNEL) {
-        _exec(reinterpret_cast<void *>(CPU::a1())); // the message to EPOS Framework is passed on register a1
-        CPU::fr(sizeof(void *));                    // tell IC::entry to perform PC = PC + 4 on return
-    }
 }
 
 void IC::int_not(Interrupt_Id id)

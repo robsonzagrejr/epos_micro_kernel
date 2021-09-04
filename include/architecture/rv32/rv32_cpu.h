@@ -23,12 +23,12 @@ public:
     using CPU_Common::Reg16;
     using CPU_Common::Reg32;
     using CPU_Common::Reg64;
-    using Reg = CPU_Common::Reg32;
-    using Log_Addr = CPU_Common::Log_Addr<Reg>;
-    using Phy_Addr = CPU_Common::Phy_Addr<Reg>;
+    using CPU_Common::Reg;
+    using CPU_Common::Log_Addr;
+    using CPU_Common::Phy_Addr;
 
     // Status Register ([m|s]status)
-    typedef Reg32 Status;
+    typedef Reg Status;
     enum {
         UIE             = 1 <<  0,      // User Interrupts Enabled
         SIE             = 1 <<  1,      // Supervisor Interrupts Enabled
@@ -105,7 +105,7 @@ public:
         // Contexts are loaded with [m|s]ret, which gets pc from [m|s]epc and updates some bits of [m|s]status, that's why _st is initialized with [M|S]PIE and [M|S]PP
         // Kernel threads are created with usp = 0 and have SPP_S set
         // Dummy contexts for the first execution of each thread (both kernel and user) are created with exit = 0 and SPIE cleared (no interrupts until the second context is popped)
-        Context(Log_Addr entry, Log_Addr exit, Log_Addr usp): _usp(usp), _pc(entry), _st(multitask ? ((exit ? SPIE : 0) | (usp ? SPP_U : SPP_S) | SUM) : ((exit ? MPIE : 0) | MPP_M)), _x1(exit) {
+        Context(Log_Addr entry, Log_Addr exit): _usp(0), _pc(entry), _st(multitask ? ((exit ? SPIE : 0) | SPP_S | SUM) : ((exit ? MPIE : 0) | MPP_M)), _x1(exit) {
             if(Traits<Build>::hysterically_debugged || Traits<Thread>::trace_idle) {
                                                                         _x5 =  5;  _x6 =  6;  _x7 =  7;  _x8 =  8;  _x9 =  9;
                 _x10 = 10; _x11 = 11; _x12 = 12; _x13 = 13; _x14 = 14; _x15 = 15; _x16 = 16; _x17 = 17; _x18 = 18; _x19 = 19;
@@ -160,41 +160,41 @@ public:
         static void push(bool interrupt = false); // interrupt or context switch?
 
     private:
-        Reg32 _usp;     // usp (used with multitasking)
-        Reg32 _pc;      // pc
-        Reg32 _st;      // [m|s]status
-    //  Reg32 _x0;      // zero
-        Reg32 _x1;      // ra, ABI Link Register
-    //  Reg32 _x2;      // sp, ABI Stack Pointer, saved as this
-    //  Reg32 _x3;      // gp, ABI Global Pointer, used in EPOS as a temporary
-    //  Reg32 _x4;      // tp, ABI Thread Pointer, used in EPOS as core id
-        Reg32 _x5;      // t0
-        Reg32 _x6;      // t1
-        Reg32 _x7;      // t2
-        Reg32 _x8;      // s0
-        Reg32 _x9;      // s1
-        Reg32 _x10;     // a0
-        Reg32 _x11;     // a1
-        Reg32 _x12;     // a2
-        Reg32 _x13;     // a3
-        Reg32 _x14;     // a4
-        Reg32 _x15;     // a5
-        Reg32 _x16;     // a6
-        Reg32 _x17;     // a7
-        Reg32 _x18;     // s2
-        Reg32 _x19;     // s3
-        Reg32 _x20;     // s4
-        Reg32 _x21;     // s5
-        Reg32 _x22;     // s6
-        Reg32 _x23;     // s7
-        Reg32 _x24;     // s8
-        Reg32 _x25;     // s9
-        Reg32 _x26;     // s10
-        Reg32 _x27;     // s11
-        Reg32 _x28;     // t3
-        Reg32 _x29;     // t4
-        Reg32 _x30;     // t5
-        Reg32 _x31;     // t6
+        Reg _usp;     // usp (used with multitasking)
+        Reg _pc;      // pc
+        Reg _st;      // [m|s]status
+    //  Reg _x0;      // zero
+        Reg _x1;      // ra, ABI Link Register
+    //  Reg _x2;      // sp, ABI Stack Pointer, saved as this
+    //  Reg _x3;      // gp, ABI Global Pointer, used in EPOS as a temporary
+    //  Reg _x4;      // tp, ABI Thread Pointer, used in EPOS as core id
+        Reg _x5;      // t0
+        Reg _x6;      // t1
+        Reg _x7;      // t2
+        Reg _x8;      // s0
+        Reg _x9;      // s1
+        Reg _x10;     // a0
+        Reg _x11;     // a1
+        Reg _x12;     // a2
+        Reg _x13;     // a3
+        Reg _x14;     // a4
+        Reg _x15;     // a5
+        Reg _x16;     // a6
+        Reg _x17;     // a7
+        Reg _x18;     // s2
+        Reg _x19;     // s3
+        Reg _x20;     // s4
+        Reg _x21;     // s5
+        Reg _x22;     // s6
+        Reg _x23;     // s7
+        Reg _x24;     // s8
+        Reg _x25;     // s9
+        Reg _x26;     // s10
+        Reg _x27;     // s11
+        Reg _x28;     // t3
+        Reg _x29;     // t4
+        Reg _x30;     // t5
+        Reg _x31;     // t6
     };
 
     // Interrupt Service Routines
@@ -206,22 +206,19 @@ public:
 public:
     CPU() {};
 
-    static Log_Addr pc() { Reg32 r; ASM("auipc %0, 0" : "=r"(r) :); return r; }
+    static Log_Addr pc() { Reg r; ASM("auipc %0, 0" : "=r"(r) :); return r; }
 
-    static Reg32 status()       { return multitask ? sstatus() : mstatus(); }
-    static void status(Status st) { multitask ? sstatus(st) : mstatus(st); }
+    static Reg sp() { Reg r; ASM("mv %0, sp" :  "=r"(r) :); return r; }
+    static void sp(Reg r) {  ASM("mv sp, %0" : : "r"(r) :); }
 
-    static Reg32 sp() { Reg32 r; ASM("mv %0, sp" :  "=r"(r) :); return r; }
-    static void sp(Reg32 r) {    ASM("mv sp, %0" : : "r"(r) :); }
+    static Reg fp() { Reg r; ASM("mv %0, fp" :  "=r"(r) :); return r; }
+    static void fp(Reg r) {  ASM("mv fp, %0" : : "r"(r) :); }
 
-    static Reg32 fp() { Reg32 r; ASM("mv %0, fp" :  "=r"(r) :); return r; }
-    static void fp(Reg32 r) {    ASM("mv fp, %0" : : "r"(r) :); }
+    static Reg ra() { Reg r; ASM("mv %0, ra" :  "=r"(r)); return r; }
+    static void ra(Reg r) {  ASM("mv ra, %0" : : "r"(r) :); }
 
-    static Reg32 lr() { Reg32 r; ASM("mv %0, ra" :  "=r"(r)); return r; }
-    static void lr(Reg32 r) {    ASM("mv ra, %0" : : "r"(r) :); }
-
-    static Reg32 fr() { Reg32 r; ASM("mv %0, a0" :  "=r"(r)); return r; }
-    static void fr(Reg32 r) {    ASM("mv a0, %0" : : "r"(r) :); }
+    static Reg fr() { Reg r; ASM("mv %0, a0" :  "=r"(r)); return r; }
+    static void fr(Reg r) {  ASM("mv a0, %0" : : "r"(r) :); }
 
     static unsigned int id() { return multitask ? tp() : mhartid(); }
 
@@ -230,6 +227,7 @@ public:
     using CPU_Common::clock;
     using CPU_Common::min_clock;
     using CPU_Common::max_clock;
+    using CPU_Common::bus_clock;
 
     static void int_enable()  { multitask ? sint_enable()  : mint_enable(); }
     static void int_disable() { multitask ? sint_disable() : mint_disable(); }
@@ -240,9 +238,8 @@ public:
 
     static void fpu_save();
     static void fpu_restore();
-    static void switch_context(Context ** o, Context * n) __attribute__ ((naked));
 
-    static void syscall(void * message);
+    static void switch_context(Context ** o, Context * n) __attribute__ ((naked));
 
     template<typename T>
     static T tsl(volatile T & lock) {
@@ -287,8 +284,8 @@ public:
 
     static void smp_barrier(unsigned long cores = cores()) { CPU_Common::smp_barrier<&finc>(cores, id()); }
 
-    static void flush_tlb() { ASM("sfence.vma" : : : "memory"); }
-    static void flush_tlb(Reg32 addr) { ASM("sfence.vma %0" : : "r"(addr) : "memory"); }
+    static void flush_tlb() {         ASM("sfence.vma"    : :           : "memory"); }
+    static void flush_tlb(Reg addr) { ASM("sfence.vma %0" : : "r"(addr) : "memory"); }
 
     using CPU_Common::htole64;
     using CPU_Common::htole32;
@@ -310,28 +307,29 @@ public:
     using CPU_Common::ntohs;
 
     template<typename ... Tn>
-    static Context * init_stack(Log_Addr usp, Log_Addr ksp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
-        ksp -= sizeof(Context);
-        Context * ctx = new(ksp) Context(entry, exit, usp); // init_stack is called with usp = 0 for kernel threads
+    static Context * init_stack(Log_Addr usp, Log_Addr sp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
+        sp -= sizeof(Context);
+        Context * ctx = new(sp) Context(entry, exit);
         init_stack_helper(&ctx->_x10, an ...); // x10 is a0
-        ksp -= sizeof(Context);
-        ctx = new(ksp) Context(&_int_leave, 0, 0); // this context will be popped by switch() to reach _int_leave(), which will activate the thread's context
+        sp -= sizeof(Context);
+        ctx = new(sp) Context(&_int_leave, 0); // this context will be popped by switch() to reach _int_leave(), which will activate the thread's context
         ctx->_x10 = 0; // zero fr() for the pop(true) issued by _int_leave()
         return ctx;
     }
 
-    // In RISC-V, the main thread of each task gets parameters over registers, not the stack, and they are initialized by init_stack.
-    template<typename ... Tn>
-    static Log_Addr init_user_stack(Log_Addr usp, void (* exit)(), Tn ... an) { return usp; }
-
 public:
     // RISC-V 32 specifics
-    static Reg tp() { Reg r;     ASM("mv %0, x4" : "=r"(r) :); return r; }
-    static void tp(Reg r) {      ASM("mv x4, %0" : : "r"(r) :); }
-    static Reg32 a0() { Reg32 r; ASM("mv %0, a0" :  "=r"(r)); return r; }
-    static void a0(Reg32 r) {    ASM("mv a0, %0" : : "r"(r) :); }
-    static Reg32 a1() { Reg32 r; ASM("mv %0, a1" :  "=r"(r)); return r; }
-    static void a1(Reg32 r) {    ASM("mv a1, %0" : : "r"(r) :); }
+    static Reg status()       { return multitask ? sstatus() : mstatus(); }
+    static void status(Status st) { multitask ? sstatus(st) : mstatus(st); }
+
+    static Reg tp() { Reg r; ASM("mv %0, x4" : "=r"(r) :); return r; }
+    static void tp(Reg r) {  ASM("mv x4, %0" : : "r"(r) :); }
+
+    static Reg a0() { Reg r; ASM("mv %0, a0" :  "=r"(r)); return r; }
+    static void a0(Reg r) {  ASM("mv a0, %0" : : "r"(r) :); }
+
+    static Reg a1() { Reg r; ASM("mv %0, a1" :  "=r"(r)); return r; }
+    static void a1(Reg r) {  ASM("mv a1, %0" : : "r"(r) :); }
 
     static void ecall() { ASM("ecall"); }
     static void iret() { multitask ? sret() : mret(); }
@@ -401,7 +399,7 @@ public:
 
     static void sret() { ASM("sret"); }
 
-    static void satp(Reg32 r) { ASM("csrw satp, %0" : : "r"(r) : "cc"); }
+    static void satp(Reg r) { ASM("csrw satp, %0" : : "r"(r) : "cc"); }
     static Reg  satp() { Reg r; ASM("csrr %0, satp" :  "=r"(r) : : ); return r; }
 
 private:
@@ -421,21 +419,7 @@ private:
 
 inline void CPU::Context::push(bool interrupt)
 {
-if(interrupt && multitask)
-    // swap(ksp, usp)
-    ASM("       csrr    x3, sstatus             \n"
-        "       andi    x3, x3, 1 << 8          \n"
-        "       bne     x3, zero, 1f            \n"
-        "       csrr    x3, sscratch            \n"
-        "       csrw    sscratch, sp            \n"
-        "       mv      sp, x3                  \n"
-        "1:                                     \n");
-
     ASM("       addi    sp, sp, %0              \n" : : "i"(-sizeof(Context))); // adjust sp for the pushes below
-
-if(multitask)
-    ASM("       csrr    x3, sscratch            \n"     // sscratch = usp (sscratch holds ksp in user-land and usp in kernel; usp = 0 for kernel threads)
-        "       sw      x3,     0(sp)           \n");   // push usp
 
 if(interrupt)
   if(multitask)
@@ -563,10 +547,10 @@ inline CPU::Reg64 betoh64(CPU::Reg64 v) { return CPU::betoh64(v); }
 inline CPU::Reg32 betoh32(CPU::Reg32 v) { return CPU::betoh32(v); }
 inline CPU::Reg16 betoh16(CPU::Reg16 v) { return CPU::betoh16(v); }
 
-inline CPU::Reg32 htonl(CPU::Reg32 v) { return CPU::htonl(v); }
-inline CPU::Reg16 htons(CPU::Reg16 v) { return CPU::htons(v); }
-inline CPU::Reg32 ntohl(CPU::Reg32 v) { return CPU::ntohl(v); }
-inline CPU::Reg16 ntohs(CPU::Reg16 v) { return CPU::ntohs(v); }
+inline CPU::Reg32 htonl(CPU::Reg32 v)   { return CPU::htonl(v); }
+inline CPU::Reg16 htons(CPU::Reg16 v)   { return CPU::htons(v); }
+inline CPU::Reg32 ntohl(CPU::Reg32 v)   { return CPU::ntohl(v); }
+inline CPU::Reg16 ntohs(CPU::Reg16 v)   { return CPU::ntohs(v); }
 
 __END_SYS
 

@@ -8,11 +8,9 @@
 extern "C" {
     void _start();
     void _init();
-    void _int_entry();
 
-    // SETUP entry point is _vector_table() and resides in the .init section (not in .text), so it will be linked first and will be the first function after the ELF header in the image.
+    // SETUP entry point is the Vector Table and resides in the .init section (not in .text), so it will be linked first and will be the first function after the ELF header in the image.
     void _entry() __attribute__ ((used, naked, section(".init")));
-    void _vector_table() __attribute__ ((used, naked, nothrow, section(".init"), alias("_entry")));
     void _reset() __attribute__ ((naked)); // so it can be safely reached from the vector table
     void _setup(); // just to create a Setup object
 
@@ -28,24 +26,26 @@ class Setup
 {
 private:
     // Physical memory map
-    static const unsigned int RAM_BASE  = Memory_Map::RAM_BASE;
-    static const unsigned int RAM_TOP   = Memory_Map::RAM_TOP;
-    static const unsigned int IMAGE     = Memory_Map::IMAGE;
-    static const unsigned int SETUP     = Memory_Map::SETUP;
+    static const unsigned int RAM_BASE          = Memory_Map::RAM_BASE;
+    static const unsigned int RAM_TOP           = Memory_Map::RAM_TOP;
+    static const unsigned int IMAGE             = Memory_Map::IMAGE;
+    static const unsigned int SETUP             = Memory_Map::SETUP;
+    static const unsigned int PAGE_TABLES       = (Memory_Map::RAM_TOP - 4 * 4096) & ~(0x3FFF); // 16KB for 4K entries of 4B each. Moreover, we need 16K aligned TTBR entry
+    static const unsigned int VECTOR_TABLE      = Traits<Build>::EXPECTED_SIMULATION_TIME ? 0x00010000 : 0x00008000;   // defined by uboot@QEMU
 
     // Logical memory map
-    static const unsigned int APP_LOW   = Memory_Map::APP_LOW;
-    static const unsigned int PHY_MEM   = Memory_Map::PHY_MEM;
-    static const unsigned int IO        = Memory_Map::IO;
-    static const unsigned int SYS       = Memory_Map::SYS;
-    static const unsigned int SYS_INFO  = Memory_Map::SYS_INFO;
-    static const unsigned int SYS_PT    = Memory_Map::SYS_PT;
-    static const unsigned int SYS_PD    = Memory_Map::SYS_PD;
-    static const unsigned int SYS_CODE  = Memory_Map::SYS_CODE;
-    static const unsigned int SYS_DATA  = Memory_Map::SYS_DATA;
-    static const unsigned int SYS_STACK = Memory_Map::SYS_STACK;
-    static const unsigned int APP_CODE  = Memory_Map::APP_CODE;
-    static const unsigned int APP_DATA  = Memory_Map::APP_DATA;
+    static const unsigned int APP_LOW           = Memory_Map::APP_LOW;
+    static const unsigned int PHY_MEM           = Memory_Map::PHY_MEM;
+    static const unsigned int IO                = Memory_Map::IO;
+    static const unsigned int SYS               = Memory_Map::SYS;
+    static const unsigned int SYS_INFO          = Memory_Map::SYS_INFO;
+    static const unsigned int SYS_PT            = Memory_Map::SYS_PT;
+    static const unsigned int SYS_PD            = Memory_Map::SYS_PD;
+    static const unsigned int SYS_CODE          = Memory_Map::SYS_CODE;
+    static const unsigned int SYS_DATA          = Memory_Map::SYS_DATA;
+    static const unsigned int SYS_STACK         = Memory_Map::SYS_STACK;
+    static const unsigned int APP_CODE          = Memory_Map::APP_CODE;
+    static const unsigned int APP_DATA          = Memory_Map::APP_DATA;
 
     // Architecture Imports
     typedef CPU::Reg32 Reg32;
@@ -88,6 +88,7 @@ private:
     void enable_paging();
 
     void load_parts();
+    void adjust_perms();
     void call_next();
 
     void panic() { Machine::panic(); }
@@ -108,7 +109,7 @@ Setup::Setup()
         bi = reinterpret_cast<char *>(IMAGE);
         si = reinterpret_cast<System_Info *>(&__boot_time_system_info);
 
-        db<Setup>(TRC) << "Setup(bi=" << reinterpret_cast<void *>(bi) << ",sp=" << reinterpret_cast<void *>(CPU::sp()) << ")" << endl;
+        db<Setup>(TRC) << "Setup(bi=" << reinterpret_cast<void *>(bi) << ",sp=" << CPU::sp() << ")" << endl;
         db<Setup>(INF) << "Setup:si=" << *si << endl;
 
         if(si->bm.n_cpus > Traits<Machine>::CPUS)
@@ -172,13 +173,13 @@ void Setup::flat_map_page_tables_setup()
     CPU::Reg32 aux = 0x0;
     for (int curr_page = 1006; curr_page >= 0; curr_page--) {
         aux = TTB_MEMORY_DESCRIPTOR | (curr_page << 20);
-        reinterpret_cast<volatile CPU::Reg32 *>(Traits<Machine>::PAGE_TABLES)[curr_page] = aux;
+        reinterpret_cast<volatile CPU::Reg32 *>(PAGE_TABLES)[curr_page] = aux;
     }
     aux = TTB_DEVICE_DESCRIPTOR | (1007 << 20);
-    reinterpret_cast<volatile CPU::Reg32 *>(Traits<Machine>::PAGE_TABLES)[1007] = aux;
+    reinterpret_cast<volatile CPU::Reg32 *>(PAGE_TABLES)[1007] = aux;
     for (int curr_page = 4095; curr_page > 1007; curr_page--) {
         aux = TTB_PERIPHERAL_DESCRIPTOR | (curr_page << 20);
-        reinterpret_cast<volatile CPU::Reg32 *>(Traits<Machine>::PAGE_TABLES)[curr_page] = aux;
+        reinterpret_cast<volatile CPU::Reg32 *>(PAGE_TABLES)[curr_page] = aux;
     }
 }
 
@@ -468,6 +469,7 @@ void Setup::say_hi()
         db<Setup>(INF) << "No SYSTEM in boot image, assuming EPOS is a library!" << endl;
 
     kout << "Setting up this machine as follows: " << endl;
+    kout << "  Mode:         " << ((Traits<Build>::MODE == Traits<Build>::LIBRARY) ? "library" : (Traits<Build>::MODE == Traits<Build>::BUILTIN) ? "built-in" : "kernel") << endl;
     kout << "  Processor:    " << Traits<Machine>::CPUS << " x Cortex A53 at " << Traits<CPU>::CLOCK / 1000000 << " MHz (BUS clock = " << Traits<CPU>::CLOCK / 1000000 << " MHz)" << endl;
     kout << "  Memory:       " << (si->bm.mem_top - si->bm.mem_base) / 1024 << " KB [" << (void *)si->bm.mem_base << ":" << (void *)si->bm.mem_top << "]" << endl;
     kout << "  User memory:  " << (si->pmm.usr_mem_top - si->pmm.usr_mem_base) / 1024 << " KB [" << (void *)si->pmm.usr_mem_base << ":" << (void *)si->pmm.usr_mem_top << "]" << endl;
@@ -691,11 +693,11 @@ void Setup::enable_paging()
     db<Setup>(TRC) << "Setup::enable_paging()" << endl;
     if(Traits<Setup>::hysterically_debugged) {
         db<Setup>(INF) << "pc=" << CPU::pc() << endl;
-        db<Setup>(INF) << "sp=" << reinterpret_cast<void *>(CPU::sp()) << endl;
+        db<Setup>(INF) << "sp=" << CPU::sp() << endl;
     }
 
-    // MNG_DOMAIN for no page permission verification
-    CPU::dacr((Traits<System>::multitask) ? CPU::CLI_DOMAIN : CPU::MNG_DOMAIN);
+    // MNG_DOMAIN for no page permission verification, CLI_DOMAIN otherwise
+    CPU::dacr((Traits<System>::multitask) ? CPU::CLI_DOMAIN : CPU::MNG_DOMAIN); 
 
     CPU::dsb();
     CPU::isb();
@@ -703,7 +705,7 @@ void Setup::enable_paging()
     // Clear TTBCR for the system to use ttbr0 instead of 1
     CPU::ttbcr(0);
     // Set ttbr0 with base address
-    CPU::ttbr0((Traits<System>::multitask) ? si->pmm.sys_pd : Traits<Machine>::PAGE_TABLES);
+    CPU::ttbr0((Traits<System>::multitask) ? si->pmm.sys_pd : PAGE_TABLES);
 
     // Enable MMU through SCTLR and ACTLR
     CPU::actlr(CPU::actlr() | CPU::SMP); // Set SMP bit
@@ -724,7 +726,7 @@ void Setup::enable_paging()
 
     if(Traits<Setup>::hysterically_debugged) {
         db<Setup>(INF) << "pc=" << CPU::pc() << endl;
-        db<Setup>(INF) << "sp=" << reinterpret_cast<void *>(CPU::sp()) << endl;
+        db<Setup>(INF) << "sp=" << CPU::sp() << endl;
     }
 }
 
@@ -813,6 +815,30 @@ void Setup::load_parts()
     }
 }
 
+void Setup::adjust_perms()
+{
+    db<Setup>(TRC) << "Setup::adjust_perms(appc={b=" << (void *)si->pmm.app_code << ",s=" << MMU::pages(si->lm.app_code_size) << "}"
+                   << ",appd={b=" << (void *)si->pmm.app_data << ",s=" << MMU::pages(si->lm.app_data_size) << "}"
+                   << ",appe={b=" << (void *)si->pmm.app_extra << ",s=" << MMU::pages(si->lm.app_extra_size) << "}"
+                   << "})" << endl;
+
+
+    // Get the logical address of the first APPLICATION Page Tables
+    PT_Entry * app_code_pt = MMU::phy2log(reinterpret_cast<PT_Entry *>(si->pmm.app_code_pts));
+    PT_Entry * app_data_pt = MMU::phy2log(reinterpret_cast<PT_Entry *>(si->pmm.app_data_pts));
+
+    unsigned int i;
+    PT_Entry aux;
+
+    // APPLICATION code
+    for(i = 0, aux = si->pmm.app_code; i < MMU::pages(si->lm.app_code_size); i++, aux = aux + sizeof(Page))
+        app_code_pt[MMU::page(APP_CODE) + i] = MMU::phy2pte(aux, Flags::APPC);
+
+    // APPLICATION data (contains stack, heap and extra)
+    for(i = 0, aux = si->pmm.app_data; i < MMU::pages(si->lm.app_data_size); i++, aux = aux + sizeof(Page))
+        app_data_pt[MMU::page(APP_DATA) + i] = MMU::phy2pte(aux, Flags::APPD);
+}
+
 void Setup::call_next()
 {
     int cpu_id = CPU::id();
@@ -871,13 +897,14 @@ void _entry()
                         ldr pc, irq                                             \t\n\
                         ldr pc, fiq                                             \t\n\
                                                                                 \t\n\
+                        .balign 32                                              \t\n\
         reset:          .word _reset                                            \t\n\
-        ui:             .word _undefined_instruction                            \t\n\
-        si:             .word _software_interrupt                               \t\n\
-        pa:             .word _prefetch_abort                                   \t\n\
-        da:             .word _data_abort                                       \t\n\
-        irq:            .word _int_entry                                        \t\n\
-        fiq:            .word _fiq                                              ");
+        ui:             .word 0x0                                               \t\n\
+        si:             .word 0x0                                               \t\n\
+        pa:             .word 0x0                                               \t\n\
+        da:             .word 0x0                                               \t\n\
+        irq:            .word 0x0                                               \t\n\
+        fiq:            .word 0x0                                               ");
 }
 
 void _reset()
@@ -885,21 +912,13 @@ void _reset()
     // QEMU get us here in SVC mode with interrupt disabled, but the real Raspberry Pi3 starts in hypervisor mode, so we must switch to SVC mode
     if(!Traits<Machine>::SIMULATED) {
         CPU::Reg cpsr = CPU::cpsr();
-        cpsr = cpsr & ~CPU::FLAG_M;     // clear mode bits
-        cpsr = cpsr | CPU::FLAG_SVC;    // set supervisor flag
-        CPU::spsr_cxsf(cpsr);           // enter supervisor mode
-        CPU::Reg address = CPU::lr();
+        cpsr &= ~CPU::FLAG_M;           // clear mode bits
+        cpsr |= CPU::FLAG_SVC;          // set supervisor flag
+        CPU::cpsrc(cpsr);               // enter supervisor mode
+        CPU::Reg address = CPU::ra();
         CPU::elr_hyp(address);
-        CPU::msr12();
+        CPU::r12_to_psr();
     }
-
-    // Configure a temporary stack for IRQ mode
-    CPU::cpsrc(CPU::FLAG_I | CPU::FLAG_F | CPU::FLAG_IRQ); // enter IRQ mode with interrupts disabled
-    CPU::sp(0x7ffc);
-
-    // Configure a temporary stack for FIQ mode
-    CPU::cpsrc(CPU::FLAG_I | CPU::FLAG_F | CPU::FLAG_FIQ); // enter FIQ mode with interrupts disabled
-    CPU::sp(0x3ffc);
 
     // Configure a stack for SVC mode, which will be used until the first Thread is created
     CPU::cpsrc(CPU::FLAG_I | CPU::FLAG_F | CPU::FLAG_SVC); // enter SVC mode with interrupts disabled
@@ -908,8 +927,8 @@ void _reset()
     if(CPU::id() == 0) {
         // After a reset, we copy the vector table to 0x0000 to get a cleaner memory map (it is originally at 0x8000)
         // An alternative would be to set vbar address via mrc p15, 0, r1, c12, c0, 0
-        CPU::r0(EPOS::S::Traits<EPOS::S::Machine>::VECTOR_TABLE); // load r0 with the source pointer
-        CPU::r1(0); // load r1 with the destination pointer
+        CPU::r0(reinterpret_cast<CPU::Reg>(&_entry)); // load r0 with the source pointer
+        CPU::r1(Memory_Map::VECTOR_TABLE); // load r1 with the destination pointer
 
         // Copy the first 32 bytes
         CPU::ldmia(); // load multiple registers from the memory pointed by r0 and auto-increment it accordingly

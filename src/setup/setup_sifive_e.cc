@@ -102,7 +102,7 @@ Setup::Setup()
         si = reinterpret_cast<System_Info *>(&__boot_time_system_info);
 
         Display::init();
-        db<Setup>(TRC) << "Setup(bi=" << reinterpret_cast<void *>(bi) << ",sp=" << reinterpret_cast<void *>(CPU::sp()) << ")" << endl;
+        db<Setup>(TRC) << "Setup(bi=" << reinterpret_cast<void *>(bi) << ",sp=" << CPU::sp() << ")" << endl;
         db<Setup>(INF) << "Setup:si=" << *si << endl;
 
         if(si->bm.n_cpus > Traits<Machine>::CPUS)
@@ -426,6 +426,7 @@ void Setup::say_hi()
         db<Setup>(INF) << "No SYSTEM in boot image, assuming EPOS is a library!" << endl;
 
     kout << "Setting up this machine as follows: " << endl;
+    kout << "  Mode:         " << ((Traits<Build>::MODE == Traits<Build>::LIBRARY) ? "library" : (Traits<Build>::MODE == Traits<Build>::BUILTIN) ? "built-in" : "kernel") << endl;
     kout << "  Processor:    " << Traits<Machine>::CPUS << " x RV32 at " << Traits<CPU>::CLOCK / 1000000 << " MHz (BUS clock = " << Traits<CPU>::CLOCK / 1000000 << " MHz)" << endl;
     kout << "  Memory:       " << (si->bm.mem_top - si->bm.mem_base) / 1024 << " KB [" << (void *)si->bm.mem_base << ":" << (void *)si->bm.mem_top << "]" << endl;
     kout << "  User memory:  " << (si->pmm.usr_mem_top - si->pmm.usr_mem_base) / 1024 << " KB [" << (void *)si->pmm.usr_mem_base << ":" << (void *)si->pmm.usr_mem_top << "]" << endl;
@@ -626,7 +627,7 @@ void Setup::enable_paging()
     db<Setup>(TRC) << "Setup::enable_paging()" << endl;
     if(Traits<Setup>::hysterically_debugged) {
         db<Setup>(INF) << "pc=" << CPU::pc() << endl;
-        db<Setup>(INF) << "sp=" << reinterpret_cast<void *>(CPU::sp()) << endl;
+        db<Setup>(INF) << "sp=" << CPU::sp() << endl;
     }
 
     // Set SATP and enable paging
@@ -637,7 +638,7 @@ void Setup::enable_paging()
 
     if(Traits<Setup>::hysterically_debugged) {
         db<Setup>(INF) << "pc=" << CPU::pc() << endl;
-        db<Setup>(INF) << "sp=" << reinterpret_cast<void *>(CPU::sp()) << endl;
+        db<Setup>(INF) << "sp=" << CPU::sp() << endl;
     }
 }
 

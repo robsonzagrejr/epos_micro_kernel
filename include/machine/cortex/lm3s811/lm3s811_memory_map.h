@@ -32,6 +32,7 @@ struct Memory_Map: public Cortex_Memory_Map
         FLASH0_BASE                 = 0x400fd000, // Flash Controller
         SCR_BASE                    = 0x400fe000, // System Control
         SCB_BASE                    = 0xe000e000, // System Control Block
+        VECTOR_TABLE                = Traits<Machine>::APP_CODE,
 
         // Logical Address Space
         APP_LOW         = Traits<Machine>::APP_LOW,
