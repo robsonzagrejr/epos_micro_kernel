@@ -105,7 +105,7 @@ public:
         // Contexts are loaded with [m|s]ret, which gets pc from [m|s]epc and updates some bits of [m|s]status, that's why _st is initialized with [M|S]PIE and [M|S]PP
         // Kernel threads are created with usp = 0 and have SPP_S set
         // Dummy contexts for the first execution of each thread (both kernel and user) are created with exit = 0 and SPIE cleared (no interrupts until the second context is popped)
-        Context(Log_Addr entry, Log_Addr exit): _usp(0), _pc(entry), _st(multitask ? ((exit ? SPIE : 0) | SPP_S | SUM) : ((exit ? MPIE : 0) | MPP_M)), _x1(exit) {
+        Context(Log_Addr entry, Log_Addr exit, Log_Addr usp): _usp(usp), _pc(entry), _st(multitask ? ((exit ? SPIE : 0) | (usp ? SPP_U : SPP_S) | SUM) : ((exit ? MPIE : 0) | MPP_M)), _x1(exit) {
             if(Traits<Build>::hysterically_debugged || Traits<Thread>::trace_idle) {
                                                                         _x5 =  5;  _x6 =  6;  _x7 =  7;  _x8 =  8;  _x9 =  9;
                 _x10 = 10; _x11 = 11; _x12 = 12; _x13 = 13; _x14 = 14; _x15 = 15; _x16 = 16; _x17 = 17; _x18 = 18; _x19 = 19;
@@ -241,6 +241,9 @@ public:
 
     static void switch_context(Context ** o, Context * n) __attribute__ ((naked));
 
+    static void syscall(void * message);
+    static void syscalled(unsigned int int_id);
+
     template<typename T>
     static T tsl(volatile T & lock) {
         register T old;
@@ -307,15 +310,19 @@ public:
     using CPU_Common::ntohs;
 
     template<typename ... Tn>
-    static Context * init_stack(Log_Addr usp, Log_Addr sp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
-        sp -= sizeof(Context);
-        Context * ctx = new(sp) Context(entry, exit);
+    static Context * init_stack(Log_Addr usp, Log_Addr ksp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
+        ksp -= sizeof(Context);
+        Context * ctx = new(ksp) Context(entry, exit, usp); // init_stack is called with usp = 0 for kernel threads
         init_stack_helper(&ctx->_x10, an ...); // x10 is a0
-        sp -= sizeof(Context);
-        ctx = new(sp) Context(&_int_leave, 0); // this context will be popped by switch() to reach _int_leave(), which will activate the thread's context
+        ksp -= sizeof(Context);
+        ctx = new(ksp) Context(&_int_leave, 0, 0); // this context will be popped by switch() to reach _int_leave(), which will activate the thread's context
         ctx->_x10 = 0; // zero fr() for the pop(true) issued by _int_leave()
         return ctx;
     }
+
+    // In RISC-V, the main thread of each task gets parameters over registers, not the stack, and they are initialized by init_stack.
+    template<typename ... Tn>
+    static Log_Addr init_user_stack(Log_Addr usp, void (* exit)(), Tn ... an) { return usp; }
 
 public:
     // RISC-V 32 specifics
@@ -419,7 +426,21 @@ private:
 
 inline void CPU::Context::push(bool interrupt)
 {
+if(interrupt && multitask)
+    // swap(ksp, usp)
+    ASM("       csrr    x3, sstatus             \n"
+        "       andi    x3, x3, 1 << 8          \n"
+        "       bne     x3, zero, 1f            \n"
+        "       csrr    x3, sscratch            \n"
+        "       csrw    sscratch, sp            \n"
+        "       mv      sp, x3                  \n"
+        "1:                                     \n");
+
     ASM("       addi    sp, sp, %0              \n" : : "i"(-sizeof(Context))); // adjust sp for the pushes below
+
+if(multitask)
+    ASM("       csrr    x3, sscratch            \n"     // sscratch = usp (sscratch holds ksp in user-land and usp in kernel; usp = 0 for kernel threads)
+        "       sw      x3,     0(sp)           \n");   // push usp
 
 if(interrupt)
   if(multitask)

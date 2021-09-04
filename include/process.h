@@ -31,6 +31,7 @@ protected:
 
     static const unsigned int QUANTUM = Traits<Thread>::QUANTUM;
     static const unsigned int STACK_SIZE = multitask ? Traits<System>::STACK_SIZE : Traits<Application>::STACK_SIZE;
+    static const unsigned int USER_STACK_SIZE = Traits<Application>::STACK_SIZE;
 
     typedef CPU::Log_Addr Log_Addr;
     typedef CPU::Context Context;
@@ -60,6 +61,7 @@ public:
 
     // Thread Configuration
     // t = 0 => Task::self()
+    // ss = 0 => user-level stack on an auto expand segment
     struct Configuration {
         Configuration(const State & s = READY, const Criterion & c = NORMAL, Task * t = 0, unsigned int ss = STACK_SIZE)
         : state(s), criterion(c), task(t), stack_size(ss) {}
@@ -124,6 +126,7 @@ private:
 
 protected:
     Task * _task;
+    Segment * _user_stack;
 
     char * _stack;
     Context * volatile _context;
@@ -160,7 +163,7 @@ protected:
 
         _current = this;
         activate();
-        _main = new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::MAIN, this), entry, an ...);
+        _main = new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::MAIN, this, 0), entry, an ...);
     }
 
 public:
@@ -169,7 +172,7 @@ public:
     : _as (new (SYSTEM) Address_Space), _cs(cs), _ds(ds), _code(_as->attach(_cs, code)), _data(_as->attach(_ds, data)), _entry(entry) {
         db<Task>(TRC) << "Task(as=" << _as << ",cs=" << _cs << ",ds=" << _ds << ",entry=" << _entry << ",code=" << _code << ",data=" << _data << ") => " << this << endl;
 
-        _main = new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::MAIN, this), entry, an ...);
+        _main = new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::MAIN, this, 0), entry, an ...);
     }
     
     template<typename ... Tn>
@@ -177,7 +180,7 @@ public:
     : _as (new (SYSTEM) Address_Space), _cs(cs), _ds(ds), _code(_as->attach(_cs, code)), _data(_as->attach(_ds, data)), _entry(entry) {
         db<Task>(TRC) << "Task(as=" << _as << ",cs=" << _cs << ",ds=" << _ds << ",entry=" << _entry << ",code=" << _code << ",data=" << _data << ") => " << this << endl;
 
-        _main = new (SYSTEM) Thread(Thread::Configuration(conf.state, conf.criterion, this), entry, an ...);
+        _main = new (SYSTEM) Thread(Thread::Configuration(conf.state, conf.criterion, this, 0), entry, an ...);
     }
     
     template<typename ... Tn>
@@ -215,7 +218,7 @@ public:
         db<Task>(TRC) << "Task(as=" << _as << ",cs=" << _cs << ",ds=" << _ds << ",entry=" << _entry << ",code=" << _code << ",data=" << _data << ") => " << this << endl;
 
         // Create the task's main thread
-        _main = new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::MAIN, this), static_cast<int (*)(Tn ...)>(_entry), an ...);
+        _main = new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::MAIN, this, 0), static_cast<int (*)(Tn ...)>(_entry), an ...);
     }
 
     ~Task();
@@ -291,7 +294,7 @@ private:
 // Thread inline methods that depend on Task
 template<typename ... Tn>
 inline Thread::Thread(int (* entry)(Tn ...), Tn ... an)
-: _task(Task::self()), _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
+: _task(Task::self()), _user_stack(0), _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
 {
     constructor_prologue(STACK_SIZE);
     _context = CPU::init_stack(0, _stack + STACK_SIZE, &__exit, entry, an ...);
@@ -302,8 +305,16 @@ template<typename ... Tn>
 inline Thread::Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
 : _task(conf.task ? conf.task : Task::self()), _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
 {
-    constructor_prologue(conf.stack_size);
-    _context = CPU::init_stack(0, _stack + conf.stack_size, &__exit, entry, an ...);
+    if(multitask && !conf.stack_size) { // auto-expand, user-level stack
+
+        // handle user-level stack
+
+    } else { // single-task scenarios and idle thread, which is a kernel thread, don't have a user-level stack
+        constructor_prologue(conf.stack_size);
+        _user_stack = 0;
+        _context = CPU::init_stack(0, _stack + conf.stack_size, &__exit, entry, an ...);
+    }
+
     constructor_epilogue(entry, STACK_SIZE);
 }
 

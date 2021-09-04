@@ -44,7 +44,13 @@ void CPU::Context::load() const volatile
     ASM("       mov     sp, %0                  \n"
         "       isb                             \n" : : "r"(this)); // serialize the pipeline so that SP gets updated before the pop
 
+#ifdef __cortex_a__
+
+// handle USP
+
+#else
     ASM("       add     sp, #8                  \n");       // skip usp, ulr
+#endif
 
     ASM("       pop     {r12}                   \n");
     r12_to_psr();                                           // the context is loaded in SVC; with multitasking, a second context drives a mode change at _int_leave
@@ -70,7 +76,13 @@ if(thumb)
     psr_to_r12();                                       // save PSR to temporary register r12
     ASM("       push    {r12}                   \n");   // save PSR
 
+#ifdef __cortex_a__
+
+// handle USP
+
+#else
     ASM("       sub     sp, #8                  \n");   // skip ulr and usp
+#endif
 
     ASM("       str     sp, [r0]                \n");   // update Context * volatile * o
 
@@ -78,7 +90,13 @@ if(thumb)
     ASM("       mov     sp, r1                  \n"     // get Context * volatile n into SP
         "       isb                             \n");   // serialize the pipeline so SP gets updated before the pop
 
+#ifdef __cortex_a__
+
+// handle USP
+
+#else
     ASM("       add     sp, #8                  \n");   // skip usp and ulr
+#endif
 
     ASM("       pop     {r12}                   \n");   // pop PSR into temporary register r12
     r12_to_psr();                                       // restore PSR

@@ -95,6 +95,7 @@ public:
         HARD_INT        = CPU::EXCEPTIONS,
         INT_SYS_TIMER   = HARD_INT + (multitask ? IRQ_SUP_TIMER : IRQ_MAC_TIMER),
         INT_RESCHEDULER = HARD_INT + (multitask ? IRQ_SUP_SOFT : IRQ_MAC_SOFT),  // an IPI is mapped to the machine with mcause set to IRQ_MAC_SOFT
+        INT_SYSCALL     = CPU::EXC_ENVU
     };
 
 public:
@@ -166,6 +167,7 @@ private:
     static void dispatch();
 
     // Logical handlers
+    static void syscall(Interrupt_Id int_id);
     static void int_not(Interrupt_Id i);
     static void exception(Interrupt_Id i);
 

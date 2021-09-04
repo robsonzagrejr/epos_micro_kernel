@@ -1,6 +1,5 @@
 // EPOS Semaphore Component Test Program
 
-#include <machine/display.h>
 #include <time.h>
 #include <synchronizer.h>
 #include <process.h>
@@ -21,8 +20,6 @@ int philosopher(int n, int l, int c);
 int main()
 {
     table.lock();
-    Display::clear();
-    Display::position(0, 0);
     cout << "The Philosopher's Dinner:" << endl;
 
     for(int i = 0; i < 5; i++)
@@ -36,25 +33,12 @@ int main()
 
     cout << "Philosophers are alive and hungry!" << endl;
 
-    Display::position(7, 44);
-    cout << '/';
-    Display::position(13, 44);
-    cout << '\\';
-    Display::position(16, 35);
-    cout << '|';
-    Display::position(13, 27);
-    cout << '/';
-    Display::position(7, 27);
-    cout << '\\';
-    Display::position(19, 0);
-
     cout << "The dinner is served ..." << endl;
     table.unlock();
 
     for(int i = 0; i < 5; i++) {
         int ret = phil[i]->join();
         table.lock();
-        Display::position(20 + i, 0);
         cout << "Philosopher " << i << " ate " << ret << " times " << endl;
         table.unlock();
     }
@@ -77,30 +61,26 @@ int philosopher(int n, int l, int c)
     for(int i = iterations; i > 0; i--) {
 
         table.lock();
-        Display::position(l, c);
-        cout << "thinking";
+        cout << n << " thinking";
         table.unlock();
 
         Delay thinking(1000000);
 
         table.lock();
-        Display::position(l, c);
-        cout << " hungry ";
+        cout << n << " hungry ";
         table.unlock();
 
         chopstick[first]->p();   // get first chopstick
         chopstick[second]->p();  // get second chopstick
 
         table.lock();
-        Display::position(l, c);
-        cout << " eating ";
+        cout << n << " eating ";
         table.unlock();
 
         Delay eating(500000);
 
         table.lock();
-        Display::position(l, c);
-        cout << "  sate  ";
+        cout << n << "  sate  ";
         table.unlock();
 
         chopstick[first]->v();   // release first chopstick
@@ -108,7 +88,6 @@ int philosopher(int n, int l, int c)
     }
 
     table.lock();
-    Display::position(l, c);
     cout << "  done  ";
     table.unlock();
 

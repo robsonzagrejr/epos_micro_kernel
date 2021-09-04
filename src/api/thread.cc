@@ -90,8 +90,10 @@ Thread::~Thread()
         break;
     }
 
-    if(multitask)
+    if(multitask) {
         _task->remove(this);
+        delete _user_stack;
+    }
 
     if(_joining)
         _joining->resume();
