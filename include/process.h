@@ -28,6 +28,9 @@ protected:
     static const bool preemptive = Traits<Thread>::Criterion::preemptive;
     static const bool reboot = Traits<System>::reboot;
 
+    static const bool multitask = Traits<System>::multitask;
+
+
     static const unsigned int QUANTUM = Traits<Thread>::QUANTUM;
     static const unsigned int STACK_SIZE = Traits<Application>::STACK_SIZE;
 
@@ -47,6 +50,7 @@ public:
     // Thread Scheduling Criterion
     typedef Traits<Thread>::Criterion Criterion;
     enum {
+        LOADER  = Criterion::LOADER,
         HIGH    = Criterion::HIGH,
         NORMAL  = Criterion::NORMAL,
         LOW     = Criterion::LOW,
@@ -59,12 +63,13 @@ public:
 
     // Thread Configuration
     struct Configuration {
-        Configuration(const State & s = READY, const Criterion & c = NORMAL, unsigned int ss = STACK_SIZE)
-        : state(s), criterion(c), stack_size(ss) {}
+        Configuration(const State & s = READY, const Criterion & c = NORMAL, unsigned int ss = STACK_SIZE, Task * t = 0)
+        : state(s), criterion(c), stack_size(ss), task(t) {}
 
         State state;
         Criterion criterion;
         unsigned int stack_size;
+        Task * task;
     };
 
 
@@ -81,6 +86,8 @@ public:
     const volatile Criterion & priority() const { return _link.rank(); }
     void priority(const Criterion & p);
 
+    Task * task() const { return _task; }
+
     int join();
     void pass();
     void suspend();
@@ -89,6 +96,7 @@ public:
     static Thread * volatile self() { return running(); }
     static void yield();
     static void exit(int status = 0);
+
 
 protected:
     void constructor_prologue(unsigned int stack_size);
@@ -118,7 +126,9 @@ private:
     static void init();
 
 protected:
+    Task * _task;
     char * _stack;
+    Segment  * _ustack;
     Context * volatile _context;
     volatile State _state;
     Queue * _waiting;
@@ -130,24 +140,93 @@ protected:
     static Scheduler<Thread> _scheduler;
 };
 
-
-template<typename ... Tn>
-inline Thread::Thread(int (* entry)(Tn ...), Tn ... an)
-: _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
+// Task
+class Task
 {
-    constructor_prologue(STACK_SIZE);
-    _context = CPU::init_stack(0, _stack + STACK_SIZE, &__exit, entry, an ...);
-    constructor_epilogue(entry, STACK_SIZE);
-}
+    friend class Thread;        // for insert()
 
-template<typename ... Tn>
-inline Thread::Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
-: _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
-{
-    constructor_prologue(conf.stack_size);
-    _context = CPU::init_stack(0, _stack + conf.stack_size, &__exit, entry, an ...);
-    constructor_epilogue(entry, conf.stack_size);
-}
+private:
+    typedef CPU::Log_Addr Log_Addr;
+    typedef CPU::Phy_Addr Phy_Addr;
+    typedef CPU::Context Context;
+
+protected:
+    // This constructor is only used by Thread::init()
+    template<typename ... Tn>
+    Task(Address_Space * as, Segment * cs, Segment * ds, int (* entry)(Tn ...), const Log_Addr & code, const Log_Addr & data, Tn ... an)
+    : _as(as), _cs(cs), _ds(ds), _entry(entry), _code(code), _data(data) {
+        db<Task, Init>(TRC) << "Task(as=" << _as << ",cs=" << _cs << ",ds=" << _ds << ",entry=" << _entry << ",code=" << _code << ",data=" << _data << ") => " << this << endl;
+        lock();
+        _id = _task_count++;
+        unlock();
+        _current = this;
+        activate();
+        _main = new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::LOADER, Traits<Application>::STACK_SIZE, this), entry, an ...);
+    }
+
+public:
+    template<typename ... Tn>
+    Task(Segment * cs, Segment * ds, int (* entry)(Tn ...), const Log_Addr & code, const Log_Addr & data, Tn ... an)
+    : _as (new (SYSTEM) Address_Space), _cs(cs), _ds(ds), _entry(entry), _code(_as->attach(_cs, code)), _data(_as->attach(_ds, data)) {
+        db<Task>(TRC) << "Task(as=" << _as << ",cs=" << _cs << ",ds=" << _ds << ",entry=" << _entry << ",code=" << _code << ",data=" << _data << ") => " << this << endl;
+        lock();
+        _id = _task_count++;
+        unlock();
+        _main = new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::MAIN, Traits<Application>::STACK_SIZE, this), entry, an ...);
+    }
+    ~Task();
+
+    Address_Space * address_space() const { return _as; }
+
+    Segment * code_segment() const { return _cs; }
+    Segment * data_segment() const { return _ds; }
+
+    Log_Addr code() const { return _code; }
+    Log_Addr data() const { return _data; }
+
+    Thread * main() const { return _main; }
+
+    static Task * volatile self() { return current(); }
+    Log_Addr entry() { return _entry; }
+
+    unsigned int id() {return _id;}
+
+    void activate_context() {
+        activate();
+        MMU::flush_tlb();
+        lock();
+        _current = this;
+        unlock();
+    }
+
+private:
+    void activate() const { _as->activate(); }
+
+    void insert(Thread * t) { _threads.insert(new (SYSTEM) Thread::Queue::Element(t)); }
+    void remove(Thread * t) { Thread::Queue::Element * el = _threads.remove(t); if(el) delete el; }
+
+    static Task * volatile current() { return _current; }
+    static void current(Task * t) { _current = t; }
+
+    static void lock() { CPU::int_disable(); }
+    static void unlock() { CPU::int_enable(); }
+
+private:
+    unsigned int _id;
+    Address_Space * _as;
+    Segment * _cs;
+    Segment * _ds;
+    Log_Addr _entry;
+    Log_Addr _code;
+    Log_Addr _data;
+    Thread * _main;
+    Thread::Queue _threads;
+
+    static Task * volatile _current;
+
+protected:
+    static volatile unsigned int _task_count;
+};
 
 
 // A Java-like Active Object
@@ -178,6 +257,42 @@ public:
 private:
     Thread * _handler;
 };
+
+template<typename ... Tn>
+inline Thread::Thread(int (* entry)(Tn ...), Tn ... an)
+:_task(Task::self()), _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
+{
+    constructor_prologue(STACK_SIZE);
+    _context = CPU::init_stack(0, _stack + STACK_SIZE, &__exit, entry, an ...);
+    constructor_epilogue(entry, STACK_SIZE);
+
+    _task->insert(this);
+}
+
+template<typename ... Tn>
+inline Thread::Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
+:_task(conf.task ? conf.task : Task::self()), _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
+{
+    constructor_prologue(conf.stack_size);
+
+    if (conf.criterion == Thread::IDLE) {
+        _context = CPU::init_stack(0, _stack + conf.stack_size, &__exit, entry, an ...);
+    } else {
+        _ustack = new (SYSTEM) Segment(Traits<Machine>::STACK_SIZE, Segment::Flags::APP);
+        CPU::Log_Addr usp = _task->address_space()->attach(_ustack);
+        db<Thread>(TRC) << "UStack attached at vaddr=" << usp << endl;
+        _context = CPU::init_user_stack(usp + Traits<Machine>::STACK_SIZE, _stack + Traits<Machine>::STACK_SIZE, &__exit, entry, an ...);
+        db<Thread>(TRC) << "Context attached at vaddr=" << hex << _context << endl;
+    }
+    //Log_Addr usp = CPU::init_user_stack(0, _stack + conf.stack_size, &__exit, entry, an ...);
+    constructor_epilogue(entry, conf.stack_size);
+    //db<Thread>(TRC) << "------->THREAD USP" << hex << usp << endl;
+
+    // Not add Idle in task's threads list
+    if (conf.criterion != Thread::IDLE) {
+        _task->insert(this);
+    }
+}
 
 __END_SYS
 

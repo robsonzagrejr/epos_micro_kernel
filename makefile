@@ -25,10 +25,10 @@ endif
 
 run1: etc img/$(APPLICATION)$(MACH_IMGSUFF)
 		(cd img && $(MAKE) run1)
-		
+
 img/$(APPLICATION)$(MACH_IMGSUFF):
 		$(MAKE) $(PRECLEAN) all1
-		
+
 debug: FORCE
 ifndef APPLICATION
 		$(foreach app,$(APPLICATIONS),$(MAKE) DEBUG=1 APPLICATION=$(app) debug1;)
@@ -59,7 +59,7 @@ UNCOMPILED_TESTS:= $(filter-out $(TESTS_COMPILED),$(TESTS_TO_RUN))
 test: FORCE
 		$(foreach tst,$(TESTS),$(LINK) $(TST)/$(tst) $(APP);)
 		$(foreach tst,$(UNFINISHED_TESTS),$(MAKETEST) APPLICATION=$(tst) prebuild_$(tst) clean1 all1 posbuild_$(tst) prerun_$(tst) run1 posbuild_$(tst);)
-		
+
 buildtest: FORCE
 		$(foreach tst,$(TESTS),$(LINK) $(TST)/$(tst) $(APP);)
 		$(foreach tst,$(UNCOMPILED_TESTS),$(MAKETEST) APPLICATION=$(tst) prebuild_$(tst) clean1 all1 posbuild_$(tst) || exit;)
@@ -126,5 +126,29 @@ dist: veryclean
 		sed -e 's/^\/\//#/' $(ETC)/license.txt > $(ETC)/license.as
 		find $(TOP) -name "*.S" -print | xargs sed -i "1r $(ETC)/license.txt.as"
 		$(CLEAN) $(ETC)/license.as
+
+pre_loader:
+		killall qemu-system-aarch64
+		make cleanapps
+		rm img/loader.img
+		rm img/loader_apps.bin
+		rm img/loader_apps
+		rm img/hello
+
+
+loader:
+		#killall qemu-system-aarch64
+		#cd app ;\
+		#make APPLICATION=hello
+		#make APPLICATION=syscall_test
+		make APPLICATION=writer
+		make APPLICATION=reader
+		make APPLICATION=loader_apps
+		#./bin/eposmkbi . img/loader.img img/loader_apps img/hello img/hello img/syscall_test
+		# ./bin/eposmkbi . img/loader.img img/loader_apps img/hello
+		./bin/eposmkbi . img/loader.img img/loader_apps img/writer img/reader
+		/usr/bin/arm-none-eabi-objcopy -O binary img/loader.img img/loader_apps.bin
+		make APPLICATION=loader_apps debug
+
 
 FORCE:

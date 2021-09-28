@@ -1,5 +1,6 @@
 // EPOS ARM Cortex IC Mediator Implementation
 
+#include <architecture/cpu.h>
 #include <machine/machine.h>
 #include <machine/ic.h>
 #include <machine/timer.h>
@@ -15,6 +16,21 @@ extern "C" { void _prefetch_abort() __attribute__ ((alias("_ZN4EPOS1S2IC14prefet
 extern "C" { void _data_abort() __attribute__ ((alias("_ZN4EPOS1S2IC10data_abortEv"))); }
 extern "C" { void _reserved() __attribute__ ((alias("_ZN4EPOS1S2IC8reservedEv"))); }
 extern "C" { void _fiq() __attribute__ ((alias("_ZN4EPOS1S2IC3fiqEv"))); }
+
+extern "C" { void _go_user_mode() __attribute__ ((naked)); }
+extern "C" { void __exit(); }
+extern "C" { void _exit(int s); }
+
+void _go_user_mode() {
+    ASM("pop {r12}                     \n"
+        "msr sp_usr, r12               \n"
+        "pop {r12}                     \n"
+        "msr lr_usr, r12               \n"
+        "pop {r0}                      \n"
+        "msr spsr_cfxs, r0             \n"
+        "ldmfd sp!, {r0-r12, lr, pc}^  \n"
+    );
+}
 
 __BEGIN_SYS
 
@@ -211,44 +227,90 @@ void IC::int_not(Interrupt_Id i)
 
 void IC::hard_fault(Interrupt_Id i)
 {
+    ASM(
+        // Go to SVC to kill thread
+        "msr cpsr_c, #0x13                          \n"
+    );
     db<IC>(ERR) << "IC::hard_fault(i=" << i << ")" << endl;
-    Machine::panic();
+    //Machine::panic();
+    _exit(-1);
 }
 
 void IC::undefined_instruction()
 {
+    ASM(
+        // Go to SVC to kill thread
+        "msr cpsr_c, #0x13                          \n"
+    );
     db<IC>(ERR) << "Undefined instruction" << endl;
-    Machine::panic();
+    //Machine::panic();
+    _exit(-1);
 }
 
 void IC::software_interrupt()
 {
-    db<IC>(ERR) << "Software interrupt" << endl;
-    Machine::panic();
+    //Salvar Contexto IC
+    ASM(
+        "stmfd sp!, {r0-r3, lr}  \n"
+        "mrs r1, spsr            \n"
+        "push {r1}               \n"
+    );
+    CPU::syscalled();
+    ASM(
+        "pop {r1}                \n"
+        "msr spsr_cfxs, r1       \n"
+        "ldmfd sp!, {r0-r3, pc}^ \n"
+    );
 }
 
 void IC::prefetch_abort()
 {
-    db<IC>(ERR) << "Prefetch abort" << endl;
-    Machine::panic();
+    ASM(
+        // Go to SVC to execute __exit or to kill thread
+        "msr cpsr_c, #0x13                          \n"
+        // Get the addr of prefetch function
+        "mrs r1, lr_abt                             \n"
+        "sub r1, r1, #0x4                           \n"
+        "ldr r2, =__exit                            \n"
+        "cmp r1, r2                                 \n"
+        "bne _prefetch_abort_error_exit             \n"
+        // Continues to thread __exit
+        "bx r1                                      \n"
+        "_prefetch_abort_error_exit:                \n"
+    );
+    _exit(-1);
 }
 
 void IC::data_abort()
 {
+    ASM(
+        // Go to SVC to kill thread
+        "msr cpsr_c, #0x13                          \n"
+    );
     db<IC>(ERR) << "Data abort" << endl;
-    Machine::panic();
+    _exit(-1);
 }
 
 void IC::reserved()
 {
+    ASM(
+        // Go to SVC to kill thread
+        "msr cpsr_c, #0x13                          \n"
+    );
     db<IC>(ERR) << "Reserved" << endl;
-    Machine::panic();
+    //Machine::panic();
+    _exit(-1);
 }
 
 void IC::fiq()
 {
+    ASM(
+        // Go to SVC to kill thread
+        "msr cpsr_c, #0x13                          \n"
+    );
     db<IC>(ERR) << "FIQ handler" << endl;
-    Machine::panic();
+    //Machine::panic();
+    _exit(-1);
 }
 
 __END_SYS

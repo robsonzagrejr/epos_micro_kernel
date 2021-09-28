@@ -31,7 +31,7 @@ system_builtin_$(MMOD): $(OBJS)
 		--section-start $(MACH_DATA_NAME)=$(SYS_DATA_ADDR) \
 		--entry=_init -o system_$(MMOD) \
 		$(LIB)/crtbegin_$(MMOD).o \
-		system_scaffold.o \
+		system_scaffold.o system_binding.o\
 		$(LIB)/crtend_$(MMOD).o \
 		--whole-archive \
 		-l$(LSYS) -l$(LMACH) -l$(LARCH) \
@@ -45,13 +45,13 @@ system_kernel_$(MMOD): $(OBJS)
 		--section-start $(MACH_DATA_NAME)=$(SYS_DATA_ADDR) \
 		--entry=_init -o system_$(MMOD) \
 		$(LIB)/crtbegin_$(MMOD).o \
-		system_scaffold.o \
+		system_scaffold.o system_binding.o \
 		$(LIB)/crtend_$(MMOD).o \
 		--whole-archive \
 		-l$(LSYS) -l$(LMACH) -l$(LARCH) \
 		--no-whole-archive \
 		-l$(LUTIL) -lgcc
-		$(LD) $(LDFLAGS) -i application_scaffold.o -o application_$(MMOD).o
+		$(LD) $(LDFLAGS) -i application_scaffold.o application_binding.o -o application_$(MMOD).o
 
 clean:
 		$(CLEAN) *.o $(shell find -maxdepth 1 -executable -not -type d)

@@ -86,7 +86,7 @@ public:
 
     void undefined_instruction();
     void software_interrupt();
-    void prefetch_abort();
+    void prefetch_abort() __attribute__((naked));
     void data_abort();
     void reserved();
     void fiq();

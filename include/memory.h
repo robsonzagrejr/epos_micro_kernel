@@ -4,17 +4,19 @@
 #define __memory_h
 
 #include <architecture.h>
+#include <utility/list.h>
 
 __BEGIN_SYS
 
-class Address_Space: private MMU::Directory
+class Address_Space: MMU::Directory
 {
     friend class Init_System;   // for Address_Space(pd)
     friend class Thread;        // for Address_Space(pd)
     friend class Scratchpad;    // for Address_Space(pd)
     friend class Task;          // for activate()
 
-private:
+//private:
+public:
     using MMU::Directory::activate;
 
 public:
@@ -62,6 +64,41 @@ private:
         db<Segment>(TRC) << "Segment(pt=" << pt << ",from=" << from << ",to=" << to << ",flags=" << flags << ") [Chunk::pt=" << Chunk::pt() << ",sz=" << Chunk::size() << "] => " << this << endl;
     }
 };
+
+/*
+class Port_Shared_Segment
+{
+public:
+    int _port;
+    Shared_Segment * _shared_seg;
+
+public:
+    Port_Shared_Memory(int port, Shared_Segment * shared_seg): _port(port), _shared_seg(shared_seg) {}
+    int get_port() { return _port; }
+    int get_shared_seg() { return _shared_seg; }
+};
+*/
+
+
+class Shared_Segment: public Segment
+{
+private:
+    int _port;
+    typedef List<Shared_Segment> SS_List;
+
+public:
+    static SS_List _shared_segments;
+
+public:
+    Shared_Segment(int port, unsigned int bytes);
+
+    static Shared_Segment * using_port(int port);
+
+    void set_port(int port) {_port = port;}
+    int get_port() {return _port;}
+};
+
+
 
 __END_SYS
 

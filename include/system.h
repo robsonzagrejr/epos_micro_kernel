@@ -15,6 +15,10 @@ class Application
     friend class Init_Application;
     friend void * ::malloc(size_t);
     friend void ::free(void *);
+public:
+    static const unsigned int HEAP_SIZE = Traits<Application>::HEAP_SIZE;
+    static const unsigned int STACK_SIZE = Traits<Application>::STACK_SIZE;
+
 
 private:
     static void init();

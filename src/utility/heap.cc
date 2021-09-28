@@ -9,7 +9,7 @@ __BEGIN_UTIL
 // Methods
 void Heap::out_of_memory()
 {
-    db<Heaps>(ERR) << "Heap::alloc(this=" << this << "): out of memory!" << endl;
+    db<Heaps>(TRC) << "Heap::alloc(this=" << this << "): out of memory!" << endl;
 
     _panic();
 }

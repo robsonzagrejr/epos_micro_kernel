@@ -8,7 +8,7 @@
         .type   _mcu_start, function
 _mcu_start:
         // Temporary Stack Pointer for INIT for Cortex-M; Cortex-A temporary stack(s) for INIT are created and configure by SETUP
-        // Main's stack will be allocated by Thread::init()  
+        // Main's stack will be allocated by Thread::init()
         ldr     r0, =__boot_stack__
         mov     sp, r0
 
@@ -18,6 +18,9 @@ _mcu_start:
         .global _start
         .type   _start, function
 _start:
+        // Save argc and argv
+        mov      r2, #3
+        push    {r0-r1}
         // Clear the BSS
         eor     r0, r0
         ldr     r1, =__bss_start__
@@ -34,6 +37,14 @@ _start:
         .globl  __epos_app_entry
         .type   __epos_app_entry, function
 __epos_app_entry:
+//_user_mode:
+        //msr cpsr_all, #16    // Change to user mode
+        //mov r12, sp
+        //mrs sp, sp_usr
+        //msr sp_usr, r12
+
+        // Load argc and argv
+        pop     {r0-r1}
         bl      main
         push    {r0}         // save main's return value to be used by exit()
         bl      _fini
