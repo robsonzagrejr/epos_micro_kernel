@@ -5,6 +5,8 @@
 
 #include <architecture/cpu.h>
 
+extern "C" { void _go_user_mode(); }
+
 __BEGIN_SYS
 
 class ARMv7: protected CPU_Common
@@ -318,7 +320,7 @@ public:
 
     static Reg r0() { Reg r; ASM("mov %0, r0" : "=r"(r) : : ); return r; }
     static void r0(Reg r) { ASM("mov r0, %0" : : "r"(r): ); }
-    
+
     static Reg r1() { Reg r; ASM("mov %0, r1" : "=r"(r) : : ); return r; }
     static void r1(Reg r) { ASM("mov r1, %0" : : "r"(r): ); }
 
@@ -411,7 +413,8 @@ public:
     {
     public:
         Context(){}
-        Context(Log_Addr  entry, Log_Addr exit, Log_Addr usp): _flags(FLAG_DEFAULTS), _lr(exit | (thumb ? 1 : 0)), _pc(entry | (thumb ? 1 : 0)) {
+        // Need to be a FLAG_USER when isnt a system
+        Context(Log_Addr  entry, Log_Addr exit, Log_Addr usp, Log_Addr ulr, bool is_system):_usp(usp), _ulr(ulr), _flags((is_system? FLAG_SVC : FLAG_USER)), _lr(exit | (thumb ? 1 : 0)), _pc(entry | (thumb ? 1 : 0)) {
             if(Traits<Build>::hysterically_debugged || Traits<Thread>::trace_idle) {
                 _r0 = 0; _r1 = 1; _r2 = 2; _r3 = 3; _r4 = 4; _r5 = 5; _r6 = 6; _r7 = 7; _r8 = 8; _r9 = 9; _r10 = 10; _r11 = 11; _r12 = 12;
             }
@@ -444,6 +447,8 @@ public:
         }
 
     public:
+        Reg32 _usp;
+        Reg32 _ulr;
         Reg32 _flags;
         Reg32 _r0;
         Reg32 _r1;
@@ -515,8 +520,18 @@ public:
     template<typename ... Tn>
     static Context * init_stack(Log_Addr usp, Log_Addr ksp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
         ksp -= sizeof(Context);
-        Context * ctx = new(ksp) Context(entry, exit, usp);
+        Context * ctx = new(ksp) Context(entry, exit, usp, exit, true);
         init_stack_helper(&ctx->_r0, an ...);
+        return ctx;
+    }
+
+    template<typename ... Tn>
+    static Context * init_user_stack(Log_Addr usp, Log_Addr ksp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
+        ksp -= sizeof(Context);
+        Context * ctx = new(ksp) Context(entry, exit, usp, exit, false);
+        init_stack_helper(&ctx->_r0, an ...);
+        ksp -= sizeof(Context);
+        ctx = new(ksp) Context(&_go_user_mode, 0, 0, 0, true);
         return ctx;
     }
 
