@@ -27,7 +27,12 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int MIO_BASE          = 0x40000000;
     static const unsigned int MIO_TOP           = 0x400000ff;
     static const unsigned int VECTOR_TABLE      = SIMULATED ? 0x00010000 : 0x00008000;   // Defined by uboot@QEMU
-    static const unsigned int PAGE_TABLES       = 0x3eef0000;   // 1006 MB
+    static const unsigned int PAGE_TABLES       = 0x3ed00000;   // 1006 MB
+    static const unsigned int SYS_INFO          = 0x3ec3f000;   // 4K
+    static const unsigned int APPC_PAGE_TABLES  = 0x3ec38000;   // 1006 MB
+    static const unsigned int APPD_PAGE_TABLES  = 0x3ec00000;   // 1006 MB
+    static const unsigned int SYS_PAGE_TABLES   = 0x3ed00000;   // 1006 MB
+    static const unsigned int SHARED_MEM        = 0x3eff0000;
 
     // Boot Image
     static const unsigned int BOOT_LENGTH_MIN   = NOT_USED;
@@ -35,22 +40,23 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int BOOT_STACK        = 0x3eeefffc;   // MEM_TOP - sizeof(int) - 1M for boot stacks
 
     // Logical Memory Map
-    static const unsigned int BOOT              = NOT_USED;
-    static const unsigned int IMAGE             = NOT_USED;
-    static const unsigned int SETUP             = NOT_USED;
-    static const unsigned int INIT              = NOT_USED;
+    static const unsigned int BOOT              = 0x00000000;
+    static const unsigned int IMAGE             = 0x00008000;
+    static const unsigned int SETUP             = 0x00010000;
+    static const unsigned int INIT              = 0x00800000;
 
     static const unsigned int APP_LOW           = MEM_BASE;
-    static const unsigned int APP_CODE          = VECTOR_TABLE;
-    static const unsigned int APP_DATA          = VECTOR_TABLE;
+    static const unsigned int APP_CODE          = 0x05000000;//VECTOR_TABLE;
+    static const unsigned int APP_DATA          = 0x0A000000;//VECTOR_TABLE;
     static const unsigned int APP_HIGH          = MEM_TOP;
 
     static const unsigned int PHY_MEM           = 0x40000000; // 2 GB
     static const unsigned int IO                = NOT_USED;     // this machine only supports the library architecture of EPOS
 
-    static const unsigned int SYS               = 0xff700000;   // 4 GB - 9 MB
-    static const unsigned int SYS_CODE          = 0xff700000;
-    static const unsigned int SYS_DATA          = 0xff740000;
+    static const unsigned int SYS               = 0x01000000;   // 4 GB - 9 MB
+    static const unsigned int SYS_CODE          = 0x01000000;
+    static const unsigned int SYS_DATA          = 0x03000000;
+    static const unsigned int SYS_STACK         = 0x04000000;
 
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE        = 16 * 1024;

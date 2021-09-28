@@ -78,6 +78,9 @@ fi
 
 LINKER_BUILTIN=$LINKER
 LINK_FLGS_BUILTIN="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
+if [ "$BOOT_STACK" != "" ] ; then
+    LINK_FLGS_BUILTIN="$LINK_FLGS_BUILTIN --defsym=__boot_stack__=$BOOT_STACK"
+fi
 LINK_OBJI_BUILTIN="$LIB/crt0_$MMOD.o $LIB/crtbegin_$MMOD.o"
 LINK_OBJN_BUILTIN="$LIB/application_$MMOD.o $LIB/init_application_$MMOD.o"
 LINK_OBJL_BUILTIN="$LIB/crtend_$MMOD.o -R$SRC/system/system_$MMOD"

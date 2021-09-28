@@ -18,6 +18,8 @@ enum Color {
     WHITE = COLOR_0
 };
 
+enum Shared_Allocator { SHARED };
+
 // Power Management Modes
 enum Power_Mode
 {
@@ -49,6 +51,9 @@ void * operator new[](size_t, const EPOS::Scratchpad_Allocator &);
 
 void * operator new(size_t, const EPOS::Color &);
 void * operator new[](size_t, const EPOS::Color &);
+
+void * operator new(size_t, const EPOS::Shared_Allocator &);
+void * operator new[](size_t, const EPOS::Shared_Allocator &);
 
 // Utilities
 __BEGIN_UTIL

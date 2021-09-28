@@ -115,7 +115,7 @@ ifeq ($(MMOD),realview_pbx)
 cortex_CC_FLAGS		:= -mcpu=cortex-a9
 cortex_AS_FLAGS		:= -mcpu=cortex-a9
 cortex_LD_FLAGS		:=
-cortex_EMULATOR		= qemu-system-arm -machine realview-pbx-a9 -smp $(CPUS) -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel 
+cortex_EMULATOR		= qemu-system-arm -machine realview-pbx-a9 -smp $(CPUS) -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel
 cortex_DEBUGGER		:= arm-none-eabi-gdb
 cortex_FLASHER		= $(TLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f
 cortex_MAGIC		:= --omagic
@@ -127,7 +127,7 @@ endif
 ifeq ($(MMOD),zynq)
 cortex_CC_FLAGS		:= -mcpu=cortex-a9
 cortex_AS_FLAGS		:= -mcpu=cortex-a9
-cortex_EMULATOR		= qemu-system-arm -machine xilinx-zynq-a9  -smp $(CPUS) -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel 
+cortex_EMULATOR		= qemu-system-arm -machine xilinx-zynq-a9  -smp $(CPUS) -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel
 cortex_DEBUGGER		:= arm-none-eabi-gdb
 cortex_FLASHER		= $(TLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f
 cortex_MAGIC		:= --omagic
@@ -140,8 +140,8 @@ ifeq ($(MMOD),raspberry_pi3)
 cortex_CC_FLAGS		:= -mcpu=cortex-a53 -mfloat-abi=hard -mfpu=vfp
 cortex_AS_FLAGS		:= -mcpu=cortex-a53
 cortex_LD_FLAGS		:=
-cortex_EMULATOR		= qemu-system-aarch64 -M raspi2 -cpu cortex-a53 -smp 4 -m 1G -serial null -serial mon:stdio -nographic -no-reboot -kernel 
-cortex_DEBUGGER		:= gdb
+cortex_EMULATOR      = qemu-system-aarch64 -M raspi2 -cpu cortex-a53 -smp 4 -m 1G -serial null -serial mon:stdio -nographic -no-reboot -device loader,addr=0x10000,force-raw=on,file=
+cortex_DEBUGGER     := arm-none-eabi-gdb
 cortex_FLASHER		= $(TLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f
 cortex_MAGIC		:= --omagic
 cortex_CODE_NAME	:= .init
@@ -150,7 +150,7 @@ cortex_IMG_SUFFIX	:= .bin
 endif
 
 ifeq ($(MMOD),lm3s811)
-cortex_EMULATOR		= qemu-system-arm -machine lm3s811evb -m $(MEM_SIZE)k -serial mon:stdio -serial null -nographic -no-reboot -kernel 
+cortex_EMULATOR		= qemu-system-arm -machine lm3s811evb -m $(MEM_SIZE)k -serial mon:stdio -serial null -nographic -no-reboot -kernel
 cortex_CC_FLAGS		:= -mcpu=cortex-m3 -mthumb -mabi=atpcs
 cortex_AS_FLAGS		:= -mcpu=cortex-m3 -mthumb -meabi=gnu
 cortex_LD_FLAGS		:=
@@ -163,7 +163,7 @@ cortex_IMG_SUFFIX	:= .img
 endif
 
 ifeq ($(MMOD),emote3)
-cortex_EMULATOR		= 
+cortex_EMULATOR		=
 cortex_CC_FLAGS		:= -mcpu=cortex-m3 -mthumb -mabi=atpcs
 cortex_AS_FLAGS		:= -mcpu=cortex-m3 -mthumb -meabi=gnu
 cortex_LD_FLAGS		:=
@@ -177,11 +177,11 @@ endif
 
 ifeq ($(MMOD),sifive_e)
 riscv_CC_FLAGS          := -Wl, -mno-relax
-riscv_AS_FLAGS          := 
+riscv_AS_FLAGS          :=
 riscv_LD_FLAGS          := --no-relax
-riscv_EMULATOR			= qemu-system-riscv32 -machine virt -cpu rv32 -smp $(CPUS) -m $(MEM_SIZE)k -serial mon:stdio -bios none -nographic -no-reboot -device loader,file=$(IMAGE),addr=$(IMAGE_ADDR),force-raw=on -kernel 
+riscv_EMULATOR			= qemu-system-riscv32 -machine virt -cpu rv32 -smp $(CPUS) -m $(MEM_SIZE)k -serial mon:stdio -bios none -nographic -no-reboot -device loader,file=$(IMAGE),addr=$(IMAGE_ADDR),force-raw=on -kernel
 riscv_DEBUGGER          := $(COMP_PREFIX)gdb
-riscv_FLASHER           := 
+riscv_FLASHER           :=
 riscv_MAGIC             := --nmagic
 riscv_CODE_NAME	        := .init
 riscv_DATA_NAME         := .data
@@ -190,11 +190,11 @@ endif
 
 ifeq ($(MMOD),sifive_u)
 riscv_CC_FLAGS          := -Wl, -mno-relax
-riscv_AS_FLAGS          := 
+riscv_AS_FLAGS          :=
 riscv_LD_FLAGS          := --no-relax
-riscv_EMULATOR          = qemu-system-riscv64 -machine virt -cpu rv32 -smp $(CPUS) -m $(MEM_SIZE)k -serial mon:stdio -bios none -nographic -no-reboot -kernel 
+riscv_EMULATOR          = qemu-system-riscv64 -machine virt -cpu rv32 -smp $(CPUS) -m $(MEM_SIZE)k -serial mon:stdio -bios none -nographic -no-reboot -kernel
 riscv_DEBUGGER          := $(COMP_PREFIX)gdb
-riscv_FLASHER           := 
+riscv_FLASHER           :=
 riscv_MAGIC             := --nmagic
 riscv_CODE_NAME         := .init
 riscv_DATA_NAME         := .data
@@ -369,7 +369,8 @@ lib%.o: lib%.cc
 		$(CLEAN) $<.tmp
 
 %.bin: %.img
-		$(OBJCOPY) -O binary $< $@
+		#$(OBJCOPY) -O binary $< $@
+		cp $< $@
 
 %.out: %.img
 		$(EMULATOR) $< | $(TEE) $@

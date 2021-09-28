@@ -54,6 +54,11 @@ public:
 
     static void delay(const Microsecond & time);
 
+    // função criada para os testes
+    // serve para garantir que o tempo está correndo enquanto
+    // as threads estão executando
+    static volatile Tick & getElapsed() { return _elapsed; }
+
 private:
     unsigned int times() const { return _times; }
 

@@ -125,7 +125,7 @@ class RR: public Priority
 public:
     static const bool timed = true;
     static const bool dynamic = false;
-    static const bool preemptive = true;
+    static const bool preemptive = false;
 
 public:
     template <typename ... Tn>
@@ -145,66 +145,17 @@ public:
     FCFS(int p = NORMAL, Tn & ... an);
 };
 
-
-// Real-time Algorithms
-class Real_Time_Scheduler_Common: public Priority
-{
-protected:
-    Real_Time_Scheduler_Common(int p): Priority(p), _deadline(0), _period(0), _capacity(0) {} // aperiodic
-    Real_Time_Scheduler_Common(int i, const Microsecond & d, const Microsecond & p, const Microsecond & c)
-    : Priority(i), _deadline(d), _period(p), _capacity(c) {}
-
-public:
-    const Microsecond period() { return _period; }
-    void period(const Microsecond & p) { _period = p; }
-
-public:
-    Microsecond _deadline;
-    Microsecond _period;
-    Microsecond _capacity;
-};
-
 // Rate Monotonic
-class RM:public Real_Time_Scheduler_Common
-{
-public:
-    static const bool timed = false;
-    static const bool dynamic = false;
-    static const bool preemptive = true;
-
-public:
-    RM(int p = APERIODIC): Real_Time_Scheduler_Common(p) {}
-    RM(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
-    : Real_Time_Scheduler_Common(p ? p : d, d, p, c) {}
-};
-
-// Deadline Monotonic
-class DM: public Real_Time_Scheduler_Common
-{
-public:
-    static const bool timed = false;
-    static const bool dynamic = false;
-    static const bool preemptive = true;
-
-public:
-    DM(int p = APERIODIC): Real_Time_Scheduler_Common(p) {}
-    DM(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
-    : Real_Time_Scheduler_Common(d, d, p, c) {}
-};
-
-// Earliest Deadline First
-class EDF: public Real_Time_Scheduler_Common
+class RM: public Priority
 {
 public:
     static const bool timed = true;
-    static const bool dynamic = true;
+    static const bool dynamic = false;
     static const bool preemptive = true;
 
 public:
-    EDF(int p = APERIODIC): Real_Time_Scheduler_Common(p) {}
-    EDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY);
-
-    void update();
+    template <typename ... Tn>
+    RM(int p = APERIODIC, Tn & ... an) : Priority(p) {}
 };
 
 __END_SYS

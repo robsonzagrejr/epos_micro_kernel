@@ -32,6 +32,22 @@ public:
             System::_heap = new (&System::_preheap[0]) Heap(MMU::alloc(MMU::pages(HEAP_SIZE)), HEAP_SIZE);
         db<Init>(INF) << "done!" << endl;
 
+        db<Init>(INF) << "Initializing shared's heap: " << endl;
+
+        if(Traits<System>::shared) {
+            // db<Init>(INF) << "Segment done..." << endl;
+            // db<Init>(INF) << "Segment size:" << SharedMemory::_heap_segment->size() << endl;
+            // db<Init>(INF) << "SharedMemory address:" << hex << Traits<Machine>::SHARED_MEM << endl;
+            SharedMemory::_heap_segment = new (&SharedMemory::_preheap[0]) Segment(SharedMemory::SHARED_HEAP_SIZE, Segment::Flags::SYS);
+            SharedMemory::_heap = new (&SharedMemory::_preheap[sizeof(Segment)]) Heap((void *) Traits<Machine>::SHARED_MEM, SharedMemory::_heap_segment->size());
+            // db<Init>(INF) << "Preheap 0:" << hex <<  SharedMemory::_preheap[sizeof(Segment)] << endl;
+            // db<Init>(INF) << "Preheap 0:" << hex <<  SharedMemory::_heap << endl;
+
+        }
+
+        db<Init>(INF) << "done!" << endl;
+
+
         db<Init>(INF) << "Initializing the machine: " << endl;
         Machine::init();
         db<Init>(INF) << "done!" << endl;

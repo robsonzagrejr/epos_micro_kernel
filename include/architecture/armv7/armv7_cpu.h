@@ -40,11 +40,12 @@ public:
     static Reg32 fr() { Reg32 r; ASM("mov %0, r0" : "=r"(r)); return r; }
     static void fr(Reg32 fr) {   ASM("mov r0, %0" : : "r"(fr) : "r0"); }
 
-    static Reg32 sctlr() { Reg32 r; ASM("mrc p15, 0, %0, c1, c0, 0" : "=r"(r)); return r; }
-    static void sctlr(Reg32 r) {   ASM("mcr p15, 0, %0, c1, c0, 0" : : "r"(r) : "r0"); }
+    // Trocamos para c2 com base na WIKI de MMU
+    static Reg32 sctlr() { Reg32 r; ASM("mrc p15, 0, %0, c2, c0, 0" : "=r"(r)); return r; }
+    static void sctlr(Reg32 r) {   ASM("mcr p15, 0, %0, c2, c0, 0" : : "r"(r) : "r0"); }
 
-    static Reg32 actlr() { Reg32 r; ASM("mrc p15, 0, %0, c1, c0, 1" : "=r"(r)); return r; }
-    static void actlr(Reg32 r) { ASM("mcr p15, 0, %0, c1, c0, 1" : : "r"(r) : "r0"); }
+    static Reg32 actlr() { Reg32 r; ASM("mrc p15, 0, %0, c2, c0, 2" : "=r"(r)); return r; }
+    static void actlr(Reg32 r) { ASM("mcr p15, 0, %0, c2, c0, 2" : : "r"(r) : "r0"); }
 
     static void dsb() { ASM("dsb"); }
     static void isb() { ASM("isb"); }

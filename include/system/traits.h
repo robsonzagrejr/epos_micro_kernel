@@ -93,6 +93,7 @@ class Keypad;
 // API Components
 class System;
 class Application;
+class SharedMemory;
 
 class Thread;
 class Active;

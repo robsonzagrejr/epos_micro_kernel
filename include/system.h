@@ -27,7 +27,8 @@ private:
 class System
 {
     friend class Init_System;                                                   // for _heap
-    friend class Init_Application;                                              // for _heap with multiheap = false
+    friend class Init_Application;
+    friend class SharedMemory;                                             // for _heap with multiheap = false
     friend void CPU::Context::load() const volatile;
     friend void * ::malloc(size_t);						// for _heap
     friend void ::free(void *);							// for _heap
@@ -47,6 +48,23 @@ private:
     static char _preheap[(Traits<System>::multiheap ? sizeof(Segment) : 0) + sizeof(Heap)];
     static Segment * _heap_segment;
     static Heap * _heap;
+};
+
+class SharedMemory
+{
+    friend class Init_System;
+    friend void * ::operator new(size_t, const EPOS::Shared_Allocator &);	// for _heap
+    friend void * ::operator new[](size_t, const EPOS::Shared_Allocator &);	// for _heap
+    friend void ::operator delete(void *);					// for _heap
+    friend void ::operator delete[](void *);					// for _heap
+public:
+  static const unsigned int SHARED_HEAP_SIZE = 0x00001000;
+
+private:
+  static char _preheap[(Traits<System>::multiheap ? sizeof(Segment) : 0) + sizeof(Heap)];
+  static Segment * _heap_segment;
+  static Heap * _heap;
+
 };
 
 __END_SYS
@@ -92,6 +110,14 @@ inline void * operator new(size_t bytes, const EPOS::System_Allocator & allocato
 
 inline void * operator new[](size_t bytes, const EPOS::System_Allocator & allocator) {
     return _SYS::System::_heap->alloc(bytes);
+}
+
+inline void * operator new(size_t bytes, const EPOS::Shared_Allocator & allocator) {
+    return _SYS::SharedMemory::_heap->alloc(bytes);
+}
+
+inline void * operator new[](size_t bytes, const EPOS::Shared_Allocator & allocator) {
+    return _SYS::SharedMemory::_heap->alloc(bytes);
 }
 
 // Delete cannot be declared inline due to virtual destructors

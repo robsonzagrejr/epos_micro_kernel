@@ -107,6 +107,7 @@ template<> struct Traits<System>: public Traits<Build>
     static const bool multitask = (mode != Traits<Build>::LIBRARY);
     static const bool multicore = (Traits<Build>::CPUS > 1) && multithread;
     static const bool multiheap = multitask || Traits<Scratchpad>::enabled;
+    static const bool shared = false;
 
     static const unsigned long LIFE_SPAN = 1 * YEAR; // s
     static const unsigned int DUTY_CYCLE = 1000000; // ppm

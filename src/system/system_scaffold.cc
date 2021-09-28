@@ -20,6 +20,11 @@ char System::_preheap[];
 Segment * System::_heap_segment;
 Heap * System::_heap;
 
+// Shared class attributes
+char SharedMemory::_preheap[];
+Segment * SharedMemory::_heap_segment;
+Heap * SharedMemory::_heap;
+
 __END_SYS
 
 // Bindings
