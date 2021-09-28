@@ -20,6 +20,7 @@ private:
     static const unsigned int RAM_BASE = Memory_Map::RAM_BASE;
     static const unsigned int APP_LOW = Memory_Map::APP_LOW;
     static const unsigned int PHY_MEM = Memory_Map::PHY_MEM;
+    static const unsigned int SYS     = Memory_Map::SYS;
 
 public:
     // Page Flags
@@ -31,7 +32,7 @@ public:
             XN   = 1 << 0,  // not executable
             PTE  = 1 << 1,  // sets entry as Small Page == Page Table Entry
             // Access Permission bits, assuming SCTLR.AFE = 0
-            AP0  = 1 << 4,  
+            AP0  = 1 << 4,
             AP1  = 1 << 5,
             AP2  = 1 << 9,
             RW   = AP0,     // Read Write SYS
@@ -145,7 +146,61 @@ public:
     };
 
     // Page Directory
-    typedef Page_Table Page_Directory;
+    class Page_Directory {
+    public:
+        Page_Directory() {}
+
+        PD_Entry & operator[](unsigned int i) { return _entry[i]; }
+        Page_Directory & log() { return *static_cast<Page_Directory *>(phy2log(this)); }
+
+        void map(int from, int to, Page_Flags flags, Color color) {
+            Phy_Addr * addr = alloc(to - from, color);
+            if(addr)
+                remap(addr, from, to, flags);
+            else
+                for( ; from < to; from++) {
+                    Log_Addr * pde = phy2log(&_entry[from]);
+                    *pde = phy2pde(alloc(1, color));
+                }
+        }
+
+        void map_contiguous(int from, int to, Page_Flags flags, Color color) {
+            remap(alloc(to - from, color), from, to, flags);
+        }
+
+        void remap(Phy_Addr addr, int from, int to, Page_Flags flags) {
+            addr = align_page(addr);
+            for( ; from < to; from++) {
+                Log_Addr * pde = phy2log(&_entry[from]);
+                *pde = phy2pde(addr);
+                addr += sizeof(Page);
+            }
+        }
+
+        void unmap(int from, int to) {
+            for( ; from < to; from++) {
+                free(_entry[from]);
+                Log_Addr * pde = phy2log(&_entry[from]);
+                *pde = 0;
+            }
+        }
+
+        friend OStream & operator<<(OStream & os, Page_Directory & pd) {
+            os << "{\n";
+            int brk = 0;
+            for(unsigned int i = 0; i < PD_ENTRIES; i++)
+                if(pd[i]) {
+                    os << "[" << i << "]=" << pd[i] << "  ";
+                    if(!(++brk % 4))
+                        os << "\n";
+                }
+            os << "\n}";
+            return os;
+        }
+
+    private:
+        PD_Entry _entry[PD_ENTRIES]; // the Phy_Addr in each entry passed through phy2pde()
+    };
 
     // Chunk (for Segment)
     class Chunk
@@ -226,8 +281,19 @@ public:
     class Directory
     {
     public:
-        Directory() : _pd(reinterpret_cast<Page_Directory *>((calloc(4, WHITE) & ~(0x3fff)))), _free(true) { // each pd has up to 4096 entries and must be aligned with 16KB
-            for(unsigned int i = directory(PHY_MEM); i < PD_ENTRIES; i++)
+        Directory() : _pd(calloc(7, WHITE)), _free(true) { // each pd has up to 4096 entries and must be aligned with 16KB, need 7 in worst case
+            unsigned int addr = reinterpret_cast<unsigned int>(_pd);
+            // Alinhamento para o próximo diretório caso não esteja alinhado
+            // (Baseado no código do Gilson)
+            if (addr & 0x3FFF) {
+                addr = (addr & ~(0x3FFF)) + (0x3FFF + 1);
+            }
+            _pd = Phy_Addr(addr);
+
+            for(unsigned int i = directory(PHY_MEM); i < directory(APP_LOW); i++)
+                (*_pd)[i] = (*_master)[i];
+
+            for(unsigned int i = directory(SYS); i < PD_ENTRIES; i++)
                 (*_pd)[i] = (*_master)[i];
         }
 
@@ -240,6 +306,7 @@ public:
         void activate() const { CPU::pdp(pd()); }
 
         Log_Addr attach(const Chunk & chunk, unsigned int from = directory(APP_LOW)) {
+            flush_tlb();
             for(unsigned int i = from; i < PD_ENTRIES; i++)
                 if(attach(i, chunk.pt(), chunk.pts(), chunk.flags()))
                     return i << DIRECTORY_SHIFT;
@@ -247,6 +314,7 @@ public:
         }
 
         Log_Addr attach(const Chunk & chunk, Log_Addr addr) {
+            flush_tlb();
             unsigned int from = directory(addr);
             if(attach(from, chunk.pt(), chunk.pts(), chunk.flags()))
                 return from << DIRECTORY_SHIFT;
@@ -254,6 +322,7 @@ public:
         }
 
         void detach(const Chunk & chunk) {
+            flush_tlb();
             for(unsigned int i = 0; i < PD_ENTRIES; i++) {
                 if(indexes(pte2phy((*_pd)[i])) == indexes(chunk.pt())) {
                     detach(i, chunk.pt(), chunk.pts());
@@ -264,6 +333,7 @@ public:
         }
 
         void detach(const Chunk & chunk, Log_Addr addr) {
+            flush_tlb();
             unsigned int from = directory(addr);
             if(indexes(pte2phy((*_pd)[from])) != indexes(chunk.pt())) {
                 db<MMU>(WRN) << "MMU::Directory::detach(pt=" << chunk.pt() << ",addr=" << addr << ") failed!" << endl;
@@ -420,7 +490,18 @@ public:
     static PD_Entry phy2pde(Phy_Addr frame) { return (frame) | Page_Flags::PD_FLAGS; }
     static Phy_Addr pde2phy(PD_Entry entry) { return (entry & ~Page_Flags::PD_MASK); }
 
-    static void flush_tlb() {} //TODO
+    static void flush_tlb() {
+        CPU::isb();
+        CPU::dsb();
+        //ASM("MCR p15, 0, r0, c8, c5, 0;");
+        // ITLBIALL, Instruction TLB invalidate all. Operation ignores Rt value.");
+
+        ASM("mcr   p15, 0, r0, c8, c7, 0");// @ flush I,D TLBs
+        /*
+        ASM("mcr     p15, 0, r0, c7, c5, 4 \n" //  @ ISB
+            "mcrne   p15, 0, r0, c8, c7, 0");// @ flush I,D TLBs
+        */
+    }
     static void flush_tlb(Log_Addr addr) {} //TODO
 
     static Log_Addr phy2log(Phy_Addr phy) { return Log_Addr((RAM_BASE == PHY_MEM) ? phy : (RAM_BASE > PHY_MEM) ? phy - (RAM_BASE - PHY_MEM) : phy + (PHY_MEM - RAM_BASE)); }

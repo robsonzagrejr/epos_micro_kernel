@@ -557,8 +557,8 @@ void Setup::setup_app_pt()
     // APPLICATION data (contains stack, heap and extra)
     configure_page_table_descriptors(reinterpret_cast<PT_Entry *>(&app_data_pt[MMU::page(si->lm.app_data)]), si->pmm.app_data, MMU::pages(si->lm.app_data_size), MMU::page_tables(MMU::pages(si->lm.app_data_size)), Flags::APP);
 
-    db<Setup>(INF) << "APPC_PT=" << *reinterpret_cast<Page_Table *>(app_code_pt) << endl;
-    db<Setup>(INF) << "APPD_PT=" << *reinterpret_cast<Page_Table *>(app_data_pt) << endl;
+    db<Setup>(TRC) << "APPC_PT=" << *reinterpret_cast<Page_Table *>(app_code_pt) << endl;
+    db<Setup>(TRC) << "APPD_PT=" << *reinterpret_cast<Page_Table *>(app_data_pt) << endl;
 }
 
 void Setup::setup_sys_pd()
