@@ -411,7 +411,8 @@ public:
     {
     public:
         Context(){}
-        Context(Log_Addr  entry, Log_Addr exit, Log_Addr usp): _flags(FLAG_DEFAULTS), _lr(exit | (thumb ? 1 : 0)), _pc(entry | (thumb ? 1 : 0)) {
+        // Need to be a FLAG_USER when isnt a system
+        Context(Log_Addr  entry, Log_Addr exit, Log_Addr usp, bool is_system):_usp(usp), _flags((is_system? FLAG_SVC : FLAG_SVC)), _lr(exit | (thumb ? 1 : 0)), _pc(entry | (thumb ? 1 : 0)) {
             if(Traits<Build>::hysterically_debugged || Traits<Thread>::trace_idle) {
                 _r0 = 0; _r1 = 1; _r2 = 2; _r3 = 3; _r4 = 4; _r5 = 5; _r6 = 6; _r7 = 7; _r8 = 8; _r9 = 9; _r10 = 10; _r11 = 11; _r12 = 12;
             }
@@ -444,6 +445,7 @@ public:
         }
 
     public:
+        Reg32 _usp;
         Reg32 _flags;
         Reg32 _r0;
         Reg32 _r1;
@@ -515,7 +517,38 @@ public:
     template<typename ... Tn>
     static Context * init_stack(Log_Addr usp, Log_Addr ksp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
         ksp -= sizeof(Context);
-        Context * ctx = new(ksp) Context(entry, exit, usp);
+        Context * ctx = new(ksp) Context(entry, exit, usp, true);
+        init_stack_helper(&ctx->_r0, an ...);
+        return ctx;
+    }
+
+    template<typename ... Tn>
+    static Context * init_user_stack(Log_Addr usp, Log_Addr ksp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
+        ksp -= sizeof(Context);
+        Context * ctx = new(ksp) Context(entry, exit, usp, false);
+        //colocar aqui a flag do modo
+        //colocar o usp aqui de alguma forma bem no primeiro valor valido de sp
+        /*
+        ASM(
+            "push {r0-r2}    \n"
+            "mov r2, sp      \n"
+            "mov sp, %0      \n"
+            "mov r0, #16     \n"
+            "push {r0}       \n"
+            "mov sp, r2      \n"
+            "pop {r0-r2}     \n"
+            "" : : "r"(ctx)
+        );
+        */
+        /*
+        ASM(
+            "push {r0, r1}    \n"
+            "mov r0, %0       \n"
+            "push {r0}    \n"
+            "pop {r0, r1}     \n"
+            : : "r"("#0")
+        );
+        */
         init_stack_helper(&ctx->_r0, an ...);
         return ctx;
     }

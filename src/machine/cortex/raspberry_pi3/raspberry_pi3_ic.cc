@@ -1,5 +1,6 @@
 // EPOS ARM Cortex IC Mediator Implementation
 
+#include <architecture/cpu.h>
 #include <machine/machine.h>
 #include <machine/ic.h>
 #include <machine/timer.h>
@@ -223,8 +224,20 @@ void IC::undefined_instruction()
 
 void IC::software_interrupt()
 {
-    db<IC>(ERR) << "Software interrupt" << endl;
-    Machine::panic();
+    //Salvar Contexto IC
+    ASM(
+        "push {r0-r12, lr} \n"
+        //"mrs r2, spsr      \n"
+        //"push {r2, r3}     \n"
+    );
+    CPU::syscalled();
+    ASM(
+        //"pop {r2, r3}      \n"
+        //"msr spsr_cf, r2   \n"
+        "pop {r0-r12, lr}    \n"
+        //"msr cpsr_all, #16   \n"
+        //"ldm {r0-r12, pc}^ \n"
+    );
 }
 
 void IC::prefetch_abort()

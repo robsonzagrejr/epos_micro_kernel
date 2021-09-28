@@ -34,6 +34,11 @@ _start:
         .globl  __epos_app_entry
         .type   __epos_app_entry, function
 __epos_app_entry:
+_user_mode:
+        //msr cpsr_all, #16    // Change to user mode
+        mov r12, sp
+        mrs sp, sp_usr
+        msr sp_usr, r12
         bl      main
         push    {r0}         // save main's return value to be used by exit()
         bl      _fini

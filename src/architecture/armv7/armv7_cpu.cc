@@ -44,8 +44,11 @@ if(thumb)
 void CPU::Context::load() const volatile
 {
     ASM("       mov     sp, %0                  \n"
-        "       isb                             \n" // serialize the pipeline so that SP gets updated before the pop
-        "       pop     {r12}                   \n" : : "r"(this));
+        "       isb                             \n" : : "r"(this)); // serialize the pipeline so that SP gets updated before the pop
+    ASM(
+        "       pop     {r12}                   \n"
+        "       msr     sp_usr, r12             \n");
+    ASM("       pop     {r12}                   \n");
     msr12();
     ASM("       pop     {r0-r12, lr}            \n"
         "       pop     {pc}                    \n");
@@ -72,6 +75,8 @@ if(Traits<FPU>::enabled && !Traits<FPU>::user_save)
 
     mrs12();                                            // move flags to tmp register
     ASM("       push    {r12}                   \n");   // save flags
+    ASM("       mrs     r12, sp_usr             \n"
+        "       push    {r12}                   \n");
     ASM("       str     sp, [r0]                \n");   // update Context * volatile * o
 
 
@@ -79,6 +84,8 @@ if(Traits<FPU>::enabled && !Traits<FPU>::user_save)
     ASM("       mov     sp, r1                  \n"     // get Context * volatile n into SP
         "       isb                             \n");   // serialize the pipeline so SP gets updated before the pop
 
+    ASM("       pop     {r12}                   \n"
+        "       msr     sp_usr, r12             \n");
     ASM("       pop     {r12}                   \n");   // pop flags into the temporary register r12
     msr12();                                            // restore flags
 
